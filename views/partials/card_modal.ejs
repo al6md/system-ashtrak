@@ -1,0 +1,1364 @@
+<!-- ID Card Preview & Print Modal (Integrated with Cardval) -->
+<div id="printModal" class="fixed inset-0 z-50 bg-gray-900 bg-opacity-75" style="display: none; overflow-y: auto; padding: 1rem 0.5rem; box-sizing: border-box;">
+    <div style="min-height: 100%; display: flex; align-items: center; justify-content: center; width: 100%;">
+        <div class="bg-white rounded-lg shadow-xl w-full" style="max-width: 1040px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; margin: auto; border: 1px solid #e5e7eb;">
+            <!-- Header -->
+            <div style="padding: 0.75rem 1.25rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background-color: #ffffff; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.15rem;">🪪</span>
+                    <h3 style="font-size: 0.95rem; font-weight: 700; color: #1f2937; margin: 0;" id="modalTitle">Print Trader ID Card</h3>
+                </div>
+                <button type="button" onclick="closePrintModal()" style="color: #6b7280; background: #f3f4f6; border: 1px solid #e5e7eb; cursor: pointer; padding: 0.25rem 0.45rem; border-radius: 0.375rem; display: inline-flex; align-items: center; justify-content: center;" title="إغلاق">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Main Body: Clean Two-Column Grid (Card on Left, Controls on Right) -->
+            <div style="padding: 1.15rem 1.25rem; overflow-y: auto; flex: 1; background-color: #f9fafb;">
+                <div class="modal-studio-grid">
+
+                    <!-- LEFT COLUMN: Card Preview & Print Actions -->
+                    <div class="modal-preview-box">
+                        <!-- Front / Back Switcher Buttons -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; width: 100%; margin-bottom: 0.65rem;">
+                            <button type="button" id="btnFront" onclick="switchCardSide('front')" class="card-side-btn active-side">
+                                الوجه الأمامي (Front)
+                            </button>
+                            <button type="button" id="btnBack" onclick="switchCardSide('back')" class="card-side-btn">
+                                الوجه الخلفي (Back)
+                            </button>
+                        </div>
+
+                        <!-- Canvas Display (Crisp CR80 Aspect Ratio) -->
+                        <div style="width: 100%; aspect-ratio: 1024/644; border: 1px solid #d1d5db; border-radius: 0.5rem; overflow: hidden; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                            <canvas id="frontCanvas" width="1024" height="644" style="width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
+                            <canvas id="backCanvas" width="1024" height="644" style="width: 100%; height: 100%; object-fit: contain; display: none;"></canvas>
+                        </div>
+
+                        <!-- Action Buttons (Matching Cardval Dark Button UI) -->
+                        <div style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.4rem; width: 100%;">
+                            <button type="button" onclick="printCR80()" class="modal-act-btn btn-dark">🖨️ CR80 Plastic</button>
+                            <button type="button" onclick="printA4()" class="modal-act-btn btn-dark">📄 Print A4</button>
+                            <button type="button" onclick="downloadImage('front')" class="modal-act-btn btn-outline">⬇️ Front PNG</button>
+                            <button type="button" onclick="downloadImage('back')" class="modal-act-btn btn-outline">⬇️ Back PNG</button>
+                            <a id="verifyLink" href="#" target="_blank" class="modal-act-btn btn-outline">🔗 Verification</a>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Per-Card Font & Position Controls (RTL) -->
+                    <div class="modal-controls-box" dir="rtl">
+                        <!-- Panel Header -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.55rem;">
+                            <div style="font-weight: 700; font-size: 0.85rem; color: #1f2937; display: flex; align-items: center; gap: 0.35rem;">
+                                <span>🎛️</span>
+                                <span>ضبط الخط والموقع لهذه الهوية</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
+                                <button id="btnTraderSaveTypo" type="button" onclick="saveTraderCustomTypography()" style="padding: 0.35rem 0.75rem; background: #1f2937; color: #ffffff; border-radius: 0.375rem; font-weight: 600; font-size: 0.75rem; border: 1px solid transparent; cursor: pointer;" title="حفظ التعديلات لهذه البطاقة فقط">
+                                    💾 حفظ خاص للتاجر
+                                </button>
+                                <button type="button" onclick="resetTraderCustomTypography()" style="padding: 0.35rem 0.65rem; background: #ffffff; color: #374151; border: 1px solid #d1d5db; border-radius: 0.375rem; font-weight: 600; font-size: 0.75rem; cursor: pointer;">
+                                    ↺ استعادة
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Field Selection Pills -->
+                        <div style="margin-bottom: 0.75rem;">
+                            <label style="display: block; font-size: 0.75rem; font-weight: 600; color: #4b5563; margin-bottom: 0.4rem;">اختر الحقل للتعديل والتحريك:</label>
+                            <div id="modalFieldPills" style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+
+                        <!-- 1. Font Size Control Box -->
+                        <div style="background: #f9fafb; padding: 0.65rem 0.8rem; border-radius: 0.5rem; border: 1px solid #e5e7eb; margin-bottom: 0.65rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                <span style="font-size: 0.78rem; font-weight: 700; color: #374151;">حجم الخط (Font Size):</span>
+                                <span id="mActiveSizeBadge" style="font-size: 0.75rem; font-weight: 700; color: #1f2937; background: #ffffff; padding: 0.1rem 0.5rem; border-radius: 0.25rem; border: 1px solid #d1d5db; direction: ltr;">28px</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;" dir="ltr">
+                                <button type="button" class="nudge-btn" onclick="modalNudgeSize(-1)" title="تصغير 1px">-A</button>
+                                <input type="range" id="mActiveSizeSlider" min="16" max="55" value="28" style="flex: 1; height: 6px; cursor: pointer;" oninput="onModalSliderChange(this.value)">
+                                <button type="button" class="nudge-btn" onclick="modalNudgeSize(1)" title="تكبير 1px">+A</button>
+                            </div>
+                        </div>
+
+                        <!-- 2. Directional Position Controller -->
+                        <div style="background: #f9fafb; padding: 0.65rem 0.8rem; border-radius: 0.5rem; border: 1px solid #e5e7eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                <span style="font-size: 0.78rem; font-weight: 700; color: #374151;">تحريك مكان النص (Move Position):</span>
+                                <div style="font-size: 0.75rem; color: #4b5563; font-family: monospace; direction: ltr;">
+                                    X: <span id="mActiveXVal" style="font-weight: 700; color: #111827;">880</span> | 
+                                    Y: <span id="mActiveYVal" style="font-weight: 700; color: #111827;">314</span>
+                                </div>
+                            </div>
+
+                            <!-- D-Pad Directional Controls -->
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0.25rem 0; user-select: none;" dir="ltr">
+                                <!-- UP -->
+                                <button type="button" onclick="modalNudgePos('y', -2)" class="dpad-btn" title="تحريك لأعلى">
+                                    ▲ أعلى (Up)
+                                </button>
+                                <!-- LEFT / RIGHT -->
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin: 0.25rem 0;">
+                                    <button type="button" onclick="modalNudgePos('x', -2)" class="dpad-btn" title="تحريك لليسار">
+                                        ◀ يسار
+                                    </button>
+                                    <div style="width: 1.75rem; height: 1.75rem; border-radius: 9999px; background: #ffffff; border: 1px solid #d1d5db; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">
+                                        🎯
+                                    </div>
+                                    <button type="button" onclick="modalNudgePos('x', 2)" class="dpad-btn" title="تحريك لليمين">
+                                        يمين ▶
+                                    </button>
+                                </div>
+                                <!-- DOWN -->
+                                <button type="button" onclick="modalNudgePos('y', 2)" class="dpad-btn" title="تحريك لأسفل">
+                                    ▼ أسفل (Down)
+                                </button>
+                            </div>
+
+                            <!-- Direct numeric step inputs -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.45rem; padding-top: 0.45rem; border-top: 1px solid #e5e7eb;">
+                                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                    <span style="font-size: 0.75rem; font-weight: 600; color: #4b5563; white-space: nowrap;">الموقع X:</span>
+                                    <input type="number" id="mDirectInputX" style="width: 100%; font-size: 0.78rem; font-weight: 600; background: #ffffff; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.25rem 0.4rem; text-align: center; direction: ltr;" onchange="onModalDirectInputChange('x', this.value)">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                    <span style="font-size: 0.75rem; font-weight: 600; color: #4b5563; white-space: nowrap;">الموقع Y:</span>
+                                    <input type="number" id="mDirectInputY" style="width: 100%; font-size: 0.78rem; font-weight: 600; background: #ffffff; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.25rem 0.4rem; text-align: center; direction: ltr;" onchange="onModalDirectInputChange('y', this.value)">
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 0.4rem; text-align: center; font-size: 0.7rem; color: #6b7280;">
+                                * يمكنك استخدام أسهم الكيبورد (أعلى/أسفل/يمين/يسار) للتحريك المباشر
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@font-face {
+    font-family: 'PT Bold Heading';
+    src: url('/templates/PTBoldHeading.woff2') format('woff2');
+    font-weight: bold;
+}
+@font-face {
+    font-family: 'Myriad Pro';
+    src: url('/templates/MyriadPro-Bold.woff2') format('woff2');
+    font-weight: bold;
+}
+.modal-studio-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    align-items: start;
+    direction: ltr;
+}
+@media (min-width: 860px) {
+    .modal-studio-grid {
+        grid-template-columns: 480px minmax(0, 1fr);
+    }
+}
+.modal-preview-box {
+    background: #ffffff;
+    padding: 0.9rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.modal-controls-box {
+    background: #ffffff;
+    padding: 0.9rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.nudge-btn {
+    padding: 0.25rem 0.55rem;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+.nudge-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+    color: #111827;
+}
+.field-pill {
+    padding: 0.28rem 0.65rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    border: 1px solid #d1d5db;
+    background-color: #ffffff;
+    color: #374151;
+    transition: all 0.15s ease;
+}
+.field-pill:hover {
+    border-color: #9ca3af;
+    background-color: #f9fafb;
+}
+.field-pill.active-pill {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
+    border-color: #111827 !important;
+}
+.card-side-btn {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    border: 1px solid #d1d5db;
+    background-color: #f9fafb;
+    color: #374151;
+    text-align: center;
+    transition: all 0.15s ease;
+}
+.card-side-btn.active-side {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
+    border-color: #111827 !important;
+}
+.modal-act-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.38rem 0.75rem;
+    font-size: 0.73rem;
+    font-weight: 600;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+.btn-dark {
+    background: #1f2937;
+    color: #ffffff !important;
+    border: 1px solid transparent;
+}
+.btn-dark:hover { background: #374151; }
+.btn-primary {
+    background: #1f2937;
+    color: #ffffff !important;
+    border: 1px solid transparent;
+}
+.btn-primary:hover { background: #374151; }
+.btn-outline {
+    background: #ffffff;
+    color: #374151 !important;
+    border: 1px solid #d1d5db;
+}
+.btn-outline:hover { background: #f9fafb; }
+.dpad-btn {
+    padding: 0.3rem 0.85rem;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-weight: 700;
+    font-size: 0.72rem;
+    color: #374151;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    transition: all 0.1s ease;
+}
+.dpad-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+    color: #111827;
+}
+</style>
+
+<script>
+let currentTrader = null;
+let globalTypography = null;
+let activeCardTypography = null;
+let currentModalSide = 'front';
+let currentModalQrUrl = null;
+let activeModalFieldKey = 'name';
+
+const MODAL_FRONT_FIELDS = [
+    { key: 'name', label: 'اسم التاجر', sizeKey: 'name_size', xKey: 'name_x', yKey: 'name_y' },
+    { key: 'class', label: 'الصنف', sizeKey: 'class_size', xKey: 'class_x', yKey: 'class_y' },
+    { key: 'comm', label: 'الاسم التجاري', sizeKey: 'comm_size', xKey: 'comm_x', yKey: 'comm_y' },
+    { key: 'activity', label: 'النشاط', sizeKey: 'activity_size', xKey: 'activity_x', yKey: 'activity_y' },
+    { key: 'card_no', label: 'رقم الهوية', sizeKey: 'card_no_size', xKey: 'card_no_x', yKey: 'card_no_y' },
+    { key: 'aff_date', label: 'الانتساب', sizeKey: 'aff_date_size', xKey: 'aff_date_x', yKey: 'aff_date_y' },
+    { key: 'exp_date', label: 'النفاذ', sizeKey: 'exp_date_size', xKey: 'exp_date_x', yKey: 'exp_date_y' }
+];
+
+const MODAL_BACK_FIELDS = [
+    { key: 'name', label: 'Name (الاسم)', sizeKey: 'name_size', xKey: 'name_x', yKey: 'name_y' },
+    { key: 'class', label: 'Class', sizeKey: 'class_size', xKey: 'class_x', yKey: 'class_y' },
+    { key: 'comm_no', label: 'Commercial Name No', sizeKey: 'comm_no_size', xKey: 'comm_no_x', yKey: 'comm_no_y' },
+    { key: 'activity', label: 'Activity', sizeKey: 'activity_size', xKey: 'activity_x', yKey: 'activity_y' },
+    { key: 'card_no', label: 'ID No', sizeKey: 'card_no_size', xKey: 'card_no_x', yKey: 'card_no_y' },
+    { key: 'aff_date', label: 'Affiliation', sizeKey: 'aff_date_size', xKey: 'aff_date_x', yKey: 'aff_date_y' },
+    { key: 'exp_date', label: 'Expiration', sizeKey: 'exp_date_size', xKey: 'exp_date_x', yKey: 'exp_date_y' },
+    { key: 'qr', label: 'QR Code', sizeKey: 'qr_size', xKey: 'qr_x', yKey: 'qr_y' }
+];
+
+const COMPANY_FRONT_FIELDS = [
+    { key: 'comp', label: 'الشركة', sizeKey: 'comp_size', xKey: 'comp_x', yKey: 'comp_y' },
+    { key: 'ceo', label: 'المدير المفوض', sizeKey: 'ceo_size', xKey: 'ceo_x', yKey: 'ceo_y' },
+    { key: 'class_act', label: 'الصنف والنشاط', sizeKey: 'class_act_size', xKey: 'class_act_x', yKey: 'class_act_y' },
+    { key: 'cert', label: 'إجازة التأسيس', sizeKey: 'cert_size', xKey: 'cert_x', yKey: 'cert_y' },
+    { key: 'comm_date', label: 'الاسم التجاري وتاريخه', sizeKey: 'comm_date_size', xKey: 'comm_date_x', yKey: 'comm_date_y' },
+    { key: 'card_no', label: 'رقم الهوية', sizeKey: 'card_no_size', xKey: 'card_no_x', yKey: 'card_no_y' },
+    { key: 'aff_date', label: 'الانتساب', sizeKey: 'aff_date_size', xKey: 'aff_date_x', yKey: 'aff_date_y' },
+    { key: 'exp_date', label: 'النفاذ', sizeKey: 'exp_date_size', xKey: 'exp_date_x', yKey: 'exp_date_y' }
+];
+
+const COMPANY_BACK_FIELDS = [
+    { key: 'comp_en', label: 'Company', sizeKey: 'comp_en_size', xKey: 'comp_en_x', yKey: 'comp_en_y' },
+    { key: 'ceo_en', label: 'CEO', sizeKey: 'ceo_en_size', xKey: 'ceo_en_x', yKey: 'ceo_en_y' },
+    { key: 'class_act_en', label: 'Class / Activity', sizeKey: 'class_act_en_size', xKey: 'class_act_en_x', yKey: 'class_act_en_y' },
+    { key: 'license_en', label: 'License No', sizeKey: 'license_en_size', xKey: 'license_en_x', yKey: 'license_en_y' },
+    { key: 'comm_no', label: 'Commercial Name No', sizeKey: 'comm_no_size', xKey: 'comm_no_x', yKey: 'comm_no_y' },
+    { key: 'card_no', label: 'ID No', sizeKey: 'card_no_size', xKey: 'card_no_x', yKey: 'card_no_y' },
+    { key: 'aff_date', label: 'Affiliation', sizeKey: 'aff_date_size', xKey: 'aff_date_x', yKey: 'aff_date_y' },
+    { key: 'exp_date', label: 'Expiration', sizeKey: 'exp_date_size', xKey: 'exp_date_x', yKey: 'exp_date_y' },
+    { key: 'qr', label: 'QR Code', sizeKey: 'qr_size', xKey: 'qr_x', yKey: 'qr_y' }
+];
+
+const BROKER_FRONT_FIELDS = [
+    { key: 'name', label: 'اسم الدلال', sizeKey: 'name_size', xKey: 'name_x', yKey: 'name_y' },
+    { key: 'class', label: 'الصنف', sizeKey: 'class_size', xKey: 'class_x', yKey: 'class_y' },
+    { key: 'comm', label: 'الاسم التجاري (المكتب)', sizeKey: 'comm_size', xKey: 'comm_x', yKey: 'comm_y' },
+    { key: 'activity', label: 'النشاط', sizeKey: 'activity_size', xKey: 'activity_x', yKey: 'activity_y' },
+    { key: 'card_no', label: 'رقم الهوية (الشريط)', sizeKey: 'card_no_size', xKey: 'card_no_x', yKey: 'card_no_y' },
+    { key: 'aff_date', label: 'الانتساب', sizeKey: 'aff_date_size', xKey: 'aff_date_x', yKey: 'aff_date_y' },
+    { key: 'exp_date', label: 'النفاذ', sizeKey: 'exp_date_size', xKey: 'exp_date_x', yKey: 'exp_date_y' }
+];
+
+const BROKER_BACK_FIELDS = [
+    { key: 'name', label: 'Name (الاسم)', sizeKey: 'name_size', xKey: 'name_x', yKey: 'name_y' },
+    { key: 'class', label: 'Class', sizeKey: 'class_size', xKey: 'class_x', yKey: 'class_y' },
+    { key: 'comm_no', label: 'Commercial Name No', sizeKey: 'comm_no_size', xKey: 'comm_no_x', yKey: 'comm_no_y' },
+    { key: 'activity', label: 'Activity', sizeKey: 'activity_size', xKey: 'activity_x', yKey: 'activity_y' },
+    { key: 'card_no', label: 'ID No (الرقم)', sizeKey: 'card_no_size', xKey: 'card_no_x', yKey: 'card_no_y' },
+    { key: 'aff_date', label: 'Affiliation', sizeKey: 'aff_date_size', xKey: 'aff_date_x', yKey: 'aff_date_y' },
+    { key: 'exp_date', label: 'Expiration', sizeKey: 'exp_date_size', xKey: 'exp_date_x', yKey: 'exp_date_y' },
+    { key: 'qr', label: 'QR Code', sizeKey: 'qr_size', xKey: 'qr_x', yKey: 'qr_y' }
+];
+
+const DEFAULT_COMPANY_TYPOGRAPHY = {
+    front: {
+        comp_size: 26, comp_x: 900, comp_y: 285,
+        ceo_size: 24, ceo_x: 815, ceo_y: 338,
+        class_act_size: 24, class_act_x: 775, class_act_y: 385,
+        cert_size: 24, cert_x: 725, cert_y: 435,
+        comm_date_size: 24, comm_date_x: 695, comm_date_y: 485,
+        card_no_size: 30, card_no_x: 845, card_no_y: 560,
+        aff_date_size: 23, aff_date_x: 885, aff_date_y: 626,
+        exp_date_size: 23, exp_date_x: 465, exp_date_y: 626
+    },
+    back: {
+        comp_en_size: 36, comp_en_x: 195, comp_en_y: 322,
+        ceo_en_size: 33, ceo_en_x: 105, ceo_en_y: 364,
+        class_act_en_size: 33, class_act_en_x: 272, class_act_en_y: 410,
+        license_en_size: 33, license_en_x: 215, license_en_y: 461,
+        comm_no_size: 33, comm_no_x: 398, comm_no_y: 502,
+        card_no_size: 30, card_no_x: 125, card_no_y: 560,
+        aff_date_size: 28, aff_date_x: 170, aff_date_y: 630,
+        exp_date_size: 29, exp_date_x: 649, exp_date_y: 629,
+        qr_x: 754, qr_y: 212, qr_size: 234
+    }
+};
+
+const DEFAULT_BROKER_TYPOGRAPHY = {
+    front: {
+        name_size: 28, name_x: 910, name_y: 308,
+        class_size: 26, class_x: 898, class_y: 368,
+        comm_size: 24, comm_x: 800, comm_y: 432,
+        activity_size: 24, activity_x: 898, activity_y: 496,
+        card_no_size: 30, card_no_x: 860, card_no_y: 560,
+        aff_date_size: 23, aff_date_x: 898, aff_date_y: 630,
+        exp_date_size: 23, exp_date_x: 470, exp_date_y: 630
+    },
+    back: {
+        name_size: 28, name_x: 130, name_y: 308,
+        class_size: 28, class_x: 120, class_y: 368,
+        comm_no_size: 28, comm_no_x: 395, comm_no_y: 425,
+        activity_size: 28, activity_x: 165, activity_y: 478,
+        card_no_size: 30, card_no_x: 125, card_no_y: 560,
+        aff_date_size: 24, aff_date_x: 170, aff_date_y: 625,
+        exp_date_size: 24, exp_date_x: 735, exp_date_y: 625,
+        qr_x: 758, qr_y: 207, qr_size: 238
+    }
+};
+
+const DEFAULT_TYPOGRAPHY = {
+    front: {
+        name_size: 28, name_x: 900, name_y: 308,
+        class_size: 26, class_x: 890, class_y: 366,
+        comm_size: 24, comm_x: 795, comm_y: 432,
+        activity_size: 24, activity_x: 885, activity_y: 490,
+        card_no_size: 30, card_no_x: 845, card_no_y: 560,
+        aff_date_size: 23, aff_date_x: 885, aff_date_y: 626,
+        exp_date_size: 23, exp_date_x: 465, exp_date_y: 626
+    },
+    back: {
+        name_size: 26, name_x: 14, name_y: 305,
+        class_size: 24, class_x: 118, class_y: 368,
+        comm_no_size: 24, comm_no_x: 390, comm_no_y: 423,
+        activity_size: 22, activity_x: 165, activity_y: 474,
+        card_no_size: 30, card_no_x: 125, card_no_y: 560,
+        aff_date_size: 22, aff_date_x: 170, aff_date_y: 620,
+        exp_date_size: 22, exp_date_x: 735, exp_date_y: 620,
+        qr_x: 757, qr_y: 210, qr_size: 238
+    }
+};
+
+async function loadGlobalTypography() {
+    const isComp = currentTrader && currentTrader.member_type === 'company';
+    const isBroker = currentTrader && currentTrader.member_type === 'broker';
+    const endpoint = isComp
+        ? '/api/settings/company-card-typography'
+        : (isBroker ? '/api/settings/broker-card-typography' : '/api/settings/card-typography');
+    const fallback = isComp
+        ? DEFAULT_COMPANY_TYPOGRAPHY
+        : (isBroker ? DEFAULT_BROKER_TYPOGRAPHY : DEFAULT_TYPOGRAPHY);
+    try {
+        const res = await fetch(endpoint);
+        const json = await res.json();
+        if (json.success && json.settings) {
+            globalTypography = json.settings;
+            return globalTypography;
+        }
+    } catch (e) {
+        console.warn('Could not load custom typography, using defaults', e);
+    }
+    globalTypography = JSON.parse(JSON.stringify(fallback));
+    return globalTypography;
+}
+
+function entoar(str) {
+    if (!str) return '';
+    return String(str).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+}
+
+function formatClassName(cardClass, lang = 'ar') {
+    const c = String(cardClass || '').trim();
+    if (lang === 'ar') {
+        if (c === '1') return 'الأولى';
+        if (c === '2') return 'الثانية';
+        if (c === '3') return 'الثالثة';
+        if (c === '4') return 'الرابعة';
+        if (c.toLowerCase().includes('ممتاز') || c === '0') return 'الممتازة';
+        return c;
+    } else {
+        if (c === '1') return 'First';
+        if (c === '2') return 'Second';
+        if (c === '3') return 'Third';
+        if (c === '4') return 'Fourth';
+        if (c.toLowerCase().includes('ممتاز') || c === '0') return 'Excellent';
+        return c;
+    }
+}
+
+function loadImage(src) {
+    return new Promise(resolve => {
+        if (!src) return resolve(null);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => {
+            if (src !== '/templates/avatar_placeholder.png') {
+                loadImage('/templates/avatar_placeholder.png').then(resolve);
+            } else {
+                resolve(null);
+            }
+        };
+        img.src = src;
+    });
+}
+
+async function ensureFonts() {
+    try {
+        await Promise.all([
+            document.fonts.load('bold 28px "PT Bold Heading"'),
+            document.fonts.load('bold 24px "Myriad Pro"')
+        ]);
+        await document.fonts.ready;
+    } catch (e) {
+        console.warn('Font loading check:', e);
+    }
+}
+
+function drawAutoFitText(ctx, text, x, y, maxBoundary, isRtl = false) {
+    if (!text) return 1.0;
+
+    const availableWidth = Math.max(50, isRtl ? (x - maxBoundary) : (maxBoundary - x));
+
+    ctx.save();
+    let measuredWidth = ctx.measureText(text).width;
+
+    // Subtle letter-spacing for English (LTR) when long
+    if (!isRtl && measuredWidth > availableWidth && 'letterSpacing' in ctx) {
+        ctx.letterSpacing = '-0.5px';
+        measuredWidth = ctx.measureText(text).width;
+    }
+
+    // Horizontal compression without limit (بدون حد أدنى) so text fits fully before the boundary
+    const scaleX = measuredWidth > availableWidth ? (availableWidth / measuredWidth) : 1.0;
+
+    if (scaleX >= 0.995) {
+        ctx.fillText(text, x, y);
+    } else {
+        ctx.translate(x, y);
+        ctx.scale(scaleX, 1);
+        ctx.fillText(text, 0, 0);
+    }
+    ctx.restore();
+    return scaleX;
+}
+
+function getUnifiedRefSize(s, side, isComp) {
+    if (isComp) {
+        return side === 'front'
+            ? (Number(s.ceo_size) || Number(s.cert_size) || 24)
+            : (Number(s.ceo_en_size) || Number(s.license_en_size) || Number(s.comm_no_size) || 33);
+    } else {
+        return side === 'front'
+            ? (Number(s.comm_size) || Number(s.class_size) || 34)
+            : (Number(s.class_size) || Number(s.comm_no_size) || 36);
+    }
+}
+
+async function renderCardFront(canvas, trader) {
+    await ensureFonts();
+    const isComp = trader && trader.member_type === 'company';
+    const isBroker = trader && trader.member_type === 'broker';
+    const fallbackDefaults = isComp
+        ? DEFAULT_COMPANY_TYPOGRAPHY
+        : (isBroker ? DEFAULT_BROKER_TYPOGRAPHY : DEFAULT_TYPOGRAPHY);
+    const s = (activeCardTypography && activeCardTypography.front) ? activeCardTypography.front : ((globalTypography && globalTypography.front) ? globalTypography.front : fallbackDefaults.front);
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1024;
+    canvas.height = 644;
+
+    const templatePath = isComp
+        ? '/templates/company_front_clean.png'
+        : (isBroker ? '/templates/broker_front_clean.png' : '/templates/card_front_template.png');
+    const bg = await loadImage(templatePath);
+    if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+
+    // Draw photo
+    const photoSrc = trader.photo_path || '/templates/avatar_placeholder.png';
+    const photo = await loadImage(photoSrc);
+
+    const boxX = 14, boxY = 266, boxW = 274, boxH = 354, radius = 24;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(boxX + radius, boxY);
+    ctx.lineTo(boxX + boxW - radius, boxY);
+    ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + radius);
+    ctx.lineTo(boxX + boxW, boxY + boxH - radius);
+    ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - radius, boxY + boxH);
+    ctx.lineTo(boxX + radius, boxY + boxH);
+    ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - radius);
+    ctx.lineTo(boxX, boxY + radius);
+    ctx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
+    ctx.closePath();
+    ctx.clip();
+
+    if (photo) {
+        ctx.drawImage(photo, boxX, boxY, boxW, boxH);
+    } else {
+        ctx.fillStyle = '#E5E7EB';
+        ctx.fillRect(boxX, boxY, boxW, boxH);
+    }
+    ctx.restore();
+
+    // Arabic text with dynamic typography
+    ctx.save();
+    ctx.direction = 'rtl';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#000000';
+
+    if (isComp) {
+        const photoLeftMargin = 295;
+        // Company Front Design
+        // 1. الشركة
+        ctx.font = `bold ${s.comp_size || 26}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.company_name || trader.commercial_name || trader.name || '', s.comp_x || 900, s.comp_y || 285, photoLeftMargin, true);
+
+        // 2. المدير المفوض
+        ctx.font = `bold ${s.ceo_size || 24}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.ceo_name || trader.name || '', s.ceo_x || 815, s.ceo_y || 338, photoLeftMargin, true);
+
+        // 3. الصنف والنشاط
+        ctx.font = `bold ${s.class_act_size || 24}px "PT Bold Heading", sans-serif`;
+        const classAct = formatClassName(trader.card_class, 'ar') + ' / ' + (trader.activity || '-');
+        drawAutoFitText(ctx, classAct, s.class_act_x || 775, s.class_act_y || 385, photoLeftMargin, true);
+
+        // 4. رقم اجازة التأسيس
+        ctx.font = `bold ${s.cert_size || 24}px "PT Bold Heading", sans-serif`;
+        let cert = trader.incorporation_certificate_no ? entoar(trader.incorporation_certificate_no) : '-';
+        if (trader.incorporation_certificate_symbol) cert += ' (' + trader.incorporation_certificate_symbol + ')';
+        drawAutoFitText(ctx, cert, s.cert_x || 725, s.cert_y || 435, photoLeftMargin, true);
+
+        // 5. الاسم التجاري وتاريخه
+        ctx.font = `bold ${s.comm_date_size || 24}px "PT Bold Heading", sans-serif`;
+        let commDate = '';
+        if (trader.commercial_name_no) commDate += 'رقم ' + entoar(trader.commercial_name_no);
+        if (trader.affiliation_date) commDate += (commDate ? ' بتاريخ ' : '') + entoar(trader.affiliation_date);
+        if (!commDate) commDate = trader.commercial_name || '-';
+        drawAutoFitText(ctx, commDate, s.comm_date_x || 695, s.comm_date_y || 485, photoLeftMargin, true);
+
+        // 6. رقم الهوية in black ribbon
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `bold ${s.card_no_size || 30}px "PT Bold Heading", sans-serif`;
+        let cardText = entoar(trader.card_no);
+        if (trader.renewal_no) cardText += ' / ' + entoar(trader.renewal_no);
+        ctx.fillText(cardText, s.card_no_x || 845, s.card_no_y || 560);
+
+        // 7. التواريخ
+        ctx.fillStyle = '#000000';
+        ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
+        ctx.fillText(entoar(trader.affiliation_date || ''), s.aff_date_x || 885, s.aff_date_y || 626);
+        ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
+        ctx.fillText(entoar(trader.expire_date || ''), s.exp_date_x || 465, s.exp_date_y || 626);
+    } else if (isBroker) {
+        const photoLeftBroker = 295;
+        // Broker Front Design
+        // 1. الدلال
+        ctx.font = `bold ${s.name_size || 28}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.name || '', s.name_x || 910, s.name_y || 308, photoLeftBroker, true);
+
+        // 2. الصنف
+        ctx.font = `bold ${s.class_size || 26}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, formatClassName(trader.card_class, 'ar'), s.class_x || 898, s.class_y || 368, photoLeftBroker, true);
+
+        // 3. الاسم التجاري (المكتب)
+        ctx.font = `bold ${s.comm_size || 24}px "PT Bold Heading", sans-serif`;
+        let commText = trader.commercial_name || '';
+        if (trader.commercial_name_no) commText += ' / ' + entoar(trader.commercial_name_no);
+        drawAutoFitText(ctx, commText, s.comm_x || 800, s.comm_y || 432, photoLeftBroker, true);
+
+        // 4. النشاط
+        ctx.font = `bold ${s.activity_size || 24}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.activity || 'دلالية العقارات', s.activity_x || 898, s.activity_y || 496, photoLeftBroker, true);
+
+        // 5. رقم الهوية in peach ribbon
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `bold ${s.card_no_size || 30}px "PT Bold Heading", sans-serif`;
+        let cardText = entoar(trader.card_no);
+        if (trader.renewal_no) cardText += ' / ' + entoar(trader.renewal_no);
+        ctx.fillText(cardText, s.card_no_x || 860, s.card_no_y || 560);
+
+        // 6. الانتساب والنفاذ
+        ctx.fillStyle = '#000000';
+        ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
+        ctx.fillText(entoar(trader.affiliation_date || ''), s.aff_date_x || 898, s.aff_date_y || 630);
+        ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
+        ctx.fillText(entoar(trader.expire_date || ''), s.exp_date_x || 470, s.exp_date_y || 630);
+    } else {
+        const photoLeftTrader = 295;
+        // Trader Front Design
+        // 1. Name
+        ctx.font = `bold ${s.name_size || 28}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.name || '', s.name_x, s.name_y, photoLeftTrader, true);
+
+        // 2. Class
+        ctx.font = `bold ${s.class_size || 26}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, formatClassName(trader.card_class, 'ar'), s.class_x, s.class_y, photoLeftTrader, true);
+
+        // 3. Commercial Name
+        ctx.font = `bold ${s.comm_size || 24}px "PT Bold Heading", sans-serif`;
+        let commText = trader.commercial_name || '';
+        if (trader.commercial_name_no) commText += ' / ' + entoar(trader.commercial_name_no);
+        drawAutoFitText(ctx, commText, s.comm_x, s.comm_y, photoLeftTrader, true);
+
+        // 4. Activity
+        ctx.font = `bold ${s.activity_size || 24}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.activity || '', s.activity_x, s.activity_y, photoLeftTrader, true);
+
+        // 5. Card No in blue ribbon
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `bold ${s.card_no_size || 30}px "PT Bold Heading", sans-serif`;
+        let cardText = entoar(trader.card_no);
+        if (trader.renewal_no) cardText += ' / ' + entoar(trader.renewal_no);
+        ctx.fillText(cardText, s.card_no_x, s.card_no_y);
+
+        // 6. Dates
+        ctx.fillStyle = '#000000';
+        ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
+        ctx.fillText(entoar(trader.affiliation_date || ''), s.aff_date_x, s.aff_date_y);
+        ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
+        ctx.fillText(entoar(trader.expire_date || ''), s.exp_date_x, s.exp_date_y);
+    }
+
+    ctx.restore();
+}
+
+async function renderCardBack(canvas, trader, qrDataUrl) {
+    await ensureFonts();
+    const isComp = trader && trader.member_type === 'company';
+    const isBroker = trader && trader.member_type === 'broker';
+    const fallbackDefaults = isComp
+        ? DEFAULT_COMPANY_TYPOGRAPHY
+        : (isBroker ? DEFAULT_BROKER_TYPOGRAPHY : DEFAULT_TYPOGRAPHY);
+    const s = (activeCardTypography && activeCardTypography.back) ? activeCardTypography.back : ((globalTypography && globalTypography.back) ? globalTypography.back : fallbackDefaults.back);
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1024;
+    canvas.height = 644;
+
+    const templatePath = isComp
+        ? '/templates/company_back_clean.png'
+        : (isBroker ? '/templates/broker_back_clean.png' : '/templates/card_back_clean.png');
+    const bg = await loadImage(templatePath);
+    if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+
+    if (qrDataUrl) {
+        const qrImg = await loadImage(qrDataUrl);
+        if (qrImg) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(s.qr_x || 758, s.qr_y || 207, s.qr_size || 238, s.qr_size || 238);
+            ctx.drawImage(qrImg, s.qr_x || 758, s.qr_y || 207, s.qr_size || 238, s.qr_size || 238);
+        }
+    }
+
+    ctx.save();
+    ctx.direction = 'ltr';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#000000';
+
+    if (isComp) {
+        const qrLeft = (s.qr_x || 754) - 6;
+        // Company Back Design
+        // 1. Company:
+        ctx.font = `bold ${s.comp_en_size || 36}px "Myriad Pro", Arial, sans-serif`;
+        const compEn = (trader.english_company_name || trader.company_name || '').toUpperCase();
+        drawAutoFitText(ctx, compEn, s.comp_en_x || 195, s.comp_en_y || 322, qrLeft);
+
+        // 2. CEO:
+        ctx.font = `bold ${s.ceo_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+        const ceoEn = (trader.english_ceo_name || trader.english_name || trader.ceo_name || trader.name || '').toUpperCase();
+        drawAutoFitText(ctx, ceoEn, s.ceo_en_x || 105, s.ceo_en_y || 364, qrLeft);
+
+        // 3. Class / Activity (Large Font + Full Sentence + Unlimited Condense before QR):
+        ctx.font = `bold ${s.class_act_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+        const enAct = trader.english_activity || trader.activity || '-';
+        const classActEn = formatClassName(trader.card_class, 'en') + ' / ' + enAct;
+        drawAutoFitText(ctx, classActEn, s.class_act_en_x || 272, s.class_act_en_y || 410, qrLeft);
+
+        // 4. License No:
+        ctx.font = `bold ${s.license_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+        let licText = trader.incorporation_certificate_no || '-';
+        if (trader.incorporation_certificate_symbol) licText += ' (' + trader.incorporation_certificate_symbol + ')';
+        drawAutoFitText(ctx, licText, s.license_en_x || 215, s.license_en_y || 461, qrLeft);
+
+        // 5. Commercial Name No:
+        ctx.font = `bold ${s.comm_no_size || 33}px "Myriad Pro", Arial, sans-serif`;
+        drawAutoFitText(ctx, trader.commercial_name_no || '-', s.comm_no_x || 398, s.comm_no_y || 502, qrLeft);
+
+        // 6. ID No in black ribbon
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `bold ${s.card_no_size || 30}px "Myriad Pro", Arial, sans-serif`;
+        let enCard = trader.card_no || '';
+        if (trader.renewal_no) enCard += ' / ' + trader.renewal_no;
+        ctx.fillText(enCard, s.card_no_x || 125, s.card_no_y || 560);
+
+        // 7. Dates
+        ctx.fillStyle = '#000000';
+        ctx.font = `bold ${s.aff_date_size || 28}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.affiliation_date || '-', s.aff_date_x || 170, s.aff_date_y || 630);
+        ctx.font = `bold ${s.exp_date_size || 29}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.expire_date || '-', s.exp_date_x || 649, s.exp_date_y || 629);
+    } else if (isBroker) {
+        const qrLeftBroker = (s.qr_x || 758) - 6;
+        // Broker Back Design
+        // 1. Name:
+        ctx.font = `bold ${s.name_size || 28}px "Myriad Pro", Arial, sans-serif`;
+        const enName = (trader.english_name || trader.name || '').toUpperCase();
+        drawAutoFitText(ctx, enName, s.name_x || 130, s.name_y || 308, qrLeftBroker);
+
+        // 2. Class:
+        ctx.font = `bold ${s.class_size || 28}px "Myriad Pro", Arial, sans-serif`;
+        drawAutoFitText(ctx, formatClassName(trader.card_class, 'en'), s.class_x || 120, s.class_y || 368, qrLeftBroker);
+
+        // 3. Commercial Name No:
+        ctx.font = `bold ${s.comm_no_size || 28}px "Myriad Pro", Arial, sans-serif`;
+        drawAutoFitText(ctx, trader.commercial_name_no || '-', s.comm_no_x || 395, s.comm_no_y || 425, qrLeftBroker);
+
+        // 4. Activity:
+        ctx.font = `bold ${s.activity_size || 28}px "Myriad Pro", Arial, sans-serif`;
+        const enAct = trader.english_activity || 'Real Estates BROKER';
+        drawAutoFitText(ctx, enAct, s.activity_x || 165, s.activity_y || 478, qrLeftBroker);
+
+        // 5. ID No in peach ribbon
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `bold ${s.card_no_size || 30}px "Myriad Pro", Arial, sans-serif`;
+        let enCard = trader.card_no || '';
+        if (trader.renewal_no) enCard += ' / ' + trader.renewal_no;
+        ctx.fillText(enCard, s.card_no_x || 125, s.card_no_y || 560);
+
+        // 6. Dates:
+        ctx.fillStyle = '#000000';
+        ctx.font = `bold ${s.aff_date_size || 24}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.affiliation_date || '-', s.aff_date_x || 170, s.aff_date_y || 625);
+        ctx.font = `bold ${s.exp_date_size || 24}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.expire_date || '-', s.exp_date_x || 735, s.exp_date_y || 625);
+    } else {
+        const qrLeftTrader = (s.qr_x || 757) - 6;
+        // Trader Back Design
+        // Trader Name (English)
+        const nameSize = s.name_size !== undefined ? s.name_size : 36;
+        const nameX = s.name_x !== undefined ? s.name_x : 14;
+        const nameY = s.name_y !== undefined ? s.name_y : 305;
+        ctx.font = `bold ${nameSize}px "Myriad Pro", Arial, sans-serif`;
+        const enName = (trader.english_name || trader.name || '').toUpperCase();
+        drawAutoFitText(ctx, enName, nameX, nameY, qrLeftTrader);
+
+        // Class
+        ctx.font = `bold ${s.class_size || 36}px "Myriad Pro", Arial, sans-serif`;
+        drawAutoFitText(ctx, formatClassName(trader.card_class, 'en'), s.class_x, s.class_y, qrLeftTrader);
+
+        // Commercial Name No
+        ctx.font = `bold ${s.comm_no_size || 36}px "Myriad Pro", Arial, sans-serif`;
+        drawAutoFitText(ctx, trader.commercial_name_no || '-', s.comm_no_x, s.comm_no_y, qrLeftTrader);
+
+        // Activity
+        ctx.font = `bold ${s.activity_size || 36}px "Myriad Pro", Arial, sans-serif`;
+        const enTraderAct = trader.english_activity || trader.activity || '-';
+        drawAutoFitText(ctx, enTraderAct, s.activity_x, s.activity_y, qrLeftTrader);
+
+        // ID No in blue ribbon
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `bold ${s.card_no_size || 34}px "Myriad Pro", Arial, sans-serif`;
+        let enCard = trader.card_no || '';
+        if (trader.renewal_no) enCard += ' / ' + trader.renewal_no;
+        ctx.fillText(enCard, s.card_no_x, s.card_no_y);
+
+        // Dates
+        ctx.fillStyle = '#000000';
+        ctx.font = `bold ${s.aff_date_size || 27}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.affiliation_date || '-', s.aff_date_x, s.aff_date_y);
+        ctx.font = `bold ${s.exp_date_size || 28}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.expire_date || '-', s.exp_date_x, s.exp_date_y);
+    }
+
+    ctx.restore();
+}
+
+function formatModalSizeBadgeText(fDef, side, s, sizeVal) {
+    return sizeVal + 'px';
+}
+
+function getActiveFieldDef() {
+    const isComp = currentTrader && currentTrader.member_type === 'company';
+    const isBroker = currentTrader && currentTrader.member_type === 'broker';
+    let list;
+    if (isComp) {
+        list = currentModalSide === 'front' ? COMPANY_FRONT_FIELDS : COMPANY_BACK_FIELDS;
+    } else if (isBroker) {
+        list = currentModalSide === 'front' ? BROKER_FRONT_FIELDS : BROKER_BACK_FIELDS;
+    } else {
+        list = currentModalSide === 'front' ? MODAL_FRONT_FIELDS : MODAL_BACK_FIELDS;
+    }
+    return list.find(f => f.key === activeModalFieldKey) || list[0];
+}
+
+function populateModalFieldPills() {
+    const container = document.getElementById('modalFieldPills');
+    container.innerHTML = '';
+    const isComp = currentTrader && currentTrader.member_type === 'company';
+    const isBroker = currentTrader && currentTrader.member_type === 'broker';
+    const fields = isComp
+        ? (currentModalSide === 'front' ? COMPANY_FRONT_FIELDS : COMPANY_BACK_FIELDS)
+        : (isBroker
+            ? (currentModalSide === 'front' ? BROKER_FRONT_FIELDS : BROKER_BACK_FIELDS)
+            : (currentModalSide === 'front' ? MODAL_FRONT_FIELDS : MODAL_BACK_FIELDS));
+
+    // Check if active key still valid for this side
+    if (!fields.find(f => f.key === activeModalFieldKey)) {
+        activeModalFieldKey = fields[0].key;
+    }
+
+    fields.forEach(f => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `field-pill ${f.key === activeModalFieldKey ? 'active-pill' : ''}`;
+        btn.innerText = f.label;
+        btn.onclick = () => selectModalField(f.key);
+        container.appendChild(btn);
+    });
+
+    syncActiveFieldInputs();
+}
+
+function selectModalField(key) {
+    activeModalFieldKey = key;
+    populateModalFieldPills();
+}
+
+function syncActiveFieldInputs() {
+    if (!activeCardTypography) return;
+    const fDef = getActiveFieldDef();
+    const side = currentModalSide;
+    const s = activeCardTypography[side];
+
+    const sizeVal = s[fDef.sizeKey] || 24;
+    const xVal = s[fDef.xKey] || 0;
+    const yVal = s[fDef.yKey] || 0;
+
+    document.getElementById('mActiveSizeBadge').innerText = formatModalSizeBadgeText(fDef, side, s, sizeVal);
+    document.getElementById('mActiveSizeSlider').value = sizeVal;
+    document.getElementById('mActiveXVal').innerText = xVal;
+    document.getElementById('mActiveYVal').innerText = yVal;
+    document.getElementById('mDirectInputX').value = xVal;
+    document.getElementById('mDirectInputY').value = yVal;
+}
+
+function onModalSliderChange(val) {
+    if (!activeCardTypography) return;
+    const fDef = getActiveFieldDef();
+    const side = currentModalSide;
+    const num = parseInt(val) || 24;
+
+    activeCardTypography[side][fDef.sizeKey] = num;
+    document.getElementById('mActiveSizeBadge').innerText = formatModalSizeBadgeText(fDef, side, activeCardTypography[side], num);
+
+    redrawModalCanvas();
+}
+
+function modalNudgeSize(delta) {
+    if (!activeCardTypography) return;
+    const fDef = getActiveFieldDef();
+    const side = currentModalSide;
+    const cur = activeCardTypography[side][fDef.sizeKey] || 24;
+    const nextVal = Math.max(12, Math.min(60, cur + delta));
+
+    activeCardTypography[side][fDef.sizeKey] = nextVal;
+    document.getElementById('mActiveSizeBadge').innerText = formatModalSizeBadgeText(fDef, side, activeCardTypography[side], nextVal);
+    document.getElementById('mActiveSizeSlider').value = nextVal;
+
+    redrawModalCanvas();
+}
+
+function modalNudgePos(axis, delta) {
+    if (!activeCardTypography) return;
+    const fDef = getActiveFieldDef();
+    const side = currentModalSide;
+    const key = axis === 'x' ? fDef.xKey : fDef.yKey;
+    const cur = activeCardTypography[side][key] || 0;
+    const nextVal = cur + delta;
+
+    activeCardTypography[side][key] = nextVal;
+
+    if (axis === 'x') {
+        document.getElementById('mActiveXVal').innerText = nextVal;
+        document.getElementById('mDirectInputX').value = nextVal;
+    } else {
+        document.getElementById('mActiveYVal').innerText = nextVal;
+        document.getElementById('mDirectInputY').value = nextVal;
+    }
+
+    redrawModalCanvas();
+}
+
+function onModalDirectInputChange(axis, val) {
+    if (!activeCardTypography) return;
+    const fDef = getActiveFieldDef();
+    const side = currentModalSide;
+    const key = axis === 'x' ? fDef.xKey : fDef.yKey;
+    const num = parseInt(val) || 0;
+
+    activeCardTypography[side][key] = num;
+    if (axis === 'x') {
+        document.getElementById('mActiveXVal').innerText = num;
+    } else {
+        document.getElementById('mActiveYVal').innerText = num;
+    }
+
+    redrawModalCanvas();
+}
+
+function redrawModalCanvas() {
+    if (currentModalSide === 'front') {
+        renderCardFront(document.getElementById('frontCanvas'), currentTrader);
+    } else {
+        renderCardBack(document.getElementById('backCanvas'), currentTrader, currentModalQrUrl);
+    }
+}
+
+async function saveTraderCustomTypography() {
+    if (!currentTrader) return;
+    try {
+        const res = await fetch(`/api/traders/${currentTrader.id}/typography`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ typography: activeCardTypography })
+        });
+        const j = await res.json();
+        if (j.success) {
+            const label = currentTrader.member_type === 'company' ? 'هذه الشركة' : (currentTrader.member_type === 'broker' ? 'هذا الدلال' : 'هذا التاجر');
+            alert(`تم حفظ إعدادات الخط والمواقع المخصصة لـ (${label}) بنجاح!`);
+        } else {
+            alert('Error: ' + j.error);
+        }
+    } catch (e) {
+        alert('Network error: ' + e.message);
+    }
+}
+
+async function resetTraderCustomTypography() {
+    if (!currentTrader) return;
+    if (!confirm('هل تريد استعادة إعدادات الخط العامة لهذا السجل؟')) return;
+    try {
+        await fetch(`/api/traders/${currentTrader.id}/typography/reset`, { method: 'POST' });
+        const isComp = currentTrader.member_type === 'company';
+        const isBroker = currentTrader.member_type === 'broker';
+        const fallback = isComp ? DEFAULT_COMPANY_TYPOGRAPHY : (isBroker ? DEFAULT_BROKER_TYPOGRAPHY : DEFAULT_TYPOGRAPHY);
+        activeCardTypography = JSON.parse(JSON.stringify(globalTypography || fallback));
+        populateModalFieldPills();
+        redrawModalCanvas();
+        alert('تمت استعادة الإعدادات العامة للبطاقة!');
+    } catch (e) {
+        alert('Network error: ' + e.message);
+    }
+}
+
+async function openPrintModal(traderId, uuid) {
+    try {
+        const res = await fetch('/api/traders/' + (uuid || traderId));
+        const json = await res.json();
+        if (!json.success || !json.trader) return;
+
+        currentTrader = json.trader;
+        const isComp = currentTrader.member_type === 'company';
+        const isBroker = currentTrader.member_type === 'broker';
+
+        await loadGlobalTypography();
+
+        const titlePrefix = isComp ? 'Print Company ID: ' : (isBroker ? 'Print Broker ID: ' : 'Print Trader ID: ');
+        const displayName = isComp ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name) : currentTrader.name;
+        document.getElementById('modalTitle').innerText = titlePrefix + displayName + ' (' + currentTrader.card_no + ')';
+        document.getElementById('verifyLink').href = '/traders/validate/' + currentTrader.uuid;
+        const btnSave = document.getElementById('btnTraderSaveTypo');
+        if (btnSave) btnSave.innerText = isComp ? '💾 حفظ خاص للشركة' : (isBroker ? '💾 حفظ خاص للدلال' : '💾 حفظ خاص للتاجر');
+
+        const fallback = isComp ? DEFAULT_COMPANY_TYPOGRAPHY : (isBroker ? DEFAULT_BROKER_TYPOGRAPHY : DEFAULT_TYPOGRAPHY);
+
+        // Check if this trader has custom typography saved
+        if (currentTrader.custom_typography) {
+            try {
+                activeCardTypography = JSON.parse(currentTrader.custom_typography);
+            } catch (e) {
+                activeCardTypography = JSON.parse(JSON.stringify(globalTypography || fallback));
+            }
+        } else {
+            activeCardTypography = JSON.parse(JSON.stringify(globalTypography || fallback));
+        }
+
+        const qrRes = await fetch('/api/traders/' + currentTrader.id + '/qr');
+        const qrJson = await qrRes.json();
+        currentModalQrUrl = qrJson.success ? qrJson.qr_url : null;
+
+        const fCanvas = document.getElementById('frontCanvas');
+        const bCanvas = document.getElementById('backCanvas');
+
+        await renderCardFront(fCanvas, currentTrader);
+        await renderCardBack(bCanvas, currentTrader, currentModalQrUrl);
+
+        switchCardSide('front');
+        document.getElementById('printModal').style.display = 'block';
+        document.getElementById('printModal').classList.remove('hidden');
+    } catch (e) {
+        alert('Error loading card: ' + e.message);
+    }
+}
+
+function closePrintModal() {
+    document.getElementById('printModal').style.display = 'none';
+    document.getElementById('printModal').classList.add('hidden');
+    currentTrader = null;
+    activeCardTypography = null;
+}
+
+function switchCardSide(side) {
+    currentModalSide = side;
+    const fCanvas = document.getElementById('frontCanvas');
+    const bCanvas = document.getElementById('backCanvas');
+    const btnF = document.getElementById('btnFront');
+    const btnB = document.getElementById('btnBack');
+
+    if (side === 'front') {
+        fCanvas.style.display = 'block';
+        bCanvas.style.display = 'none';
+        btnF.className = 'card-side-btn active-side';
+        btnB.className = 'card-side-btn';
+    } else {
+        fCanvas.style.display = 'none';
+        bCanvas.style.display = 'block';
+        btnB.className = 'card-side-btn active-side';
+        btnF.className = 'card-side-btn';
+    }
+    populateModalFieldPills();
+}
+
+// Keyboard arrow key listener for super fast positioning!
+window.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('printModal');
+    if (!modal || modal.style.display === 'none') return;
+    if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+    if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        modalNudgePos('y', -2);
+    } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        modalNudgePos('y', 2);
+    } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        modalNudgePos('x', -2);
+    } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        modalNudgePos('x', 2);
+    } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        modalNudgeSize(1);
+    } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        modalNudgeSize(-1);
+    }
+});
+
+function printHtmlContent(htmlContent) {
+    // 1. Try direct popup window first (guaranteed focus and print dialog on modern browsers)
+    let printWin = null;
+    try {
+        printWin = window.open('', '_blank');
+    } catch (e) {}
+
+    if (printWin) {
+        try {
+            printWin.document.open();
+            printWin.document.write(htmlContent);
+            printWin.document.close();
+            setTimeout(() => {
+                try {
+                    printWin.focus();
+                    printWin.print();
+                } catch(err) {
+                    console.warn('Popup print trigger error:', err);
+                }
+            }, 300);
+            return;
+        } catch (e) {
+            console.warn('Popup write failed, falling back to iframe:', e);
+        }
+    }
+
+    // 2. Fallback to hidden iframe (anchored properly without negative offscreen coords)
+    try {
+        let iframe = document.getElementById('cardPrintHiddenIframe');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'cardPrintHiddenIframe';
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            document.body.appendChild(iframe);
+        }
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+
+        setTimeout(() => {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (err) {
+                console.error('Iframe print error:', err);
+            }
+        }, 350);
+    } catch (e) {
+        console.error('All print methods failed:', e);
+    }
+}
+
+function printCR80() {
+    const fCanvas = document.getElementById('frontCanvas');
+    const bCanvas = document.getElementById('backCanvas');
+    if (!fCanvas || !bCanvas) return;
+    const fData = fCanvas.toDataURL('image/png');
+    const bData = bCanvas.toDataURL('image/png');
+    const displayName = currentTrader ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name || '') : '';
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>CR80 Plastic Print - ${displayName}</title>
+    <style>
+        @page {
+            size: 85.6mm 53.98mm;
+            margin: 0;
+        }
+        @media print {
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 85.6mm !important;
+                height: 53.98mm !important;
+                overflow: hidden !important;
+            }
+            .card-page {
+                width: 85.6mm !important;
+                height: 53.98mm !important;
+                page-break-after: always;
+                page-break-inside: avoid;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+            }
+            .card-page:last-child {
+                page-break-after: auto !important;
+            }
+            img {
+                width: 85.6mm !important;
+                height: 53.98mm !important;
+                object-fit: fill !important;
+                display: block !important;
+            }
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+        .card-page {
+            width: 85.6mm;
+            height: 53.98mm;
+            display: block;
+        }
+        img {
+            width: 85.6mm;
+            height: 53.98mm;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="card-page"><img src="${fData}" alt="Front"></div>
+    <div class="card-page"><img src="${bData}" alt="Back"></div>
+</body>
+</html>`;
+    printHtmlContent(html);
+}
+
+function printA4() {
+    const fCanvas = document.getElementById('frontCanvas');
+    const bCanvas = document.getElementById('backCanvas');
+    if (!fCanvas || !bCanvas) return;
+    const fData = fCanvas.toDataURL('image/png');
+    const bData = bCanvas.toDataURL('image/png');
+    const displayName = currentTrader ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name || '') : '';
+    const cardNo = currentTrader ? (currentTrader.card_no || '') : '';
+
+    const html = `<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <title>A4 Card Print - ${displayName}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+        @media print {
+            body {
+                margin: 0 !important;
+                padding: 10mm !important;
+            }
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background: #fff;
+        }
+        h2 {
+            margin: 0 0 8px 0;
+            font-size: 20px;
+            color: #111827;
+        }
+        p {
+            margin: 0 0 25px 0;
+            font-size: 14px;
+            color: #4b5563;
+        }
+        .sheet {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15mm;
+            margin-top: 15px;
+        }
+        .box {
+            width: 85.6mm;
+            height: 53.98mm;
+            border: 1px dashed #6b7280;
+            border-radius: 3.18mm;
+            overflow: hidden;
+            box-sizing: border-box;
+            background: #fff;
+        }
+        .box img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h2>غرفة تجارة كربلاء المقدسة</h2>
+    <p>بطاقة عضوية: <strong>${displayName}</strong> &mdash; رقم الهوية: <strong>${cardNo}</strong></p>
+    <div class="sheet">
+        <div class="box"><img src="${fData}" alt="Front"></div>
+        <div class="box"><img src="${bData}" alt="Back"></div>
+    </div>
+</body>
+</html>`;
+    printHtmlContent(html);
+}
+
+function downloadImage(side) {
+    if (!currentTrader) return;
+    const canvas = side === 'front' ? document.getElementById('frontCanvas') : document.getElementById('backCanvas');
+    const link = document.createElement('a');
+    const prefix = currentTrader.member_type === 'company' ? 'Company' : (currentTrader.member_type === 'broker' ? 'Broker' : 'Card');
+    link.download = `${prefix}_${currentTrader.card_no}_${side}.png`;
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+}
+</script>

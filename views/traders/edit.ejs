@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Edit <%= trader.member_type === 'broker' ? 'Broker' : (trader.member_type === 'company' ? 'Company' : 'Trader') %> - Cardval</title>
+
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+    <!-- Scripts and Styles -->
+    <link rel="preload" as="style" href="/build/assets/app-514d3f3f.css" />
+    <link rel="modulepreload" href="/build/assets/app-4a08c204.js" />
+    <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
+    <script type="module" src="/build/assets/app-4a08c204.js"></script>
+</head>
+<body class="font-sans antialiased">
+    <div class="min-h-screen bg-gray-100">
+        <!-- Navigation -->
+        <%- include('../partials/navigation', { currentPath: currentPath || '/traders' }) %>
+
+        <!-- Header -->
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Edit <%= trader.member_type === 'broker' ? 'Broker' : (trader.member_type === 'company' ? 'Company' : 'Trader') %>
+                </h2>
+            </div>
+        </header>
+
+        <!-- Main Form -->
+        <main>
+            <div class="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
+                <form method="POST" action="/traders/<%= trader.uuid %>" enctype="multipart/form-data">
+                    <input type="hidden" name="_method" value="patch">
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="col-span-2">
+                            <label for="name" class="block text-sm font-medium text-gray-700">Trader name</label>
+                            <input name="name" id="name" placeholder="Trader name"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= trader.name || '' %>" required>
+
+                            <label for="english_name" class="block text-sm font-medium text-gray-700 mt-2">Trader name in English</label>
+                            <input name="english_name" id="english_name" placeholder="Trader name in English"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= trader.english_name || '' %>">
+
+                            <label for="card_no" class="block text-sm font-medium text-gray-700 mt-2">Card No</label>
+                            <input name="card_no" id="card_no" type="number" placeholder="Card No"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= trader.card_no || '' %>" required>
+
+                            <% if (trader.member_type === 'broker' || trader.stamp_no) { %>
+                            <label for="stamp_no" class="block text-sm font-medium text-gray-700 mt-2">Stamp No (رقم الختم)</label>
+                            <input name="stamp_no" id="stamp_no" type="number" placeholder="Stamp No"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= trader.stamp_no || '' %>">
+                            <% } %>
+
+                            <label for="renewal_no" class="block text-sm font-medium text-gray-700 mt-2">Renewal No</label>
+                            <input name="renewal_no" id="renewal_no" type="number" placeholder="Renewal No"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= trader.renewal_no || '' %>">
+                        </div>
+
+                        <div>
+                            <label for="person_pic" class="block text-sm font-medium text-gray-700 cursor-pointer">Person Image
+                                <img id="pp_preview" src="<%= trader.photo_path || '/templates/avatar_placeholder.png' %>"
+                                     onerror="this.onerror=null; this.src='/templates/avatar_placeholder.png';"
+                                     style="width: 175px; height: 200px; object-fit: cover; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 4px;" />
+                            </label>
+
+                            <input style="display: none" onchange="readURL(this);" name="person_pic" id="person_pic" type="file" accept="image/*">
+
+                            <script>
+                                function readURL(input) {
+                                    if (input.files && input.files[0]) {
+                                        var reader = new FileReader();
+                                        reader.onload = function (e) {
+                                            document.getElementById('pp_preview').src = e.target.result;
+                                        };
+                                        reader.readAsDataURL(input.files[0]);
+                                    }
+                                }
+                            </script>
+                        </div>
+                    </div>
+
+                    <label for="card_class" class="block text-sm font-medium text-gray-700 mt-3">Card class</label>
+                    <select name="card_class" id="card_class" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                        <option value="0" <%= trader.card_class === '0' || String(trader.card_class).includes('ممتاز') ? 'selected' : '' %>>الممتاز</option>
+                        <option value="1" <%= trader.card_class === '1' ? 'selected' : '' %>>الاول</option>
+                        <option value="2" <%= trader.card_class === '2' ? 'selected' : '' %>>الثاني</option>
+                        <option value="3" <%= trader.card_class === '3' ? 'selected' : '' %>>الثالث</option>
+                        <option value="4" <%= trader.card_class === '4' ? 'selected' : '' %>>الرابع</option>
+                    </select>
+
+                    <label for="address" class="block text-sm font-medium text-gray-700 mt-3">Address</label>
+                    <input name="address" id="address" type="text" placeholder="Address"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= trader.address || '' %>">
+
+                    <label for="phone_number" class="block text-sm font-medium text-gray-700 mt-3">Phone Number</label>
+                    <input name="phone_number" id="phone_number" type="text" placeholder="Phone Number"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= trader.phone_number || '' %>">
+
+                    <label for="activity" class="block text-sm font-medium text-gray-700 mt-3">Activity</label>
+                    <input name="activity" id="activity" type="text" placeholder="Activity"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= trader.activity || '' %>">
+
+                    <label for="english_activity" class="block text-sm font-medium text-gray-700 mt-3">Activity in English</label>
+                    <input name="english_activity" id="english_activity" type="text" placeholder="Activity in English"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= trader.english_activity || '' %>">
+
+                    <label for="commercial_name" class="block text-sm font-medium text-gray-700 mt-3">Commercial Name</label>
+                    <input name="commercial_name" id="commercial_name" type="text" placeholder="Commercial Name"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= trader.commercial_name || '' %>">
+
+                    <label for="commercial_name_no" class="block text-sm font-medium text-gray-700 mt-3">Commercial Name No</label>
+                    <input name="commercial_name_no" id="commercial_name_no" type="number" placeholder="Commercial Name No"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= trader.commercial_name_no || '' %>">
+
+                    <label for="speciality" class="block text-sm font-medium text-gray-700 mt-3">Speciality</label>
+                    <input name="speciality" id="speciality" type="text" placeholder="Speciality"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= trader.speciality || '' %>">
+
+                    <div class="grid grid-cols-2 gap-4 mt-3">
+                        <div>
+                            <label for="affiliation_date" class="block text-sm font-medium text-gray-700">Affiliation Date</label>
+                            <input name="affiliation_date" id="affiliation_date" type="date"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= trader.affiliation_date || '' %>">
+                        </div>
+                        <div>
+                            <label for="expire_date" class="block text-sm font-medium text-gray-700">Expire Date</label>
+                            <input name="expire_date" id="expire_date" type="date"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= trader.expire_date || '' %>">
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            Save
+                        </button>
+                        <button type="button" onclick="openPrintModal('<%= trader.id %>', '<%= trader.uuid %>')" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" style="background-color: #1f2937; color: #ffffff;">
+                            🖨️ Print ID Card
+                        </button>
+                        <a href="<%= typeof currentPath !== 'undefined' ? currentPath : (trader.member_type === 'broker' ? '/brokers' : (trader.member_type === 'company' ? '/companies' : '/traders')) %>" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Print Modal -->
+    <%- include('../partials/card_modal') %>
+</body>
+</html>

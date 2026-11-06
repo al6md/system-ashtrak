@@ -1,0 +1,2747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Profile - Cardval</title>
+
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+    <!-- Scripts and Styles -->
+    <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
+    <script type="module" src="/build/assets/app-4a08c204.js"></script>
+
+    <style>
+        @font-face {
+            font-family: 'PT Bold Heading';
+            src: url('/templates/PTBoldHeading.woff2') format('woff2');
+            font-weight: bold;
+        }
+        @font-face {
+            font-family: 'Myriad Pro';
+            src: url('/templates/MyriadPro-Bold.woff2') format('woff2');
+            font-weight: bold;
+        }
+
+        /* Studio Card & Header (Matching Cardval Frontend UI) */
+        .studio-card-wrapper {
+            background-color: #ffffff;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem 2rem;
+        }
+        .studio-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding-bottom: 1.15rem;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid #e5e7eb;
+            direction: rtl;
+        }
+        .studio-header-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
+        }
+        .studio-header-sub {
+            margin-top: 0.25rem;
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+        .studio-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .btn-save-studio {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.375rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ffffff !important;
+            background-color: #1f2937;
+            border: 1px solid transparent;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+            transition: all 0.15s ease;
+        }
+        .btn-save-studio:hover {
+            background-color: #374151;
+        }
+        .btn-save-studio.save-company {
+            background-color: #1f2937;
+        }
+        .btn-save-studio.save-company:hover {
+            background-color: #111827;
+        }
+        .btn-save-studio.save-broker {
+            background-color: #1f2937;
+        }
+        .btn-save-studio.save-broker:hover {
+            background-color: #374151;
+        }
+        .btn-reset-studio {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.6rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #374151;
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-reset-studio:hover {
+            background-color: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        /* Template Switcher Bar */
+        .studio-tpl-bar {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.9rem 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            direction: rtl;
+        }
+        .studio-tpl-info {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .studio-tpl-btns {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .tpl-switch-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.55rem 1.1rem;
+            font-size: 0.82rem;
+            font-weight: 700;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .active-template-btn {
+            background-color: #1f2937 !important;
+            color: #ffffff !important;
+            border-color: #111827 !important;
+            box-shadow: 0 1px 3px rgba(79, 70, 229, 0.3);
+        }
+        .active-template-company {
+            background-color: #1f2937 !important;
+            color: #ffffff !important;
+            border-color: #111827 !important;
+            box-shadow: 0 1px 3px rgba(31, 41, 55, 0.3);
+        }
+        .active-template-broker {
+            background-color: #1f2937 !important;
+            color: #ffffff !important;
+            border-color: #111827 !important;
+            box-shadow: 0 1px 3px rgba(234, 88, 12, 0.3);
+        }
+        .inactive-template-btn {
+            background-color: #ffffff !important;
+            color: #374151 !important;
+            border-color: #d1d5db !important;
+        }
+        .inactive-template-btn:hover {
+            background-color: #f3f4f6 !important;
+            color: #111827 !important;
+        }
+
+        /* Two-Column Non-Overlapping Grid Layout */
+        .studio-main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.75rem;
+            align-items: start;
+            direction: ltr; /* Puts Sticky Card Preview in Left Column, Scrollable Controls in Right Column */
+        }
+        @media (min-width: 860px) {
+            .studio-main-grid {
+                grid-template-columns: 470px minmax(0, 1fr);
+            }
+            .studio-preview-col {
+                position: sticky;
+                top: 1.25rem;
+            }
+        }
+        .studio-preview-col {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.6rem;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            direction: rtl;
+        }
+        .studio-controls-col {
+            direction: rtl;
+            min-width: 0;
+        }
+
+        /* Preview Header & Side Tabs */
+        .preview-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.65rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .preview-pin-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #4338ca;
+            background-color: #eef2ff;
+            border: 1px solid #c7d2fe;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+        }
+        .preview-side-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .side-tab-btn {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            border-radius: 0.375rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s ease;
+        }
+        .active-tab-btn {
+            background-color: #1f2937 !important;
+            color: #ffffff !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .inactive-tab-btn {
+            background-color: #e5e7eb !important;
+            color: #374151 !important;
+        }
+        .inactive-tab-btn:hover {
+            background-color: #d1d5db !important;
+        }
+
+        /* Canvas Box */
+        .preview-canvas-wrap {
+            border: 2px solid #c7d2fe;
+            border-radius: 0.5rem;
+            background-color: #ffffff;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            aspect-ratio: 1024 / 644;
+        }
+
+        /* Quick Direct Toolbar */
+        .quick-toolbar-box {
+            margin-top: 0.85rem;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+        }
+        .quick-toolbar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.55rem;
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .quick-selection-pill {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #4338ca;
+            background-color: #eef2ff;
+            border: 1px solid #c7d2fe;
+            padding: 0.15rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+        .quick-toolbar-controls {
+            display: grid;
+            grid-template-columns: 1.3fr auto auto;
+            gap: 0.45rem;
+            align-items: center;
+        }
+        @media (max-width: 520px) {
+            .quick-toolbar-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+        .quick-field-select {
+            width: 100%;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #1f2937;
+            background-color: #f9fafb;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.38rem 0.5rem;
+        }
+        .quick-nudge-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            padding: 0.2rem 0.35rem;
+        }
+
+        /* Control Groups (Right Column) */
+        .control-group {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .control-group:hover, .control-group.active-group {
+            border-color: #6366f1;
+            background-color: #f5f7ff;
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.08);
+        }
+        .control-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.55rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .control-inputs {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.65rem;
+            align-items: center;
+        }
+        .control-inputs input[type="number"] {
+            width: 100%;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.35rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: #ffffff;
+            color: #111827;
+            text-align: center;
+            direction: ltr;
+        }
+        .control-inputs input[type="number"]:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+        }
+        .input-label {
+            font-size: 0.75rem;
+            color: #4b5563;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+        .card-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #d1d5db;
+            outline: none;
+            cursor: pointer;
+        }
+        .nudge-btn {
+            padding: 0.25rem 0.5rem;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: #374151;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .nudge-btn:hover {
+            background: #eef2ff;
+            border-color: #6366f1;
+            color: #4338ca;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased bg-gray-100">
+    <div class="min-h-screen">
+        <%- include('../partials/navigation', { currentPath: '/profile' }) %>
+
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Profile &amp; Card Typography Settings
+                </h2>
+                <a href="/traders" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+                    &larr; Return to Traders
+                </a>
+            </div>
+        </header>
+
+        <main class="py-6">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+                <!-- Toast Alert -->
+                <div id="saveAlert" style="display: none;" class="p-4 rounded-md bg-green-50 border border-green-200">
+                    <div class="flex">
+                        <div class="flex-shrink-0 text-green-500 font-bold text-lg">&check;</div>
+                        <div class="ml-3 text-sm font-medium text-green-800" id="saveAlertText">
+                            تم حفظ إعدادات الخطوط والمواقع بنجاح!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAIN CARD: Card Typography Studio -->
+                <div class="studio-card-wrapper">
+                    <!-- Studio Header -->
+                    <div class="studio-header">
+                        <div>
+                            <h3 class="studio-header-title">
+                                <span>🎨</span>
+                                <span>استوديو ضبط خطوط وتصميم بطاقة الهوية (Live Typography Studio)</span>
+                            </h3>
+                            <p class="studio-header-sub">
+                                نموذج الهوية مثبت في العمود الجانبي بشكل مستقل لترى نتيجة التعديل فورياً أثناء تقليب وضبط الحقول.
+                            </p>
+                        </div>
+                        <div class="studio-header-actions">
+                            <button type="button" id="btnSaveAll" onclick="saveSettings()" class="btn-save-studio">
+                                💾 حفظ التعديلات لجميع هويات التجار
+                            </button>
+                            <button type="button" id="btnResetDefault" onclick="resetToDefaults()" class="btn-reset-studio">
+                                ↺ استعادة افتراضي التجار
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Template Type Switcher (التجار / الشركات / الدلالين) -->
+                    <div class="studio-tpl-bar">
+                        <div class="studio-tpl-info">
+                            <span style="font-size: 1.25rem;">🪪</span>
+                            <div>
+                                <div style="font-size: 0.88rem; font-weight: 700; color: #111827;">اختر نموذج بطاقة الهوية للضبط المباشر:</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">يتم عرض نموذج حقيقي لكل قسم مع إمكانية ضبط حجم الخط والموقع وحفظه</div>
+                            </div>
+                        </div>
+                        <div class="studio-tpl-btns">
+                            <button type="button" id="tplBtnTrader" onclick="switchCardTemplate('trader')" class="tpl-switch-btn active-template-btn">
+                                <span>👤</span>
+                                <span>هوية التجار (Traders ID)</span>
+                            </button>
+                            <button type="button" id="tplBtnCompany" onclick="switchCardTemplate('company')" class="tpl-switch-btn inactive-template-btn">
+                                <span>🏢</span>
+                                <span>هوية الشركات (Companies ID)</span>
+                            </button>
+                            <button type="button" id="tplBtnBroker" onclick="switchCardTemplate('broker')" class="tpl-switch-btn inactive-template-btn">
+                                <span>🤝</span>
+                                <span>هوية الدلالين (Brokers ID)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TWO-COLUMN STUDIO GRID: Left Column = Sticky Card Preview | Right Column = Scrollable Controls -->
+                    <div class="studio-main-grid">
+                        
+                        <!-- COLUMN 1 (LEFT): STICKY CARD VIEWPORT (Never overlaps Controls Column) -->
+                        <div class="studio-preview-col">
+                            <!-- Card Header Info -->
+                            <div class="preview-top-bar">
+                                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <span id="previewIcon" style="font-size: 1rem;">👤</span>
+                                    <span id="previewCardTitle" style="font-size: 0.8rem; font-weight: 700; color: #1f2937;">معاينة مباشرة: بطاقة هوية التجار</span>
+                                </div>
+                                <span class="preview-pin-badge">
+                                    📌 ثابت أثناء التقليب
+                                </span>
+                            </div>
+
+                            <!-- Side Switcher Tabs (Front / Back) -->
+                            <div class="preview-side-tabs">
+                                <button type="button" id="tabFrontBtn" onclick="switchPreviewSide('front')" class="side-tab-btn active-tab-btn">
+                                    الوجه الأمامي (Front - عربي)
+                                </button>
+                                <button type="button" id="tabBackBtn" onclick="switchPreviewSide('back')" class="side-tab-btn inactive-tab-btn">
+                                    الوجه الخلفي (Back - إنجليزي)
+                                </button>
+                            </div>
+
+                            <!-- Canvas Display (Crisp CR80 standard ratio 1024x644) -->
+                            <div class="preview-canvas-wrap">
+                                <canvas id="previewFrontCanvas" width="1024" height="644" style="width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
+                                <canvas id="previewBackCanvas" width="1024" height="644" style="width: 100%; height: 100%; object-fit: contain; display: none;"></canvas>
+                            </div>
+
+                            <!-- QUICK DIRECT TOOLBAR -->
+                            <div class="quick-toolbar-box">
+                                <div class="quick-toolbar-header">
+                                    <span>⚡ تحكم مباشر وسريع في الحقل المحدد:</span>
+                                    <span id="quickSelectionBadge" class="quick-selection-pill">اسم التاجر</span>
+                                </div>
+                                <div class="quick-toolbar-controls">
+                                    <!-- Field Select Dropdown -->
+                                    <div>
+                                        <select id="quickFieldSelect" onchange="onQuickFieldChange(this.value)" class="quick-field-select">
+                                            <!-- Dynamically populated based on active side and template -->
+                                        </select>
+                                    </div>
+
+                                    <!-- Font Size Quick Adjuster -->
+                                    <div class="quick-nudge-group">
+                                        <button type="button" class="nudge-btn" onclick="nudgeSize(-1)" title="تصغير الخط 1px">-A</button>
+                                        <span id="quickSizeDisplay" style="font-size: 0.78rem; font-weight: 700; color: #4338ca; min-width: 38px; text-align: center;">28px</span>
+                                        <button type="button" class="nudge-btn" onclick="nudgeSize(1)" title="تكبير الخط 1px">+A</button>
+                                    </div>
+
+                                    <!-- Position Quick Adjuster (Arrow Nudges) -->
+                                    <div class="quick-nudge-group">
+                                        <button type="button" class="nudge-btn" onclick="nudgePos('x', -2)" title="تحريك يسار">◀</button>
+                                        <button type="button" class="nudge-btn" onclick="nudgePos('y', -2)" title="تحريك لأعلى">▲</button>
+                                        <button type="button" class="nudge-btn" onclick="nudgePos('y', 2)" title="تحريك لأسفل">▼</button>
+                                        <button type="button" class="nudge-btn" onclick="nudgePos('x', 2)" title="تحريك يمين">▶</button>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 0.45rem; text-align: center; font-size: 0.7rem; color: #6b7280;">
+                                    * يمكنك أيضاً استخدام أسهم الكيبورد (أعلى/أسفل/يمين/يسار) للتحريك السريع
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- COLUMN 2 (RIGHT): DETAILED CONTROLS LIST -->
+                        <div class="studio-controls-col">
+                            
+                            <!-- ================= TRADER CONTROLS CONTAINER ================= -->
+                            <div id="traderControlsContainer">
+                                <!-- FRONT CONTROLS -->
+                                <div id="frontControlsPanel" class="space-y-3">
+                                    <div class="font-bold text-sm text-indigo-700 mb-2 border-b pb-1 flex justify-between items-center">
+                                        <span>عناصر الوجه الأمامي للتجار (Arabic Front Side):</span>
+                                        <span class="text-xs text-gray-500 font-normal">اضغط على أي حقل لتمييزه</span>
+                                    </div>
+
+                                    <!-- Trader Name -->
+                                    <div class="control-group" id="grp_front_name" onclick="selectQuickField('name_size')">
+                                        <div class="control-title">
+                                            <span>اسم التاجر (Trader Name)</span>
+                                            <span id="val_front_name_size" class="text-xs font-bold text-indigo-600"><%= settings.front.name_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="front_name_size" min="18" max="42" value="<%= settings.front.name_size %>" oninput="updateSetting('front', 'name_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_name_x" value="<%= settings.front.name_x %>" oninput="updateSetting('front', 'name_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_name_y" value="<%= settings.front.name_y %>" oninput="updateSetting('front', 'name_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Class -->
+                                    <div class="control-group" id="grp_front_class" onclick="selectQuickField('class_size')">
+                                        <div class="control-title">
+                                            <span>الصنف (Card Class)</span>
+                                            <span id="val_front_class_size" class="text-xs font-bold text-indigo-600"><%= settings.front.class_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="front_class_size" min="18" max="38" value="<%= settings.front.class_size %>" oninput="updateSetting('front', 'class_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_class_x" value="<%= settings.front.class_x %>" oninput="updateSetting('front', 'class_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_class_y" value="<%= settings.front.class_y %>" oninput="updateSetting('front', 'class_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Commercial Name -->
+                                    <div class="control-group" id="grp_front_comm" onclick="selectQuickField('comm_size')">
+                                        <div class="control-title">
+                                            <span>الاسم التجاري والرقم (Commercial Name)</span>
+                                            <span id="val_front_comm_size" class="text-xs font-bold text-indigo-600"><%= settings.front.comm_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="front_comm_size" min="16" max="34" value="<%= settings.front.comm_size %>" oninput="updateSetting('front', 'comm_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_comm_x" value="<%= settings.front.comm_x %>" oninput="updateSetting('front', 'comm_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_comm_y" value="<%= settings.front.comm_y %>" oninput="updateSetting('front', 'comm_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Activity -->
+                                    <div class="control-group" id="grp_front_activity" onclick="selectQuickField('activity_size')">
+                                        <div class="control-title">
+                                            <span>النشاط التجاري (Activity)</span>
+                                            <span id="val_front_activity_size" class="text-xs font-bold text-indigo-600"><%= settings.front.activity_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="front_activity_size" min="16" max="34" value="<%= settings.front.activity_size %>" oninput="updateSetting('front', 'activity_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_activity_x" value="<%= settings.front.activity_x %>" oninput="updateSetting('front', 'activity_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_activity_y" value="<%= settings.front.activity_y %>" oninput="updateSetting('front', 'activity_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card No (Blue Ribbon) -->
+                                    <div class="control-group" id="grp_front_card_no" onclick="selectQuickField('card_no_size')" style="background-color: #f0f4ff; border-color: #c7d2fe;">
+                                        <div class="control-title">
+                                            <span class="text-indigo-900 font-bold">رقم الهوية والشريط الأزرق (Card No)</span>
+                                            <span id="val_front_card_no_size" class="text-xs font-bold text-indigo-700"><%= settings.front.card_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="front_card_no_size" min="20" max="42" value="<%= settings.front.card_no_size %>" oninput="updateSetting('front', 'card_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_card_no_x" value="<%= settings.front.card_no_x %>" oninput="updateSetting('front', 'card_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_card_no_y" value="<%= settings.front.card_no_y %>" oninput="updateSetting('front', 'card_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Affiliation Date -->
+                                    <div class="control-group" id="grp_front_aff_date" onclick="selectQuickField('aff_date_size')">
+                                        <div class="control-title">
+                                            <span>تاريخ الانتماء (Affiliation Date)</span>
+                                            <span id="val_front_aff_date_size" class="text-xs font-bold text-indigo-600"><%= settings.front.aff_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="front_aff_date_size" min="16" max="34" value="<%= settings.front.aff_date_size %>" oninput="updateSetting('front', 'aff_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_aff_date_x" value="<%= settings.front.aff_date_x %>" oninput="updateSetting('front', 'aff_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">الموقع الرأسي Y (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="front_aff_date_y" value="<%= settings.front.aff_date_y %>" oninput="updateSetting('front', 'aff_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expiration Date -->
+                                    <div class="control-group" id="grp_front_exp_date" onclick="selectQuickField('exp_date_size')">
+                                        <div class="control-title">
+                                            <span>تاريخ النفاذ والانتهاء (Expiration Date)</span>
+                                            <span id="val_front_exp_date_size" class="text-xs font-bold text-indigo-600"><%= settings.front.exp_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="front_exp_date_size" min="16" max="34" value="<%= settings.front.exp_date_size %>" oninput="updateSetting('front', 'exp_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="front_exp_date_x" value="<%= settings.front.exp_date_x %>" oninput="updateSetting('front', 'exp_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">الموقع الرأسي Y (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="front_exp_date_y" value="<%= settings.front.exp_date_y %>" oninput="updateSetting('front', 'exp_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Synchronized Dates Helper -->
+                                    <div class="p-2.5 bg-indigo-50/70 rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
+                                        <span class="font-semibold text-indigo-900">⚡ تحريك تاريخي الانتماء والنفاذ معاً:</span>
+                                        <div class="flex gap-1.5">
+                                            <button type="button" onclick="nudgeBothDates('front', -2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▲ للأعلى معاً</button>
+                                            <button type="button" onclick="nudgeBothDates('front', 2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▼ للأسفل معاً</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- BACK CONTROLS -->
+                                <div id="backControlsPanel" class="space-y-3" style="display: none;">
+                                    <div class="font-bold text-sm text-indigo-700 mb-2 border-b pb-1">
+                                        عناصر الوجه الخلفي للتجار (English Back Side):
+                                    </div>
+
+                                    <!-- Trader Name En -->
+                                    <div class="control-group" id="grp_back_name" onclick="selectQuickField('name_size')">
+                                        <div class="control-title">
+                                            <span>Trader Name (اسم التاجر)</span>
+                                            <span id="val_back_name_size" class="text-xs font-bold text-indigo-600"><%= settings.back.name_size || 26 %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="back_name_size" min="16" max="36" value="<%= settings.back.name_size || 26 %>" oninput="updateSetting('back', 'name_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_name_x" value="<%= settings.back.name_x !== undefined ? settings.back.name_x : 14 %>" oninput="updateSetting('back', 'name_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_name_y" value="<%= settings.back.name_y !== undefined ? settings.back.name_y : 305 %>" oninput="updateSetting('back', 'name_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Class En -->
+                                    <div class="control-group" id="grp_back_class" onclick="selectQuickField('class_size')">
+                                        <div class="control-title">
+                                            <span>Class Value</span>
+                                            <span id="val_back_class_size" class="text-xs font-bold text-indigo-600"><%= settings.back.class_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="back_class_size" min="16" max="36" value="<%= settings.back.class_size %>" oninput="updateSetting('back', 'class_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_class_x" value="<%= settings.back.class_x %>" oninput="updateSetting('back', 'class_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_class_y" value="<%= settings.back.class_y %>" oninput="updateSetting('back', 'class_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Commercial Name No -->
+                                    <div class="control-group" id="grp_back_comm_no" onclick="selectQuickField('comm_no_size')">
+                                        <div class="control-title">
+                                            <span>Commercial Name No</span>
+                                            <span id="val_back_comm_no_size" class="text-xs font-bold text-indigo-600"><%= settings.back.comm_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="back_comm_no_size" min="16" max="36" value="<%= settings.back.comm_no_size %>" oninput="updateSetting('back', 'comm_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_comm_no_x" value="<%= settings.back.comm_no_x %>" oninput="updateSetting('back', 'comm_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_comm_no_y" value="<%= settings.back.comm_no_y %>" oninput="updateSetting('back', 'comm_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Activity En -->
+                                    <div class="control-group" id="grp_back_activity" onclick="selectQuickField('activity_size')">
+                                        <div class="control-title">
+                                            <span>Activity</span>
+                                            <span id="val_back_activity_size" class="text-xs font-bold text-indigo-600"><%= settings.back.activity_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="back_activity_size" min="16" max="34" value="<%= settings.back.activity_size %>" oninput="updateSetting('back', 'activity_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_activity_x" value="<%= settings.back.activity_x %>" oninput="updateSetting('back', 'activity_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_activity_y" value="<%= settings.back.activity_y %>" oninput="updateSetting('back', 'activity_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ID No (Blue Ribbon) -->
+                                    <div class="control-group" id="grp_back_card_no" onclick="selectQuickField('card_no_size')" style="background-color: #f0f4ff; border-color: #c7d2fe;">
+                                        <div class="control-title">
+                                            <span class="text-indigo-900 font-bold">ID No (Blue Banner)</span>
+                                            <span id="val_back_card_no_size" class="text-xs font-bold text-indigo-700"><%= settings.back.card_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="back_card_no_size" min="20" max="42" value="<%= settings.back.card_no_size %>" oninput="updateSetting('back', 'card_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_card_no_x" value="<%= settings.back.card_no_x %>" oninput="updateSetting('back', 'card_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_card_no_y" value="<%= settings.back.card_no_y %>" oninput="updateSetting('back', 'card_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Affiliation Date En -->
+                                    <div class="control-group" id="grp_back_aff_date" onclick="selectQuickField('aff_date_size')">
+                                        <div class="control-title">
+                                            <span>Affiliation Date (الانتماء)</span>
+                                            <span id="val_back_aff_date_size" class="text-xs font-bold text-indigo-600"><%= settings.back.aff_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="back_aff_date_size" min="16" max="34" value="<%= settings.back.aff_date_size %>" oninput="updateSetting('back', 'aff_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position (يمين / يسار)</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_aff_date_x" value="<%= settings.back.aff_date_x %>" oninput="updateSetting('back', 'aff_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">Y Position (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="back_aff_date_y" value="<%= settings.back.aff_date_y %>" oninput="updateSetting('back', 'aff_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expiration Date En -->
+                                    <div class="control-group" id="grp_back_exp_date" onclick="selectQuickField('exp_date_size')">
+                                        <div class="control-title">
+                                            <span>Expiration Date (الانتهاء)</span>
+                                            <span id="val_back_exp_date_size" class="text-xs font-bold text-indigo-600"><%= settings.back.exp_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="back_exp_date_size" min="16" max="34" value="<%= settings.back.exp_date_size %>" oninput="updateSetting('back', 'exp_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position (يمين / يسار)</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_exp_date_x" value="<%= settings.back.exp_date_x %>" oninput="updateSetting('back', 'exp_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">Y Position (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="back_exp_date_y" value="<%= settings.back.exp_date_y %>" oninput="updateSetting('back', 'exp_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Synchronized Back Dates Helper -->
+                                    <div class="p-2.5 bg-indigo-50/70 rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
+                                        <span class="font-semibold text-indigo-900">⚡ تحريك تاريخي الخلفي معاً:</span>
+                                        <div class="flex gap-1.5">
+                                            <button type="button" onclick="nudgeBothDates('back', -2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▲ للأعلى معاً</button>
+                                            <button type="button" onclick="nudgeBothDates('back', 2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▼ للأسفل معاً</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- QR Code Position -->
+                                    <div class="control-group" id="grp_back_qr" onclick="selectQuickField('qr_size')">
+                                        <div class="control-title">
+                                            <span>QR Code Position &amp; Size</span>
+                                            <span id="val_back_qr_size" class="text-xs font-bold text-indigo-600"><%= settings.back.qr_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">QR Size</label>
+                                                <input type="range" class="card-slider" id="back_qr_size" min="180" max="280" value="<%= settings.back.qr_size %>" oninput="updateSetting('back', 'qr_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">QR X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_qr_x" value="<%= settings.back.qr_x %>" oninput="updateSetting('back', 'qr_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">QR Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="back_qr_y" value="<%= settings.back.qr_y %>" oninput="updateSetting('back', 'qr_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ================= COMPANY CONTROLS CONTAINER ================= -->
+                            <div id="companyControlsContainer" style="display: none;">
+                                <!-- COMPANY FRONT CONTROLS -->
+                                <div id="compFrontControlsPanel" class="space-y-3">
+                                    <div class="font-bold text-sm text-indigo-700 mb-2 border-b pb-1 flex justify-between items-center">
+                                        <span>عناصر الوجه الأمامي للشركات (Arabic Front Side):</span>
+                                        <span class="text-xs text-gray-500 font-normal">اضغط على أي حقل لتمييزه</span>
+                                    </div>
+
+                                    <!-- Company Name -->
+                                    <div class="control-group" id="grp_comp_front_comp" onclick="selectQuickField('comp_size')">
+                                        <div class="control-title">
+                                            <span>الشركة (Company Name)</span>
+                                            <span id="val_comp_front_comp_size" class="text-xs font-bold text-indigo-600"><%= companySettings.front.comp_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_front_comp_size" min="18" max="42" value="<%= companySettings.front.comp_size %>" oninput="updateSetting('front', 'comp_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_comp_x" value="<%= companySettings.front.comp_x %>" oninput="updateSetting('front', 'comp_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_comp_y" value="<%= companySettings.front.comp_y %>" oninput="updateSetting('front', 'comp_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- CEO Name -->
+                                    <div class="control-group" id="grp_comp_front_ceo" onclick="selectQuickField('ceo_size')">
+                                        <div class="control-title">
+                                            <span>المدير المفوض (CEO Name)</span>
+                                            <span id="val_comp_front_ceo_size" class="text-xs font-bold text-indigo-600"><%= companySettings.front.ceo_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_front_ceo_size" min="16" max="38" value="<%= companySettings.front.ceo_size %>" oninput="updateSetting('front', 'ceo_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_ceo_x" value="<%= companySettings.front.ceo_x %>" oninput="updateSetting('front', 'ceo_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_ceo_y" value="<%= companySettings.front.ceo_y %>" oninput="updateSetting('front', 'ceo_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Class & Activity -->
+                                    <div class="control-group" id="grp_comp_front_class_act" onclick="selectQuickField('class_act_size')">
+                                        <div class="control-title">
+                                            <span>الصنف والنشاط (Class &amp; Activity)</span>
+                                            <span id="val_comp_front_class_act_size" class="text-xs font-bold text-indigo-600"><%= companySettings.front.class_act_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_front_class_act_size" min="16" max="36" value="<%= companySettings.front.class_act_size %>" oninput="updateSetting('front', 'class_act_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_class_act_x" value="<%= companySettings.front.class_act_x %>" oninput="updateSetting('front', 'class_act_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_class_act_y" value="<%= companySettings.front.class_act_y %>" oninput="updateSetting('front', 'class_act_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Incorporation License No -->
+                                    <div class="control-group" id="grp_comp_front_cert" onclick="selectQuickField('cert_size')">
+                                        <div class="control-title">
+                                            <span>رقم إجازة التأسيس (License No)</span>
+                                            <span id="val_comp_front_cert_size" class="text-xs font-bold text-indigo-600"><%= companySettings.front.cert_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_front_cert_size" min="16" max="36" value="<%= companySettings.front.cert_size %>" oninput="updateSetting('front', 'cert_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_cert_x" value="<%= companySettings.front.cert_x %>" oninput="updateSetting('front', 'cert_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_cert_y" value="<%= companySettings.front.cert_y %>" oninput="updateSetting('front', 'cert_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Commercial Name & Date -->
+                                    <div class="control-group" id="grp_comp_front_comm_date" onclick="selectQuickField('comm_date_size')">
+                                        <div class="control-title">
+                                            <span>الاسم التجاري وتاريخه (Commercial Name)</span>
+                                            <span id="val_comp_front_comm_date_size" class="text-xs font-bold text-indigo-600"><%= companySettings.front.comm_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_front_comm_date_size" min="16" max="36" value="<%= companySettings.front.comm_date_size %>" oninput="updateSetting('front', 'comm_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_comm_date_x" value="<%= companySettings.front.comm_date_x %>" oninput="updateSetting('front', 'comm_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_comm_date_y" value="<%= companySettings.front.comm_date_y %>" oninput="updateSetting('front', 'comm_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card No (Black Ribbon) -->
+                                    <div class="control-group" id="grp_comp_front_card_no" onclick="selectQuickField('card_no_size')" style="background-color: #f3f4f6; border-color: #9ca3af;">
+                                        <div class="control-title">
+                                            <span class="text-gray-900 font-bold">رقم الهوية والشريط الأسود (Card No)</span>
+                                            <span id="val_comp_front_card_no_size" class="text-xs font-bold text-gray-900"><%= companySettings.front.card_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_front_card_no_size" min="20" max="44" value="<%= companySettings.front.card_no_size %>" oninput="updateSetting('front', 'card_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_card_no_x" value="<%= companySettings.front.card_no_x %>" oninput="updateSetting('front', 'card_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_card_no_y" value="<%= companySettings.front.card_no_y %>" oninput="updateSetting('front', 'card_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Affiliation Date -->
+                                    <div class="control-group" id="grp_comp_front_aff_date" onclick="selectQuickField('aff_date_size')">
+                                        <div class="control-title">
+                                            <span>تاريخ الانتساب (Affiliation Date)</span>
+                                            <span id="val_comp_front_aff_date_size" class="text-xs font-bold text-indigo-600"><%= companySettings.front.aff_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_front_aff_date_size" min="16" max="34" value="<%= companySettings.front.aff_date_size %>" oninput="updateSetting('front', 'aff_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_aff_date_x" value="<%= companySettings.front.aff_date_x %>" oninput="updateSetting('front', 'aff_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">الموقع الرأسي Y (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="comp_front_aff_date_y" value="<%= companySettings.front.aff_date_y %>" oninput="updateSetting('front', 'aff_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expiration Date -->
+                                    <div class="control-group" id="grp_comp_front_exp_date" onclick="selectQuickField('exp_date_size')">
+                                        <div class="control-title">
+                                            <span>تاريخ النفاذ والانتهاء (Expiration Date)</span>
+                                            <span id="val_comp_front_exp_date_size" class="text-xs font-bold text-indigo-600"><%= companySettings.front.exp_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_front_exp_date_size" min="16" max="34" value="<%= companySettings.front.exp_date_size %>" oninput="updateSetting('front', 'exp_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_front_exp_date_x" value="<%= companySettings.front.exp_date_x %>" oninput="updateSetting('front', 'exp_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">الموقع الرأسي Y (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="comp_front_exp_date_y" value="<%= companySettings.front.exp_date_y %>" oninput="updateSetting('front', 'exp_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Synchronized Dates Helper -->
+                                    <div class="p-2.5 bg-indigo-50/70 rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
+                                        <span class="font-semibold text-indigo-900">⚡ تحريك تاريخي الشركات معاً:</span>
+                                        <div class="flex gap-1.5">
+                                            <button type="button" onclick="nudgeBothDates('front', -2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▲ للأعلى معاً</button>
+                                            <button type="button" onclick="nudgeBothDates('front', 2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▼ للأسفل معاً</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- COMPANY BACK CONTROLS -->
+                                <div id="compBackControlsPanel" class="space-y-3" style="display: none;">
+                                    <div class="font-bold text-sm text-indigo-700 mb-2 border-b pb-1">
+                                        عناصر الوجه الخلفي للشركات (English Back Side):
+                                    </div>
+
+                                    <!-- Company Name En -->
+                                    <div class="control-group" id="grp_comp_back_comp_en" onclick="selectQuickField('comp_en_size')">
+                                        <div class="control-title">
+                                            <span>Company (اسم الشركة)</span>
+                                            <span id="val_comp_back_comp_en_size" class="text-xs font-bold text-indigo-600"><%= companySettings.back.comp_en_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_back_comp_en_size" min="16" max="38" value="<%= companySettings.back.comp_en_size %>" oninput="updateSetting('back', 'comp_en_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_comp_en_x" value="<%= companySettings.back.comp_en_x %>" oninput="updateSetting('back', 'comp_en_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_comp_en_y" value="<%= companySettings.back.comp_en_y %>" oninput="updateSetting('back', 'comp_en_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- CEO Name En -->
+                                    <div class="control-group" id="grp_comp_back_ceo_en" onclick="selectQuickField('ceo_en_size')">
+                                        <div class="control-title">
+                                            <span>CEO (المدير المفوض)</span>
+                                            <span id="val_comp_back_ceo_en_size" class="text-xs font-bold text-indigo-600"><%= companySettings.back.ceo_en_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_back_ceo_en_size" min="16" max="36" value="<%= companySettings.back.ceo_en_size %>" oninput="updateSetting('back', 'ceo_en_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_ceo_en_x" value="<%= companySettings.back.ceo_en_x %>" oninput="updateSetting('back', 'ceo_en_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_ceo_en_y" value="<%= companySettings.back.ceo_en_y %>" oninput="updateSetting('back', 'ceo_en_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Class / Activity En -->
+                                    <div class="control-group" id="grp_comp_back_class_act_en" onclick="selectQuickField('class_act_en_size')">
+                                        <div class="control-title">
+                                            <span>Class / Activity (الصنف والنشاط)</span>
+                                            <span id="val_comp_back_class_act_en_size" class="text-xs font-bold text-indigo-600"><%= companySettings.back.class_act_en_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_back_class_act_en_size" min="16" max="50" value="<%= companySettings.back.class_act_en_size %>" oninput="updateSetting('back', 'class_act_en_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_class_act_en_x" value="<%= companySettings.back.class_act_en_x %>" oninput="updateSetting('back', 'class_act_en_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_class_act_en_y" value="<%= companySettings.back.class_act_en_y %>" oninput="updateSetting('back', 'class_act_en_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- License No En -->
+                                    <div class="control-group" id="grp_comp_back_license_en" onclick="selectQuickField('license_en_size')">
+                                        <div class="control-title">
+                                            <span>License No (رقم إجازة التأسيس)</span>
+                                            <span id="val_comp_back_license_en_size" class="text-xs font-bold text-indigo-600"><%= companySettings.back.license_en_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_back_license_en_size" min="16" max="36" value="<%= companySettings.back.license_en_size %>" oninput="updateSetting('back', 'license_en_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_license_en_x" value="<%= companySettings.back.license_en_x %>" oninput="updateSetting('back', 'license_en_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_license_en_y" value="<%= companySettings.back.license_en_y %>" oninput="updateSetting('back', 'license_en_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Commercial Name No En -->
+                                    <div class="control-group" id="grp_comp_back_comm_no" onclick="selectQuickField('comm_no_size')">
+                                        <div class="control-title">
+                                            <span>Commercial Name No (الاسم التجاري)</span>
+                                            <span id="val_comp_back_comm_no_size" class="text-xs font-bold text-indigo-600"><%= companySettings.back.comm_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_back_comm_no_size" min="16" max="36" value="<%= companySettings.back.comm_no_size %>" oninput="updateSetting('back', 'comm_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_comm_no_x" value="<%= companySettings.back.comm_no_x %>" oninput="updateSetting('back', 'comm_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_comm_no_y" value="<%= companySettings.back.comm_no_y %>" oninput="updateSetting('back', 'comm_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ID No (Black Ribbon) -->
+                                    <div class="control-group" id="grp_comp_back_card_no" onclick="selectQuickField('card_no_size')" style="background-color: #f3f4f6; border-color: #9ca3af;">
+                                        <div class="control-title">
+                                            <span class="text-gray-900 font-bold">ID No (Black Ribbon)</span>
+                                            <span id="val_comp_back_card_no_size" class="text-xs font-bold text-gray-900"><%= companySettings.back.card_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_back_card_no_size" min="20" max="44" value="<%= companySettings.back.card_no_size %>" oninput="updateSetting('back', 'card_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_card_no_x" value="<%= companySettings.back.card_no_x %>" oninput="updateSetting('back', 'card_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_card_no_y" value="<%= companySettings.back.card_no_y %>" oninput="updateSetting('back', 'card_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Affiliation Date En -->
+                                    <div class="control-group" id="grp_comp_back_aff_date" onclick="selectQuickField('aff_date_size')">
+                                        <div class="control-title">
+                                            <span>Affiliation Date (الانتماء)</span>
+                                            <span id="val_comp_back_aff_date_size" class="text-xs font-bold text-indigo-600"><%= companySettings.back.aff_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_back_aff_date_size" min="16" max="34" value="<%= companySettings.back.aff_date_size %>" oninput="updateSetting('back', 'aff_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position (يمين / يسار)</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_aff_date_x" value="<%= companySettings.back.aff_date_x %>" oninput="updateSetting('back', 'aff_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">Y Position (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="comp_back_aff_date_y" value="<%= companySettings.back.aff_date_y %>" oninput="updateSetting('back', 'aff_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expiration Date En -->
+                                    <div class="control-group" id="grp_comp_back_exp_date" onclick="selectQuickField('exp_date_size')">
+                                        <div class="control-title">
+                                            <span>Expiration Date (الانتهاء)</span>
+                                            <span id="val_comp_back_exp_date_size" class="text-xs font-bold text-indigo-600"><%= companySettings.back.exp_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_back_exp_date_size" min="16" max="34" value="<%= companySettings.back.exp_date_size %>" oninput="updateSetting('back', 'exp_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position (يمين / يسار)</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_exp_date_x" value="<%= companySettings.back.exp_date_x %>" oninput="updateSetting('back', 'exp_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">Y Position (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="comp_back_exp_date_y" value="<%= companySettings.back.exp_date_y %>" oninput="updateSetting('back', 'exp_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Synchronized Back Dates Helper -->
+                                    <div class="p-2.5 bg-indigo-50/70 rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
+                                        <span class="font-semibold text-indigo-900">⚡ تحريك تاريخي الخلفي معاً:</span>
+                                        <div class="flex gap-1.5">
+                                            <button type="button" onclick="nudgeBothDates('back', -2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▲ للأعلى معاً</button>
+                                            <button type="button" onclick="nudgeBothDates('back', 2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▼ للأسفل معاً</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- QR Code Position -->
+                                    <div class="control-group" id="grp_comp_back_qr" onclick="selectQuickField('qr_size')">
+                                        <div class="control-title">
+                                            <span>QR Code Position &amp; Size</span>
+                                            <span id="val_comp_back_qr_size" class="text-xs font-bold text-indigo-600"><%= companySettings.back.qr_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">QR Size</label>
+                                                <input type="range" class="card-slider" id="comp_back_qr_size" min="180" max="280" value="<%= companySettings.back.qr_size %>" oninput="updateSetting('back', 'qr_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">QR X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_qr_x" value="<%= companySettings.back.qr_x %>" oninput="updateSetting('back', 'qr_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">QR Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_back_qr_y" value="<%= companySettings.back.qr_y %>" oninput="updateSetting('back', 'qr_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ================= BROKER CONTROLS CONTAINER ================= -->
+                            <div id="brokerControlsContainer" style="display: none;">
+                                <!-- BROKER FRONT CONTROLS -->
+                                <div id="brokerFrontControlsPanel" class="space-y-3">
+                                    <div class="font-bold text-sm text-indigo-700 mb-2 border-b pb-1 flex justify-between items-center">
+                                        <span>عناصر الوجه الأمامي للدلالين (Arabic Front Side):</span>
+                                        <span class="text-xs text-gray-500 font-normal">اضغط على أي حقل لتمييزه</span>
+                                    </div>
+
+                                    <!-- Broker Name -->
+                                    <div class="control-group" id="grp_broker_front_name" onclick="selectQuickField('name_size')">
+                                        <div class="control-title">
+                                            <span>اسم الدلال (Broker Name)</span>
+                                            <span id="val_broker_front_name_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.front.name_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="broker_front_name_size" min="18" max="42" value="<%= brokerSettings.front.name_size %>" oninput="updateSetting('front', 'name_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_name_x" value="<%= brokerSettings.front.name_x %>" oninput="updateSetting('front', 'name_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_name_y" value="<%= brokerSettings.front.name_y %>" oninput="updateSetting('front', 'name_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Class -->
+                                    <div class="control-group" id="grp_broker_front_class" onclick="selectQuickField('class_size')">
+                                        <div class="control-title">
+                                            <span>الصنف (Class)</span>
+                                            <span id="val_broker_front_class_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.front.class_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="broker_front_class_size" min="18" max="38" value="<%= brokerSettings.front.class_size %>" oninput="updateSetting('front', 'class_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_class_x" value="<%= brokerSettings.front.class_x %>" oninput="updateSetting('front', 'class_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_class_y" value="<%= brokerSettings.front.class_y %>" oninput="updateSetting('front', 'class_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Commercial Name -->
+                                    <div class="control-group" id="grp_broker_front_comm" onclick="selectQuickField('comm_size')">
+                                        <div class="control-title">
+                                            <span>الاسم التجاري / المكتب (Commercial Name)</span>
+                                            <span id="val_broker_front_comm_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.front.comm_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="broker_front_comm_size" min="18" max="36" value="<%= brokerSettings.front.comm_size %>" oninput="updateSetting('front', 'comm_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_comm_x" value="<%= brokerSettings.front.comm_x %>" oninput="updateSetting('front', 'comm_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_comm_y" value="<%= brokerSettings.front.comm_y %>" oninput="updateSetting('front', 'comm_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Activity -->
+                                    <div class="control-group" id="grp_broker_front_activity" onclick="selectQuickField('activity_size')">
+                                        <div class="control-title">
+                                            <span>النشاط (Activity)</span>
+                                            <span id="val_broker_front_activity_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.front.activity_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="broker_front_activity_size" min="18" max="36" value="<%= brokerSettings.front.activity_size %>" oninput="updateSetting('front', 'activity_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_activity_x" value="<%= brokerSettings.front.activity_x %>" oninput="updateSetting('front', 'activity_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_activity_y" value="<%= brokerSettings.front.activity_y %>" oninput="updateSetting('front', 'activity_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card No (Peach Ribbon) -->
+                                    <div class="control-group" id="grp_broker_front_card_no" onclick="selectQuickField('card_no_size')" style="background-color: #fff7ed; border-color: #f97316;">
+                                        <div class="control-title">
+                                            <span class="text-orange-950 font-bold">رقم الهوية - الشريط البرتقالي (ID No)</span>
+                                            <span id="val_broker_front_card_no_size" class="text-xs font-bold text-orange-700"><%= brokerSettings.front.card_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="broker_front_card_no_size" min="20" max="44" value="<%= brokerSettings.front.card_no_size %>" oninput="updateSetting('front', 'card_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_card_no_x" value="<%= brokerSettings.front.card_no_x %>" oninput="updateSetting('front', 'card_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_card_no_y" value="<%= brokerSettings.front.card_no_y %>" oninput="updateSetting('front', 'card_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Affiliation Date -->
+                                    <div class="control-group" id="grp_broker_front_aff_date" onclick="selectQuickField('aff_date_size')">
+                                        <div class="control-title">
+                                            <span>الانتساب (Affiliation Date)</span>
+                                            <span id="val_broker_front_aff_date_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.front.aff_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="broker_front_aff_date_size" min="16" max="34" value="<%= brokerSettings.front.aff_date_size %>" oninput="updateSetting('front', 'aff_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X (يمين/يسار)</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_aff_date_x" value="<%= brokerSettings.front.aff_date_x %>" oninput="updateSetting('front', 'aff_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">الموقع الرأسي Y (أعلى/أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="broker_front_aff_date_y" value="<%= brokerSettings.front.aff_date_y %>" oninput="updateSetting('front', 'aff_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expire Date -->
+                                    <div class="control-group" id="grp_broker_front_exp_date" onclick="selectQuickField('exp_date_size')">
+                                        <div class="control-title">
+                                            <span>النفاذ (Expiration Date)</span>
+                                            <span id="val_broker_front_exp_date_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.front.exp_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="broker_front_exp_date_size" min="16" max="34" value="<%= brokerSettings.front.exp_date_size %>" oninput="updateSetting('front', 'exp_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X (يمين/يسار)</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_front_exp_date_x" value="<%= brokerSettings.front.exp_date_x %>" oninput="updateSetting('front', 'exp_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">الموقع الرأسي Y (أعلى/أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="broker_front_exp_date_y" value="<%= brokerSettings.front.exp_date_y %>" oninput="updateSetting('front', 'exp_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Synchronized Front Dates Helper -->
+                                    <div class="p-2.5 bg-indigo-50/70 rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
+                                        <span class="font-semibold text-indigo-900">⚡ تحريك تاريخي الأمامي معاً:</span>
+                                        <div class="flex gap-1.5">
+                                            <button type="button" onclick="nudgeBothDates('front', -2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▲ للأعلى معاً</button>
+                                            <button type="button" onclick="nudgeBothDates('front', 2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▼ للأسفل معاً</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- BROKER BACK CONTROLS -->
+                                <div id="brokerBackControlsPanel" class="space-y-3" style="display: none;">
+                                    <div class="font-bold text-sm text-indigo-700 mb-2 border-b pb-1">
+                                        عناصر الوجه الخلفي للدلالين (English Back Side):
+                                    </div>
+
+                                    <!-- Broker Name En -->
+                                    <div class="control-group" id="grp_broker_back_name" onclick="selectQuickField('name_size')">
+                                        <div class="control-title">
+                                            <span>Name (اسم الدلال)</span>
+                                            <span id="val_broker_back_name_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.back.name_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="broker_back_name_size" min="16" max="38" value="<%= brokerSettings.back.name_size %>" oninput="updateSetting('back', 'name_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_name_x" value="<%= brokerSettings.back.name_x %>" oninput="updateSetting('back', 'name_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_name_y" value="<%= brokerSettings.back.name_y %>" oninput="updateSetting('back', 'name_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Class En -->
+                                    <div class="control-group" id="grp_broker_back_class" onclick="selectQuickField('class_size')">
+                                        <div class="control-title">
+                                            <span>Class (الصنف)</span>
+                                            <span id="val_broker_back_class_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.back.class_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="broker_back_class_size" min="16" max="38" value="<%= brokerSettings.back.class_size %>" oninput="updateSetting('back', 'class_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_class_x" value="<%= brokerSettings.back.class_x %>" oninput="updateSetting('back', 'class_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_class_y" value="<%= brokerSettings.back.class_y %>" oninput="updateSetting('back', 'class_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Commercial Name No En -->
+                                    <div class="control-group" id="grp_broker_back_comm_no" onclick="selectQuickField('comm_no_size')">
+                                        <div class="control-title">
+                                            <span>Commercial Name No (الاسم التجاري)</span>
+                                            <span id="val_broker_back_comm_no_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.back.comm_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="broker_back_comm_no_size" min="16" max="38" value="<%= brokerSettings.back.comm_no_size %>" oninput="updateSetting('back', 'comm_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_comm_no_x" value="<%= brokerSettings.back.comm_no_x %>" oninput="updateSetting('back', 'comm_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_comm_no_y" value="<%= brokerSettings.back.comm_no_y %>" oninput="updateSetting('back', 'comm_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Activity En -->
+                                    <div class="control-group" id="grp_broker_back_activity" onclick="selectQuickField('activity_size')">
+                                        <div class="control-title">
+                                            <span>Activity (النشاط)</span>
+                                            <span id="val_broker_back_activity_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.back.activity_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="broker_back_activity_size" min="16" max="38" value="<%= brokerSettings.back.activity_size %>" oninput="updateSetting('back', 'activity_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_activity_x" value="<%= brokerSettings.back.activity_x %>" oninput="updateSetting('back', 'activity_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_activity_y" value="<%= brokerSettings.back.activity_y %>" oninput="updateSetting('back', 'activity_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ID No (Peach Ribbon) -->
+                                    <div class="control-group" id="grp_broker_back_card_no" onclick="selectQuickField('card_no_size')" style="background-color: #fff7ed; border-color: #f97316;">
+                                        <div class="control-title">
+                                            <span class="text-orange-950 font-bold">ID No (Peach Ribbon)</span>
+                                            <span id="val_broker_back_card_no_size" class="text-xs font-bold text-orange-700"><%= brokerSettings.back.card_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="broker_back_card_no_size" min="20" max="44" value="<%= brokerSettings.back.card_no_size %>" oninput="updateSetting('back', 'card_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_card_no_x" value="<%= brokerSettings.back.card_no_x %>" oninput="updateSetting('back', 'card_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_card_no_y" value="<%= brokerSettings.back.card_no_y %>" oninput="updateSetting('back', 'card_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Affiliation Date En -->
+                                    <div class="control-group" id="grp_broker_back_aff_date" onclick="selectQuickField('aff_date_size')">
+                                        <div class="control-title">
+                                            <span>Affiliation Date (الانتساب)</span>
+                                            <span id="val_broker_back_aff_date_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.back.aff_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="broker_back_aff_date_size" min="16" max="34" value="<%= brokerSettings.back.aff_date_size %>" oninput="updateSetting('back', 'aff_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position (يمين / يسار)</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_aff_date_x" value="<%= brokerSettings.back.aff_date_x %>" oninput="updateSetting('back', 'aff_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">Y Position (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="broker_back_aff_date_y" value="<%= brokerSettings.back.aff_date_y %>" oninput="updateSetting('back', 'aff_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expiration Date En -->
+                                    <div class="control-group" id="grp_broker_back_exp_date" onclick="selectQuickField('exp_date_size')">
+                                        <div class="control-title">
+                                            <span>Expiration Date (النفاذ)</span>
+                                            <span id="val_broker_back_exp_date_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.back.exp_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="broker_back_exp_date_size" min="16" max="34" value="<%= brokerSettings.back.exp_date_size %>" oninput="updateSetting('back', 'exp_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position (يمين / يسار)</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_exp_date_x" value="<%= brokerSettings.back.exp_date_x %>" oninput="updateSetting('back', 'exp_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">Y Position (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="broker_back_exp_date_y" value="<%= brokerSettings.back.exp_date_y %>" oninput="updateSetting('back', 'exp_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Synchronized Back Dates Helper -->
+                                    <div class="p-2.5 bg-indigo-50/70 rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
+                                        <span class="font-semibold text-indigo-900">⚡ تحريك تاريخي الخلفي معاً:</span>
+                                        <div class="flex gap-1.5">
+                                            <button type="button" onclick="nudgeBothDates('back', -2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▲ للأعلى معاً</button>
+                                            <button type="button" onclick="nudgeBothDates('back', 2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▼ للأسفل معاً</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- QR Code Position -->
+                                    <div class="control-group" id="grp_broker_back_qr" onclick="selectQuickField('qr_size')">
+                                        <div class="control-title">
+                                            <span>QR Code Position &amp; Size</span>
+                                            <span id="val_broker_back_qr_size" class="text-xs font-bold text-indigo-600"><%= brokerSettings.back.qr_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">QR Size</label>
+                                                <input type="range" class="card-slider" id="broker_back_qr_size" min="180" max="280" value="<%= brokerSettings.back.qr_size %>" oninput="updateSetting('back', 'qr_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">QR X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_qr_x" value="<%= brokerSettings.back.qr_x %>" oninput="updateSetting('back', 'qr_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">QR Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="broker_back_qr_y" value="<%= brokerSettings.back.qr_y %>" oninput="updateSetting('back', 'qr_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Breeze Profile Information Form -->
+                <div class="p-6 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl">
+                        <section>
+                            <header>
+                                <h2 class="text-lg font-medium text-gray-900">Profile Information</h2>
+                                <p class="mt-1 text-sm text-gray-600">Update your account's profile information and email address.</p>
+                            </header>
+                            <form method="post" action="/profile" class="mt-6 space-y-6">
+                                <input type="hidden" name="_method" value="patch">
+                                <div>
+                                    <label class="block font-medium text-sm text-gray-700" for="name">Name</label>
+                                    <input class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full" id="name" name="name" type="text" value="<%= user.name %>" required>
+                                </div>
+                                <div>
+                                    <label class="block font-medium text-sm text-gray-700" for="email">Email</label>
+                                    <input class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full" id="email" name="email" type="email" value="<%= user.email %>" required>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">Save Profile</button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- Breeze Update Password Form -->
+                <div class="p-6 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl">
+                        <section>
+                            <header>
+                                <h2 class="text-lg font-medium text-gray-900">Update Password</h2>
+                                <p class="mt-1 text-sm text-gray-600">Ensure your account is using a long, random password to stay secure.</p>
+                            </header>
+                            <form method="post" action="/profile" class="mt-6 space-y-6" onsubmit="event.preventDefault(); alert('تم حفظ كلمة المرور بنجاح!');">
+                                <div>
+                                    <label class="block font-medium text-sm text-gray-700" for="current_password">Current Password</label>
+                                    <input class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full" id="current_password" type="password">
+                                </div>
+                                <div>
+                                    <label class="block font-medium text-sm text-gray-700" for="new_password">New Password</label>
+                                    <input class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full" id="new_password" type="password">
+                                </div>
+                                <div>
+                                    <label class="block font-medium text-sm text-gray-700" for="confirm_password">Confirm Password</label>
+                                    <input class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full" id="confirm_password" type="password">
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">Save Password</button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Script to handle live rendering, preview, template switching, and saving -->
+    <script>
+        const sampleTrader = <%- JSON.stringify(sampleTrader) %>;
+        const sampleCompany = <%- JSON.stringify(sampleCompany) %>;
+        const sampleBroker = <%- JSON.stringify(sampleBroker) %>;
+        let traderSettings = <%- JSON.stringify(settings) %>;
+        let companySettings = <%- JSON.stringify(companySettings) %>;
+        let brokerSettings = <%- JSON.stringify(brokerSettings) %>;
+
+        let activeTemplateType = 'trader'; // 'trader' | 'company' | 'broker'
+        let currentActiveSide = 'front';    // 'front' | 'back'
+        let currentQuickKey = 'name_size';
+        let sampleTraderQrUrl = null;
+        let sampleCompanyQrUrl = null;
+        let sampleBrokerQrUrl = null;
+
+        const TRADER_FRONT_FIELDS = [
+            { key: 'name_size', label: 'اسم التاجر', prop: 'name' },
+            { key: 'class_size', label: 'الصنف', prop: 'class' },
+            { key: 'comm_size', label: 'الاسم التجاري', prop: 'comm' },
+            { key: 'activity_size', label: 'النشاط التجاري', prop: 'activity' },
+            { key: 'card_no_size', label: 'رقم الهوية', prop: 'card_no' },
+            { key: 'aff_date_size', label: 'تاريخ الانتساب', prop: 'aff_date' },
+            { key: 'exp_date_size', label: 'تاريخ النفاذ (الانتهاء)', prop: 'exp_date' }
+        ];
+
+        const TRADER_BACK_FIELDS = [
+            { key: 'name_size', label: 'Trader Name (اسم التاجر)', prop: 'name' },
+            { key: 'class_size', label: 'Class (الصنف)', prop: 'class' },
+            { key: 'comm_no_size', label: 'Commercial Name No (الاسم التجاري)', prop: 'comm_no' },
+            { key: 'activity_size', label: 'Activity (النشاط)', prop: 'activity' },
+            { key: 'card_no_size', label: 'ID No (رقم الهوية)', prop: 'card_no' },
+            { key: 'aff_date_size', label: 'Affiliation Date (تاريخ الانتماء)', prop: 'aff_date' },
+            { key: 'exp_date_size', label: 'Expiration Date (تاريخ النفاذ)', prop: 'exp_date' },
+            { key: 'qr_size', label: 'QR Code (رمز الاستجابة)', prop: 'qr' }
+        ];
+
+        const COMPANY_FRONT_FIELDS = [
+            { key: 'comp_size', label: 'الشركة (Company Name)', prop: 'comp' },
+            { key: 'ceo_size', label: 'المدير المفوض (CEO Name)', prop: 'ceo' },
+            { key: 'class_act_size', label: 'الصنف والنشاط (Class & Activity)', prop: 'class_act' },
+            { key: 'cert_size', label: 'رقم إجازة التأسيس (License No)', prop: 'cert' },
+            { key: 'comm_date_size', label: 'الاسم التجاري وتاريخه (Commercial Name)', prop: 'comm_date' },
+            { key: 'card_no_size', label: 'رقم الهوية والشريط الأسود (ID No)', prop: 'card_no' },
+            { key: 'aff_date_size', label: 'تاريخ الانتساب (Affiliation Date)', prop: 'aff_date' },
+            { key: 'exp_date_size', label: 'تاريخ النفاذ (Expiration Date)', prop: 'exp_date' }
+        ];
+
+        const COMPANY_BACK_FIELDS = [
+            { key: 'comp_en_size', label: 'Company (اسم الشركة)', prop: 'comp_en' },
+            { key: 'ceo_en_size', label: 'CEO (المدير المفوض)', prop: 'ceo_en' },
+            { key: 'class_act_en_size', label: 'Class / Activity (الصنف والنشاط)', prop: 'class_act_en' },
+            { key: 'license_en_size', label: 'License No (إجازة التأسيس)', prop: 'license_en' },
+            { key: 'comm_no_size', label: 'Commercial Name No (الاسم التجاري)', prop: 'comm_no' },
+            { key: 'card_no_size', label: 'ID No (رقم الهوية - الشريط الأسود)', prop: 'card_no' },
+            { key: 'aff_date_size', label: 'Affiliation Date (تاريخ الانتساب)', prop: 'aff_date' },
+            { key: 'exp_date_size', label: 'Expiration Date (تاريخ النفاذ)', prop: 'exp_date' },
+            { key: 'qr_size', label: 'QR Code (رمز الاستجابة)', prop: 'qr' }
+        ];
+
+        const BROKER_FRONT_FIELDS = [
+            { key: 'name_size', label: 'اسم الدلال (Broker Name)', prop: 'name' },
+            { key: 'class_size', label: 'الصنف (Class)', prop: 'class' },
+            { key: 'comm_size', label: 'الاسم التجاري / المكتب (Commercial Name)', prop: 'comm' },
+            { key: 'activity_size', label: 'النشاط (Activity)', prop: 'activity' },
+            { key: 'card_no_size', label: 'رقم الهوية - الشريط البرتقالي (ID No)', prop: 'card_no' },
+            { key: 'aff_date_size', label: 'تاريخ الانتساب (Affiliation Date)', prop: 'aff_date' },
+            { key: 'exp_date_size', label: 'تاريخ النفاذ (Expiration Date)', prop: 'exp_date' }
+        ];
+
+        const BROKER_BACK_FIELDS = [
+            { key: 'name_size', label: 'Broker Name (اسم الدلال)', prop: 'name' },
+            { key: 'class_size', label: 'Class (الصنف)', prop: 'class' },
+            { key: 'comm_no_size', label: 'Commercial Name No (الاسم التجاري)', prop: 'comm_no' },
+            { key: 'activity_size', label: 'Activity (النشاط)', prop: 'activity' },
+            { key: 'card_no_size', label: 'ID No - Peach Ribbon (رقم الهوية)', prop: 'card_no' },
+            { key: 'aff_date_size', label: 'Affiliation Date (تاريخ الانتساب)', prop: 'aff_date' },
+            { key: 'exp_date_size', label: 'Expiration Date (تاريخ النفاذ)', prop: 'exp_date' },
+            { key: 'qr_size', label: 'QR Code (رمز الاستجابة)', prop: 'qr' }
+        ];
+
+        function entoar(str) {
+            if (!str) return '';
+            return String(str).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+        }
+
+        function formatClassName(cardClass, lang = 'ar') {
+            const c = String(cardClass || '').trim();
+            if (lang === 'ar') {
+                if (c === '1') return 'الأولى';
+                if (c === '2') return 'الثانية';
+                if (c === '3') return 'الثالثة';
+                if (c === '4') return 'الرابعة';
+                if (c.toLowerCase().includes('ممتاز') || c === '0') return 'الممتازة';
+                return c;
+            } else {
+                if (c === '1') return 'First';
+                if (c === '2') return 'Second';
+                if (c === '3') return 'Third';
+                if (c === '4') return 'Fourth';
+                if (c.toLowerCase().includes('ممتاز') || c === '0') return 'Excellent';
+                return c;
+            }
+        }
+
+        function loadImage(src) {
+            return new Promise(resolve => {
+                if (!src) return resolve(null);
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => resolve(img);
+                img.onerror = () => {
+                    if (src !== '/templates/avatar_placeholder.png') {
+                        loadImage('/templates/avatar_placeholder.png').then(resolve);
+                    } else {
+                        resolve(null);
+                    }
+                };
+                img.src = src;
+            });
+        }
+
+        async function ensureFonts() {
+            try {
+                await Promise.all([
+                    document.fonts.load('bold 28px "PT Bold Heading"'),
+                    document.fonts.load('bold 24px "Myriad Pro"')
+                ]);
+                await document.fonts.ready;
+            } catch (e) {
+                console.warn('Font loading check:', e);
+            }
+        }
+
+        function drawAutoFitText(ctx, text, x, y, maxBoundary, isRtl = false) {
+            if (!text) return 1.0;
+
+            const availableWidth = Math.max(50, isRtl ? (x - maxBoundary) : (maxBoundary - x));
+
+            ctx.save();
+            let measuredWidth = ctx.measureText(text).width;
+
+            // Subtle letter-spacing for English (LTR) when long
+            if (!isRtl && measuredWidth > availableWidth && 'letterSpacing' in ctx) {
+                ctx.letterSpacing = '-0.5px';
+                measuredWidth = ctx.measureText(text).width;
+            }
+
+            // Horizontal compression without limit (بدون حد أدنى) so text fits fully before the boundary
+            const scaleX = measuredWidth > availableWidth ? (availableWidth / measuredWidth) : 1.0;
+
+            if (scaleX >= 0.995) {
+                ctx.fillText(text, x, y);
+            } else {
+                ctx.translate(x, y);
+                ctx.scale(scaleX, 1);
+                ctx.fillText(text, 0, 0);
+            }
+            ctx.restore();
+            return scaleX;
+        }
+
+        function getUnifiedRefSize(s, side, isComp) {
+            if (isComp) {
+                return side === 'front'
+                    ? (Number(s.ceo_size) || Number(s.cert_size) || 24)
+                    : (Number(s.ceo_en_size) || Number(s.license_en_size) || Number(s.comm_no_size) || 33);
+            } else {
+                return side === 'front'
+                    ? (Number(s.comm_size) || Number(s.class_size) || 34)
+                    : (Number(s.class_size) || Number(s.comm_no_size) || 36);
+            }
+        }
+
+        // ================= RENDER TRADER FRONT & BACK =================
+        async function renderPreviewTraderFront() {
+            await ensureFonts();
+            const canvas = document.getElementById('previewFrontCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1024;
+            canvas.height = 644;
+
+            const bg = await loadImage('/templates/card_front_template.png');
+            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+
+            const photoSrc = sampleTrader.photo_path || '/templates/avatar_placeholder.png';
+            const photo = await loadImage(photoSrc);
+
+            const boxX = 14, boxY = 266, boxW = 274, boxH = 354, radius = 24;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(boxX + radius, boxY);
+            ctx.lineTo(boxX + boxW - radius, boxY);
+            ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + radius);
+            ctx.lineTo(boxX + boxW, boxY + boxH - radius);
+            ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - radius, boxY + boxH);
+            ctx.lineTo(boxX + radius, boxY + boxH);
+            ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - radius);
+            ctx.lineTo(boxX, boxY + radius);
+            ctx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
+            ctx.closePath();
+            ctx.clip();
+
+            if (photo) {
+                ctx.drawImage(photo, boxX, boxY, boxW, boxH);
+            } else {
+                ctx.fillStyle = '#E5E7EB';
+                ctx.fillRect(boxX, boxY, boxW, boxH);
+            }
+            ctx.restore();
+
+            const s = traderSettings.front;
+            ctx.save();
+            ctx.direction = 'rtl';
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#000000';
+
+            const photoLeftTrader = 295;
+            // 1. Name
+            ctx.font = `bold ${s.name_size || 28}px "PT Bold Heading", sans-serif`;
+            drawAutoFitText(ctx, sampleTrader.name || '', s.name_x, s.name_y, photoLeftTrader, true);
+
+            // 2. Class
+            ctx.font = `bold ${s.class_size || 26}px "PT Bold Heading", sans-serif`;
+            drawAutoFitText(ctx, formatClassName(sampleTrader.card_class, 'ar'), s.class_x, s.class_y, photoLeftTrader, true);
+
+            // 3. Commercial Name
+            ctx.font = `bold ${s.comm_size || 24}px "PT Bold Heading", sans-serif`;
+            let commText = sampleTrader.commercial_name || '';
+            if (sampleTrader.commercial_name_no) commText += ' / ' + entoar(sampleTrader.commercial_name_no);
+            drawAutoFitText(ctx, commText, s.comm_x, s.comm_y, photoLeftTrader, true);
+
+            // 4. Activity
+            ctx.font = `bold ${s.activity_size || 24}px "PT Bold Heading", sans-serif`;
+            drawAutoFitText(ctx, sampleTrader.activity || '', s.activity_x, s.activity_y, photoLeftTrader, true);
+
+            // 5. Card No in blue ribbon
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${s.card_no_size || 30}px "PT Bold Heading", sans-serif`;
+            let cardText = entoar(sampleTrader.card_no);
+            if (sampleTrader.renewal_no) cardText += ' / ' + entoar(sampleTrader.renewal_no);
+            ctx.fillText(cardText, s.card_no_x, s.card_no_y);
+
+            // 6. Dates
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
+            ctx.fillText(entoar(sampleTrader.affiliation_date || ''), s.aff_date_x, s.aff_date_y);
+            ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
+            ctx.fillText(entoar(sampleTrader.expire_date || ''), s.exp_date_x, s.exp_date_y);
+
+            ctx.restore();
+        }
+
+        async function renderPreviewTraderBack() {
+            await ensureFonts();
+            const canvas = document.getElementById('previewBackCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1024;
+            canvas.height = 644;
+
+            const bg = await loadImage('/templates/card_back_clean.png');
+            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+
+            const s = traderSettings.back;
+
+            if (!sampleTraderQrUrl) {
+                try {
+                    const r = await fetch('/api/traders/' + (sampleTrader.id || 1) + '/qr');
+                    const j = await r.json();
+                    if (j.success) sampleTraderQrUrl = j.qr_url;
+                } catch (e) {}
+            }
+
+            if (sampleTraderQrUrl) {
+                const qrImg = await loadImage(sampleTraderQrUrl);
+                if (qrImg) ctx.drawImage(qrImg, s.qr_x, s.qr_y, s.qr_size, s.qr_size);
+            }
+
+            ctx.save();
+            ctx.direction = 'ltr';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#000000';
+
+            const qrLeftTrader = (s.qr_x || 757) - 6;
+            // Trader Name (English)
+            const nameSize = s.name_size !== undefined ? s.name_size : 36;
+            const nameX = s.name_x !== undefined ? s.name_x : 14;
+            const nameY = s.name_y !== undefined ? s.name_y : 305;
+            ctx.font = `bold ${nameSize}px "Myriad Pro", Arial, sans-serif`;
+            const enName = (sampleTrader.english_name || sampleTrader.name || '').toUpperCase();
+            drawAutoFitText(ctx, enName, nameX, nameY, qrLeftTrader);
+
+            // Class
+            ctx.font = `bold ${s.class_size || 36}px "Myriad Pro", Arial, sans-serif`;
+            drawAutoFitText(ctx, formatClassName(sampleTrader.card_class, 'en'), s.class_x, s.class_y, qrLeftTrader);
+
+            // Commercial Name No
+            ctx.font = `bold ${s.comm_no_size || 36}px "Myriad Pro", Arial, sans-serif`;
+            drawAutoFitText(ctx, sampleTrader.commercial_name_no || '-', s.comm_no_x, s.comm_no_y, qrLeftTrader);
+
+            // Activity
+            ctx.font = `bold ${s.activity_size || 36}px "Myriad Pro", Arial, sans-serif`;
+            const enTraderAct = sampleTrader.english_activity || sampleTrader.activity || '-';
+            drawAutoFitText(ctx, enTraderAct, s.activity_x, s.activity_y, qrLeftTrader);
+
+            // ID No in blue ribbon
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${s.card_no_size || 34}px "Myriad Pro", Arial, sans-serif`;
+            let enCard = sampleTrader.card_no || '';
+            if (sampleTrader.renewal_no) enCard += ' / ' + sampleTrader.renewal_no;
+            ctx.fillText(enCard, s.card_no_x, s.card_no_y);
+
+            // Dates
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${s.aff_date_size || 27}px "Myriad Pro", Arial, sans-serif`;
+            ctx.fillText(sampleTrader.affiliation_date || '-', s.aff_date_x, s.aff_date_y);
+            ctx.font = `bold ${s.exp_date_size || 28}px "Myriad Pro", Arial, sans-serif`;
+            ctx.fillText(sampleTrader.expire_date || '-', s.exp_date_x, s.exp_date_y);
+
+            ctx.restore();
+        }
+
+        // ================= RENDER COMPANY FRONT & BACK =================
+        async function renderPreviewCompanyFront() {
+            await ensureFonts();
+            const canvas = document.getElementById('previewFrontCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1024;
+            canvas.height = 644;
+
+            const bg = await loadImage('/templates/company_front_clean.png');
+            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+
+            const photoSrc = sampleCompany.photo_path || '/templates/avatar_placeholder.png';
+            const photo = await loadImage(photoSrc);
+
+            const boxX = 14, boxY = 266, boxW = 274, boxH = 354, radius = 24;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(boxX + radius, boxY);
+            ctx.lineTo(boxX + boxW - radius, boxY);
+            ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + radius);
+            ctx.lineTo(boxX + boxW, boxY + boxH - radius);
+            ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - radius, boxY + boxH);
+            ctx.lineTo(boxX + radius, boxY + boxH);
+            ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - radius);
+            ctx.lineTo(boxX, boxY + radius);
+            ctx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
+            ctx.closePath();
+            ctx.clip();
+
+            if (photo) {
+                ctx.drawImage(photo, boxX, boxY, boxW, boxH);
+            } else {
+                ctx.fillStyle = '#E5E7EB';
+                ctx.fillRect(boxX, boxY, boxW, boxH);
+            }
+            ctx.restore();
+
+            const s = companySettings.front;
+            ctx.save();
+            ctx.direction = 'rtl';
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#000000';
+
+            const photoLeftMargin = 295;
+            // 1. الشركة
+            ctx.font = `bold ${s.comp_size || 26}px "PT Bold Heading", sans-serif`;
+            drawAutoFitText(ctx, sampleCompany.company_name || sampleCompany.commercial_name || sampleCompany.name || '', s.comp_x || 900, s.comp_y || 285, photoLeftMargin, true);
+
+            // 2. المدير المفوض
+            ctx.font = `bold ${s.ceo_size || 24}px "PT Bold Heading", sans-serif`;
+            drawAutoFitText(ctx, sampleCompany.ceo_name || sampleCompany.name || '', s.ceo_x || 815, s.ceo_y || 338, photoLeftMargin, true);
+
+            // 3. الصنف والنشاط
+            ctx.font = `bold ${s.class_act_size || 24}px "PT Bold Heading", sans-serif`;
+            const classAct = formatClassName(sampleCompany.card_class, 'ar') + ' / ' + (sampleCompany.activity || '-');
+            drawAutoFitText(ctx, classAct, s.class_act_x || 775, s.class_act_y || 385, photoLeftMargin, true);
+
+            // 4. رقم اجازة التأسيس
+            ctx.font = `bold ${s.cert_size || 24}px "PT Bold Heading", sans-serif`;
+            let cert = sampleCompany.incorporation_certificate_no ? entoar(sampleCompany.incorporation_certificate_no) : '-';
+            if (sampleCompany.incorporation_certificate_symbol) cert += ' (' + sampleCompany.incorporation_certificate_symbol + ')';
+            drawAutoFitText(ctx, cert, s.cert_x || 725, s.cert_y || 435, photoLeftMargin, true);
+
+            // 5. الاسم التجاري وتاريخه
+            ctx.font = `bold ${s.comm_date_size || 24}px "PT Bold Heading", sans-serif`;
+            let commDate = '';
+            if (sampleCompany.commercial_name_no) commDate += 'رقم ' + entoar(sampleCompany.commercial_name_no);
+            if (sampleCompany.affiliation_date) commDate += (commDate ? ' بتاريخ ' : '') + entoar(sampleCompany.affiliation_date);
+            if (!commDate) commDate = sampleCompany.commercial_name || '-';
+            drawAutoFitText(ctx, commDate, s.comm_date_x || 695, s.comm_date_y || 485, photoLeftMargin, true);
+
+            // 6. رقم الهوية والشريط الأسود (white text)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${s.card_no_size || 30}px "PT Bold Heading", sans-serif`;
+            let cardText = entoar(sampleCompany.card_no);
+            if (sampleCompany.renewal_no) cardText += ' / ' + entoar(sampleCompany.renewal_no);
+            ctx.fillText(cardText, s.card_no_x || 845, s.card_no_y || 560);
+
+            // 7. التواريخ
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
+            ctx.fillText(entoar(sampleCompany.affiliation_date || ''), s.aff_date_x || 885, s.aff_date_y || 626);
+            ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
+            ctx.fillText(entoar(sampleCompany.expire_date || ''), s.exp_date_x || 465, s.exp_date_y || 626);
+
+            ctx.restore();
+        }
+
+        async function renderPreviewCompanyBack() {
+            await ensureFonts();
+            const canvas = document.getElementById('previewBackCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1024;
+            canvas.height = 644;
+
+            const bg = await loadImage('/templates/company_back_clean.png');
+            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+
+            const s = companySettings.back;
+
+            if (!sampleCompanyQrUrl) {
+                try {
+                    const r = await fetch('/api/traders/' + (sampleCompany.id || 1) + '/qr');
+                    const j = await r.json();
+                    if (j.success) sampleCompanyQrUrl = j.qr_url;
+                } catch (e) {}
+            }
+
+            if (sampleCompanyQrUrl) {
+                const qrImg = await loadImage(sampleCompanyQrUrl);
+                if (qrImg) ctx.drawImage(qrImg, s.qr_x || 754, s.qr_y || 212, s.qr_size || 234, s.qr_size || 234);
+            }
+
+            ctx.save();
+            ctx.direction = 'ltr';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#000000';
+
+            const qrLeft = (s.qr_x || 754) - 6;
+            // Company Back Design
+            // 1. Company
+            ctx.font = `bold ${s.comp_en_size || 36}px "Myriad Pro", Arial, sans-serif`;
+            const compEn = (sampleCompany.english_company_name || sampleCompany.company_name || '').toUpperCase();
+            drawAutoFitText(ctx, compEn, s.comp_en_x || 195, s.comp_en_y || 322, qrLeft);
+
+            // 2. CEO
+            ctx.font = `bold ${s.ceo_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+            const ceoEn = (sampleCompany.english_ceo_name || sampleCompany.english_name || sampleCompany.ceo_name || sampleCompany.name || '').toUpperCase();
+            drawAutoFitText(ctx, ceoEn, s.ceo_en_x || 105, s.ceo_en_y || 364, qrLeft);
+
+            // 3. Class / Activity (Large Font + Full Sentence + Unlimited Condense before QR)
+            ctx.font = `bold ${s.class_act_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+            const enAct = sampleCompany.english_activity || sampleCompany.activity || '-';
+            const classActEn = formatClassName(sampleCompany.card_class, 'en') + ' / ' + enAct;
+            drawAutoFitText(ctx, classActEn, s.class_act_en_x || 272, s.class_act_en_y || 410, qrLeft);
+
+            // 4. License No
+            ctx.font = `bold ${s.license_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+            let licText = sampleCompany.incorporation_certificate_no || '-';
+            if (sampleCompany.incorporation_certificate_symbol) licText += ' (' + sampleCompany.incorporation_certificate_symbol + ')';
+            drawAutoFitText(ctx, licText, s.license_en_x || 215, s.license_en_y || 461, qrLeft);
+
+            // 5. Commercial Name No
+            ctx.font = `bold ${s.comm_no_size || 33}px "Myriad Pro", Arial, sans-serif`;
+            drawAutoFitText(ctx, sampleCompany.commercial_name_no || '-', s.comm_no_x || 398, s.comm_no_y || 502, qrLeft);
+
+            // 6. ID No (Black Ribbon - white text)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${s.card_no_size || 30}px "Myriad Pro", Arial, sans-serif`;
+            let enCard = sampleCompany.card_no || '';
+            if (sampleCompany.renewal_no) enCard += ' / ' + sampleCompany.renewal_no;
+            ctx.fillText(enCard, s.card_no_x || 125, s.card_no_y || 560);
+
+            // 7. Dates
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${s.aff_date_size || 28}px "Myriad Pro", Arial, sans-serif`;
+            ctx.fillText(sampleCompany.affiliation_date || '-', s.aff_date_x || 170, s.aff_date_y || 630);
+            ctx.font = `bold ${s.exp_date_size || 29}px "Myriad Pro", Arial, sans-serif`;
+            ctx.fillText(sampleCompany.expire_date || '-', s.exp_date_x || 649, s.exp_date_y || 629);
+
+            ctx.restore();
+        }
+
+        // ================= RENDER BROKER FRONT & BACK =================
+        async function renderPreviewBrokerFront() {
+            await ensureFonts();
+            const canvas = document.getElementById('previewFrontCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1024;
+            canvas.height = 644;
+
+            const bg = await loadImage('/templates/broker_front_clean.png');
+            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+
+            const photoSrc = sampleBroker.photo_path || '/templates/avatar_placeholder.png';
+            const photo = await loadImage(photoSrc);
+
+            const boxX = 14, boxY = 266, boxW = 274, boxH = 354, radius = 24;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(boxX + radius, boxY);
+            ctx.lineTo(boxX + boxW - radius, boxY);
+            ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + radius);
+            ctx.lineTo(boxX + boxW, boxY + boxH - radius);
+            ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - radius, boxY + boxH);
+            ctx.lineTo(boxX + radius, boxY + boxH);
+            ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - radius);
+            ctx.lineTo(boxX, boxY + radius);
+            ctx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
+            ctx.closePath();
+            ctx.clip();
+
+            if (photo) {
+                ctx.drawImage(photo, boxX, boxY, boxW, boxH);
+            } else {
+                ctx.fillStyle = '#E5E7EB';
+                ctx.fillRect(boxX, boxY, boxW, boxH);
+            }
+            ctx.restore();
+
+            const s = brokerSettings.front;
+            ctx.save();
+            ctx.direction = 'rtl';
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#000000';
+
+            const photoLeftBroker = 295;
+            // 1. الدلال
+            ctx.font = `bold ${s.name_size || 28}px "PT Bold Heading", sans-serif`;
+            drawAutoFitText(ctx, sampleBroker.name || '', s.name_x || 910, s.name_y || 308, photoLeftBroker, true);
+
+            // 2. الصنف
+            ctx.font = `bold ${s.class_size || 26}px "PT Bold Heading", sans-serif`;
+            drawAutoFitText(ctx, formatClassName(sampleBroker.card_class, 'ar'), s.class_x || 898, s.class_y || 368, photoLeftBroker, true);
+
+            // 3. الاسم التجاري (المكتب)
+            ctx.font = `bold ${s.comm_size || 24}px "PT Bold Heading", sans-serif`;
+            let commText = sampleBroker.commercial_name || '';
+            if (sampleBroker.commercial_name_no) commText += ' / ' + entoar(sampleBroker.commercial_name_no);
+            drawAutoFitText(ctx, commText, s.comm_x || 800, s.comm_y || 432, photoLeftBroker, true);
+
+            // 4. النشاط
+            ctx.font = `bold ${s.activity_size || 24}px "PT Bold Heading", sans-serif`;
+            drawAutoFitText(ctx, sampleBroker.activity || 'دلالية العقارات', s.activity_x || 898, s.activity_y || 496, photoLeftBroker, true);
+
+            // 5. رقم الهوية in peach ribbon
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${s.card_no_size || 30}px "PT Bold Heading", sans-serif`;
+            let cardText = entoar(sampleBroker.card_no);
+            if (sampleBroker.renewal_no) cardText += ' / ' + entoar(sampleBroker.renewal_no);
+            ctx.fillText(cardText, s.card_no_x || 860, s.card_no_y || 560);
+
+            // 6. الانتساب والنفاذ
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
+            ctx.fillText(entoar(sampleBroker.affiliation_date || ''), s.aff_date_x || 898, s.aff_date_y || 630);
+            ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
+            ctx.fillText(entoar(sampleBroker.expire_date || ''), s.exp_date_x || 470, s.exp_date_y || 630);
+
+            ctx.restore();
+        }
+
+        async function renderPreviewBrokerBack() {
+            await ensureFonts();
+            const canvas = document.getElementById('previewBackCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1024;
+            canvas.height = 644;
+
+            const bg = await loadImage('/templates/broker_back_clean.png');
+            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+
+            const s = brokerSettings.back;
+
+            if (!sampleBrokerQrUrl) {
+                try {
+                    const r = await fetch('/api/traders/' + (sampleBroker.id || 1) + '/qr');
+                    const j = await r.json();
+                    if (j.success) sampleBrokerQrUrl = j.qr_url;
+                } catch (e) {}
+            }
+
+            if (sampleBrokerQrUrl) {
+                const qrImg = await loadImage(sampleBrokerQrUrl);
+                if (qrImg) {
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(s.qr_x || 758, s.qr_y || 207, s.qr_size || 238, s.qr_size || 238);
+                    ctx.drawImage(qrImg, s.qr_x || 758, s.qr_y || 207, s.qr_size || 238, s.qr_size || 238);
+                }
+            }
+
+            ctx.save();
+            ctx.direction = 'ltr';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#000000';
+
+            const qrLeftBroker = (s.qr_x || 758) - 6;
+            // 1. Name:
+            ctx.font = `bold ${s.name_size || 28}px "Myriad Pro", Arial, sans-serif`;
+            const enName = (sampleBroker.english_name || sampleBroker.name || '').toUpperCase();
+            drawAutoFitText(ctx, enName, s.name_x || 130, s.name_y || 308, qrLeftBroker);
+
+            // 2. Class:
+            ctx.font = `bold ${s.class_size || 28}px "Myriad Pro", Arial, sans-serif`;
+            drawAutoFitText(ctx, formatClassName(sampleBroker.card_class, 'en'), s.class_x || 120, s.class_y || 368, qrLeftBroker);
+
+            // 3. Commercial Name No:
+            ctx.font = `bold ${s.comm_no_size || 28}px "Myriad Pro", Arial, sans-serif`;
+            drawAutoFitText(ctx, sampleBroker.commercial_name_no || '-', s.comm_no_x || 395, s.comm_no_y || 425, qrLeftBroker);
+
+            // 4. Activity:
+            ctx.font = `bold ${s.activity_size || 28}px "Myriad Pro", Arial, sans-serif`;
+            const enAct = sampleBroker.english_activity || 'Real Estates BROKER';
+            drawAutoFitText(ctx, enAct, s.activity_x || 165, s.activity_y || 478, qrLeftBroker);
+
+            // 5. ID No in peach ribbon
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${s.card_no_size || 30}px "Myriad Pro", Arial, sans-serif`;
+            let enCard = sampleBroker.card_no || '';
+            if (sampleBroker.renewal_no) enCard += ' / ' + sampleBroker.renewal_no;
+            ctx.fillText(enCard, s.card_no_x || 125, s.card_no_y || 560);
+
+            // 6. Dates:
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${s.aff_date_size || 24}px "Myriad Pro", Arial, sans-serif`;
+            ctx.fillText(sampleBroker.affiliation_date || '-', s.aff_date_x || 170, s.aff_date_y || 625);
+            ctx.font = `bold ${s.exp_date_size || 24}px "Myriad Pro", Arial, sans-serif`;
+            ctx.fillText(sampleBroker.expire_date || '-', s.exp_date_x || 735, s.exp_date_y || 625);
+
+            ctx.restore();
+        }
+
+        // ================= TEMPLATE & SIDE CONTROLS =================
+        function renderCurrentPreview() {
+            if (currentActiveSide === 'front') {
+                if (activeTemplateType === 'trader') renderPreviewTraderFront();
+                else if (activeTemplateType === 'company') renderPreviewCompanyFront();
+                else renderPreviewBrokerFront();
+            } else {
+                if (activeTemplateType === 'trader') renderPreviewTraderBack();
+                else if (activeTemplateType === 'company') renderPreviewCompanyBack();
+                else renderPreviewBrokerBack();
+            }
+        }
+
+        function switchCardTemplate(type) {
+            activeTemplateType = type;
+            const btnT = document.getElementById('tplBtnTrader');
+            const btnC = document.getElementById('tplBtnCompany');
+            const btnB = document.getElementById('tplBtnBroker');
+            const traderContainer = document.getElementById('traderControlsContainer');
+            const companyContainer = document.getElementById('companyControlsContainer');
+            const brokerContainer = document.getElementById('brokerControlsContainer');
+            const btnSave = document.getElementById('btnSaveAll');
+            const btnReset = document.getElementById('btnResetDefault');
+
+            btnT.className = 'tpl-switch-btn ' + (type === 'trader' ? 'active-template-btn' : 'inactive-template-btn');
+            btnC.className = 'tpl-switch-btn ' + (type === 'company' ? 'active-template-company' : 'inactive-template-btn');
+            btnB.className = 'tpl-switch-btn ' + (type === 'broker' ? 'active-template-broker' : 'inactive-template-btn');
+
+            if (type === 'trader') {
+                btnSave.className = 'btn-save-studio';
+            } else if (type === 'company') {
+                btnSave.className = 'btn-save-studio save-company';
+            } else {
+                btnSave.className = 'btn-save-studio save-broker';
+            }
+
+            traderContainer.style.display = type === 'trader' ? 'block' : 'none';
+            companyContainer.style.display = type === 'company' ? 'block' : 'none';
+            brokerContainer.style.display = type === 'broker' ? 'block' : 'none';
+
+            const iconEl = document.getElementById('previewIcon');
+            const titleEl = document.getElementById('previewCardTitle');
+            if (type === 'trader') {
+                if (iconEl) iconEl.innerText = '👤';
+                if (titleEl) titleEl.innerText = 'معاينة مباشرة: بطاقة هوية التجار';
+            } else if (type === 'company') {
+                if (iconEl) iconEl.innerText = '🏢';
+                if (titleEl) titleEl.innerText = 'معاينة مباشرة: بطاقة هوية الشركات';
+            } else {
+                if (iconEl) iconEl.innerText = '🤝';
+                if (titleEl) titleEl.innerText = 'معاينة مباشرة: بطاقة هوية الدلالين';
+            }
+
+            if (type === 'trader') {
+                btnSave.innerText = '💾 حفظ التعديلات لجميع هويات التجار';
+                btnReset.innerText = '↺ استعادة افتراضي التجار';
+            } else if (type === 'company') {
+                btnSave.innerText = '💾 حفظ التعديلات لجميع هويات الشركات';
+                btnReset.innerText = '↺ استعادة افتراضي الشركات';
+            } else {
+                btnSave.innerText = '💾 حفظ التعديلات لجميع هويات الدلالين';
+                btnReset.innerText = '↺ استعادة افتراضي الدلالين';
+            }
+
+            switchPreviewSide(currentActiveSide);
+        }
+
+        function switchPreviewSide(side) {
+            currentActiveSide = side;
+            const fCanvas = document.getElementById('previewFrontCanvas');
+            const bCanvas = document.getElementById('previewBackCanvas');
+            const btnF = document.getElementById('tabFrontBtn');
+            const btnB = document.getElementById('tabBackBtn');
+
+            // Panels
+            const tFront = document.getElementById('frontControlsPanel');
+            const tBack = document.getElementById('backControlsPanel');
+            const cFront = document.getElementById('compFrontControlsPanel');
+            const cBack = document.getElementById('compBackControlsPanel');
+            const bFront = document.getElementById('brokerFrontControlsPanel');
+            const bBack = document.getElementById('brokerBackControlsPanel');
+
+            if (side === 'front') {
+                if (fCanvas) fCanvas.style.display = 'block';
+                if (bCanvas) bCanvas.style.display = 'none';
+                if (btnF) btnF.className = 'side-tab-btn active-tab-btn';
+                if (btnB) btnB.className = 'side-tab-btn inactive-tab-btn';
+
+                if (tFront) tFront.style.display = 'block';
+                if (tBack) tBack.style.display = 'none';
+                if (cFront) cFront.style.display = 'block';
+                if (cBack) cBack.style.display = 'none';
+                if (bFront) bFront.style.display = 'block';
+                if (bBack) bBack.style.display = 'none';
+            } else {
+                if (fCanvas) fCanvas.style.display = 'none';
+                if (bCanvas) bCanvas.style.display = 'block';
+                if (btnB) btnB.className = 'side-tab-btn active-tab-btn';
+                if (btnF) btnF.className = 'side-tab-btn inactive-tab-btn';
+
+                if (tFront) tFront.style.display = 'none';
+                if (tBack) tBack.style.display = 'block';
+                if (cFront) cFront.style.display = 'none';
+                if (cBack) cBack.style.display = 'block';
+                if (bFront) bFront.style.display = 'none';
+                if (bBack) bBack.style.display = 'block';
+            }
+
+            populateQuickSelect();
+            renderCurrentPreview();
+        }
+
+        function getActiveSettings() {
+            if (activeTemplateType === 'trader') return traderSettings;
+            if (activeTemplateType === 'company') return companySettings;
+            return brokerSettings;
+        }
+
+        function populateQuickSelect() {
+            const sel = document.getElementById('quickFieldSelect');
+            sel.innerHTML = '';
+            let fields;
+            if (activeTemplateType === 'trader') {
+                fields = currentActiveSide === 'front' ? TRADER_FRONT_FIELDS : TRADER_BACK_FIELDS;
+            } else if (activeTemplateType === 'company') {
+                fields = currentActiveSide === 'front' ? COMPANY_FRONT_FIELDS : COMPANY_BACK_FIELDS;
+            } else {
+                fields = currentActiveSide === 'front' ? BROKER_FRONT_FIELDS : BROKER_BACK_FIELDS;
+            }
+            fields.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.key;
+                opt.innerText = f.label;
+                sel.appendChild(opt);
+            });
+            currentQuickKey = fields[0].key;
+            updateQuickToolbarDisplay();
+        }
+
+        function onQuickFieldChange(key) {
+            currentQuickKey = key;
+            updateQuickToolbarDisplay();
+            highlightControlGroup(key);
+        }
+
+        function selectQuickField(key) {
+            currentQuickKey = key;
+            document.getElementById('quickFieldSelect').value = key;
+            updateQuickToolbarDisplay();
+            highlightControlGroup(key);
+        }
+
+        function highlightControlGroup(key) {
+            document.querySelectorAll('.control-group').forEach(el => el.classList.remove('active-group'));
+            const side = currentActiveSide;
+            const prefix = key.replace('_size', '');
+            const idPrefix = activeTemplateType === 'trader' ? '' : (activeTemplateType === 'company' ? 'comp_' : 'broker_');
+            const grp = document.getElementById(`grp_${idPrefix}${side}_${prefix}`);
+            if (grp) {
+                grp.classList.add('active-group');
+                grp.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function updateQuickToolbarDisplay() {
+            const side = currentActiveSide;
+            const settings = getActiveSettings();
+            const val = settings[side][currentQuickKey] || 24;
+            document.getElementById('quickSizeDisplay').innerText = val + 'px';
+            let fields;
+            if (activeTemplateType === 'trader') {
+                fields = currentActiveSide === 'front' ? TRADER_FRONT_FIELDS : TRADER_BACK_FIELDS;
+            } else if (activeTemplateType === 'company') {
+                fields = currentActiveSide === 'front' ? COMPANY_FRONT_FIELDS : COMPANY_BACK_FIELDS;
+            } else {
+                fields = currentActiveSide === 'front' ? BROKER_FRONT_FIELDS : BROKER_BACK_FIELDS;
+            }
+            const match = fields.find(f => f.key === currentQuickKey);
+            if (match) {
+                document.getElementById('quickSelectionBadge').innerText = match.label;
+            }
+        }
+
+        function nudgeSize(delta) {
+            const side = currentActiveSide;
+            const settings = getActiveSettings();
+            const currentVal = settings[side][currentQuickKey] || 24;
+            const newVal = Math.max(12, Math.min(60, currentVal + delta));
+            updateSetting(side, currentQuickKey, newVal);
+            updateQuickToolbarDisplay();
+        }
+
+        function nudgePos(axis, delta) {
+            const side = currentActiveSide;
+            const settings = getActiveSettings();
+            const posKey = currentQuickKey.replace('_size', `_${axis}`);
+            const currentPos = settings[side][posKey] || 0;
+            const newPos = currentPos + delta;
+            updateSetting(side, posKey, newPos);
+        }
+
+        function nudgeBothDates(side, delta) {
+            const settings = getActiveSettings();
+            const curAff = settings[side].aff_date_y || (side === 'front' ? 626 : 620);
+            const curExp = settings[side].exp_date_y || (side === 'front' ? 626 : 620);
+            updateSetting(side, 'aff_date_y', curAff + delta);
+            updateSetting(side, 'exp_date_y', curExp + delta);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+            if (e.key === 'ArrowUp') { e.preventDefault(); nudgePos('y', -2); }
+            else if (e.key === 'ArrowDown') { e.preventDefault(); nudgePos('y', 2); }
+            else if (e.key === 'ArrowLeft') { e.preventDefault(); nudgePos('x', -2); }
+            else if (e.key === 'ArrowRight') { e.preventDefault(); nudgePos('x', 2); }
+        });
+
+        function updateSetting(side, key, value) {
+            const num = parseInt(value) || 0;
+            const settings = getActiveSettings();
+            settings[side][key] = num;
+
+            // Sync input in UI if exists
+            const idPrefix = activeTemplateType === 'trader' ? '' : (activeTemplateType === 'company' ? 'comp_' : 'broker_');
+            const input = document.getElementById(`${idPrefix}${side}_${key}`);
+            if (input && input.value != num) input.value = num;
+
+            // Sync label if exists
+            const labelEl = document.getElementById(`val_${idPrefix}${side}_${key}`);
+            if (labelEl) labelEl.innerText = num + (key.includes('size') ? 'px' : '');
+
+            // Sync quick display if matches active quick key
+            if (key === currentQuickKey) {
+                document.getElementById('quickSizeDisplay').innerText = num + 'px';
+            }
+
+            // Rerender active canvas
+            renderCurrentPreview();
+        }
+
+        async function saveSettings() {
+            let endpoint, currentSettings, label;
+            if (activeTemplateType === 'trader') {
+                endpoint = '/api/settings/card-typography';
+                currentSettings = traderSettings;
+                label = 'هويات التجار';
+            } else if (activeTemplateType === 'company') {
+                endpoint = '/api/settings/company-card-typography';
+                currentSettings = companySettings;
+                label = 'هويات الشركات';
+            } else {
+                endpoint = '/api/settings/broker-card-typography';
+                currentSettings = brokerSettings;
+                label = 'هويات الدلالين';
+            }
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings: currentSettings })
+                });
+                const json = await res.json();
+                if (json.success) {
+                    const alertEl = document.getElementById('saveAlert');
+                    const alertText = document.getElementById('saveAlertText');
+                    alertText.innerText = `تم حفظ إعدادات وتصميم (${label}) بنجاح!`;
+                    alertEl.style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
+                } else {
+                    alert('Error saving settings: ' + json.error);
+                }
+            } catch (e) {
+                alert('Connection error: ' + e.message);
+            }
+        }
+
+        async function resetToDefaults() {
+            let endpoint, label;
+            if (activeTemplateType === 'trader') {
+                endpoint = '/api/settings/card-typography/reset';
+                label = 'هوية التجار';
+            } else if (activeTemplateType === 'company') {
+                endpoint = '/api/settings/company-card-typography/reset';
+                label = 'هوية الشركات';
+            } else {
+                endpoint = '/api/settings/broker-card-typography/reset';
+                label = 'هوية الدلالين';
+            }
+            if (!confirm(`هل تريد بالتأكيد استعادة الإعدادات الافتراضية لـ (${label})؟`)) return;
+            try {
+                const res = await fetch(endpoint, { method: 'POST' });
+                const json = await res.json();
+                if (json.success) {
+                    if (activeTemplateType === 'trader') {
+                        traderSettings = json.settings;
+                    } else if (activeTemplateType === 'company') {
+                        companySettings = json.settings;
+                    } else {
+                        brokerSettings = json.settings;
+                    }
+                    syncAllInputsFromSettings();
+                    renderCurrentPreview();
+                    updateQuickToolbarDisplay();
+                    alert(`تمت استعادة الإعدادات الافتراضية لـ (${label}) بنجاح!`);
+                }
+            } catch (e) {
+                alert('Error resetting: ' + e.message);
+            }
+        }
+
+        function syncAllInputsFromSettings() {
+            // Sync Trader inputs
+            for (const side of ['front', 'back']) {
+                for (const key in traderSettings[side]) {
+                    const val = traderSettings[side][key];
+                    const input = document.getElementById(`${side}_${key}`);
+                    if (input) input.value = val;
+                    const labelEl = document.getElementById(`val_${side}_${key}`);
+                    if (labelEl) labelEl.innerText = val + (key.includes('size') ? 'px' : '');
+                }
+            }
+            // Sync Company inputs
+            for (const side of ['front', 'back']) {
+                for (const key in companySettings[side]) {
+                    const val = companySettings[side][key];
+                    const input = document.getElementById(`comp_${side}_${key}`);
+                    if (input) input.value = val;
+                    const labelEl = document.getElementById(`val_comp_${side}_${key}`);
+                    if (labelEl) labelEl.innerText = val + (key.includes('size') ? 'px' : '');
+                }
+            }
+            // Sync Broker inputs
+            for (const side of ['front', 'back']) {
+                for (const key in brokerSettings[side]) {
+                    const val = brokerSettings[side][key];
+                    const input = document.getElementById(`broker_${side}_${key}`);
+                    if (input) input.value = val;
+                    const labelEl = document.getElementById(`val_broker_${side}_${key}`);
+                    if (labelEl) labelEl.innerText = val + (key.includes('size') ? 'px' : '');
+                }
+            }
+        }
+
+        // Initial render on load
+        window.addEventListener('load', () => {
+            populateQuickSelect();
+            renderCurrentPreview();
+        });
+    </script>
+</body>
+</html>

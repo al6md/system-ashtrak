@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Brokers - Cardval</title>
+
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+    <!-- Scripts and Styles (Original Assets) -->
+    <link rel="preload" as="style" href="/build/assets/app-514d3f3f.css" />
+    <link rel="modulepreload" href="/build/assets/app-4a08c204.js" />
+    <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
+    <script type="module" src="/build/assets/app-4a08c204.js"></script>
+</head>
+<body class="font-sans antialiased">
+    <div class="min-h-screen bg-gray-100">
+        <!-- Navigation Bar -->
+        <%- include('../partials/navigation', { currentPath: '/brokers' }) %>
+
+        <!-- Page Heading -->
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Brokers
+                </h2>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main>
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 p-4">
+                <div class="text-center">
+                    <!-- Quick Search Form -->
+                    <form id="search" method="get" action="/brokers">
+                        <input type="search" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm" placeholder="Find by Name, Commercial Name or Activity" name="search" value="<%= query.search || '' %>">
+                    </form>
+
+                    <!-- Advanced Search Accordion -->
+                    <details class="mt-4 bg-white shadow-sm rounded-lg p-4 text-left" <%= isAdvancedSearch ? 'open' : '' %>>
+                        <summary class="cursor-pointer font-semibold text-gray-800">Advanced Search</summary>
+                        <form method="get" action="/brokers" class="mt-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="name">Broker name</label>
+                                    <input id="name" name="name" value="<%= query.name || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="english_name">Broker name in English</label>
+                                    <input id="english_name" name="english_name" value="<%= query.english_name || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="commercial_name">Commercial Name</label>
+                                    <input id="commercial_name" name="commercial_name" value="<%= query.commercial_name || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="card_no">Card No</label>
+                                    <input id="card_no" name="card_no" value="<%= query.card_no || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="stamp_no">Stamp No</label>
+                                    <input id="stamp_no" name="stamp_no" value="<%= query.stamp_no || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="renewal_no">Renewal No</label>
+                                    <input id="renewal_no" name="renewal_no" value="<%= query.renewal_no || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="activity">Activity</label>
+                                    <input id="activity" name="activity" value="<%= query.activity || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="phone_number">Phone Number</label>
+                                    <input id="phone_number" name="phone_number" value="<%= query.phone_number || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="card_class">Card class</label>
+                                    <select id="card_class" name="card_class" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                        <option value="">Any</option>
+                                        <option value="0" <%= query.card_class === '0' ? 'selected' : '' %>>Excellent</option>
+                                        <option value="1" <%= query.card_class === '1' ? 'selected' : '' %>>First</option>
+                                        <option value="2" <%= query.card_class === '2' ? 'selected' : '' %>>Second</option>
+                                        <option value="3" <%= query.card_class === '3' ? 'selected' : '' %>>Third</option>
+                                        <option value="4" <%= query.card_class === '4' ? 'selected' : '' %>>Fourth</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="affiliation_date_from">Affiliation from</label>
+                                    <input id="affiliation_date_from" type="date" name="affiliation_date_from" value="<%= query.affiliation_date_from || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="affiliation_date_to">Affiliation to</label>
+                                    <input id="affiliation_date_to" type="date" name="affiliation_date_to" value="<%= query.affiliation_date_to || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="status">Status</label>
+                                    <select id="status" name="status" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                        <option value="active" <%= query.status === 'active' || !query.status ? 'selected' : '' %>>Active Records</option>
+                                        <option value="deleted" <%= query.status === 'deleted' ? 'selected' : '' %>>Deleted Records</option>
+                                        <option value="all" <%= query.status === 'all' ? 'selected' : '' %>>All Records</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex flex-wrap gap-2" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">Advanced Search</button>
+                                <button type="submit" formaction="/brokers/export/csv" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">Download CSV</button>
+                                <a href="/brokers" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">Reset</a>
+                            </div>
+                        </form>
+                    </details>
+
+                    <!-- Top Action Buttons -->
+                    <a href="/traders/create?type=broker" class="text-center inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem;">Add Broker</a>
+                    <a href="/brokers?status=deleted" class="text-center inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem;">List Deleted</a>
+                    <a href="/brokers/export/csv" class="text-center inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem;">Download CSV</a>
+                </div>
+
+                <!-- Brokers Feed List -->
+                <div class="mt-6 bg-white shadow-sm rounded-lg divide-y">
+                    <% if (brokers && brokers.length > 0) { %>
+                        <% brokers.forEach(function(b) { %>
+                            <div class="p-6 flex space-x-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 -scale-x-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                </svg>
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <span class="text-gray-800"><%= b.created_by || 'Site Admin' %></span>
+                                            <small class="ml-2 text-sm text-gray-600"><%= b.created_at || 'Recently' %></small>
+                                            <small class="text-sm text-gray-600"> &middot; edited</small>
+                                        </div>
+
+                                        <div class="flex items-center space-x-1">
+                                            <!-- Quick Print Button -->
+                                            <button type="button" 
+                                                    onclick="openPrintModal('<%= b.id %>', '<%= b.uuid %>')" 
+                                                    title="طباعة الهوية (Print ID Card)" 
+                                                    class="p-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded transition duration-150 ease-in-out">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                                </svg>
+                                            </button>
+
+                                            <!-- Options Dropdown Menu -->
+                                            <div class="relative" x-data="{ open: false }" @click.outside="open = false" @close.stop="open = false">
+                                                <div @click="open = ! open">
+                                                    <button class="p-1 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+
+                                                <div x-show="open"
+                                                     x-transition:enter="transition ease-out duration-200"
+                                                     x-transition:enter-start="opacity-0 scale-95"
+                                                     x-transition:enter-end="opacity-100 scale-100"
+                                                     x-transition:leave="transition ease-in duration-75"
+                                                     x-transition:leave-start="opacity-100 scale-100"
+                                                     x-transition:leave-end="opacity-0 scale-95"
+                                                     class="absolute z-50 mt-2 w-48 rounded-md shadow-lg origin-top-right right-0"
+                                                     style="display: none;"
+                                                     @click="open = false">
+                                                    <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
+                                                        <!-- Print ID Card Action -->
+                                                        <button type="button" onclick="openPrintModal('<%= b.id %>', '<%= b.uuid %>')" class="block w-full px-4 py-2 text-left text-sm leading-5 text-indigo-700 font-semibold hover:bg-gray-100 focus:outline-none transition duration-150 ease-in-out">
+                                                            🖨️ Print ID Card
+                                                        </button>
+                                                        <a class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none transition duration-150 ease-in-out" href="/traders/<%= b.uuid %>/edit">Edit</a>
+                                                        <form method="POST" action="/traders/<%= b.uuid %>" onsubmit="return confirm('Are you sure you want to delete this broker?')">
+                                                            <input type="hidden" name="_method" value="delete">
+                                                            <button type="submit" class="block w-full px-4 py-2 text-left text-sm leading-5 text-red-600 hover:bg-gray-100 focus:outline-none transition duration-150 ease-in-out">Delete</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Broker Link -->
+                                    <p class="mt-4 text-lg text-gray-900">
+                                        <a href="/traders/<%= b.uuid %>/edit" class="hover:underline">
+                                            <%= b.commercial_name || b.name %> - <%= b.activity || 'دلالية العقارات' %> - <%= b.card_no %> - <%= b.name %>
+                                        </a>
+                                    </p>
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="p-8 text-center text-gray-500">
+                            No brokers found matching your search.
+                        </div>
+                    <% } %>
+                </div>
+
+                <!-- Tailwind Pagination -->
+                <% if (totalPages > 1) { %>
+                    <div class="mt-6">
+                        <nav role="navigation" aria-label="Pagination Navigation" class="flex items-center justify-between">
+                            <div class="flex justify-between flex-1 sm:hidden">
+                                <% if (currentPage > 1) { %>
+                                    <a href="?page=<%= currentPage - 1 %><%= queryString %>" class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 leading-5 rounded-md hover:text-gray-500 focus:outline-none focus:ring ring-gray-300 focus:border-blue-300 active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150">« Previous</a>
+                                <% } %>
+                                <% if (currentPage < totalPages) { %>
+                                    <a href="?page=<%= currentPage + 1 %><%= queryString %>" class="ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 leading-5 rounded-md hover:text-gray-500 focus:outline-none focus:ring ring-gray-300 focus:border-blue-300 active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150">Next »</a>
+                                <% } %>
+                            </div>
+
+                            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-700 leading-5">
+                                        Showing
+                                        <span class="font-medium"><%= (currentPage - 1) * limit + 1 %></span>
+                                        to
+                                        <span class="font-medium"><%= Math.min(currentPage * limit, totalCount) %></span>
+                                        of
+                                        <span class="font-medium"><%= totalCount %></span>
+                                        results
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <span class="relative z-0 inline-flex shadow-sm rounded-md">
+                                        <% if (currentPage > 1) { %>
+                                            <a href="?page=<%= currentPage - 1 %><%= queryString %>" class="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md leading-5 hover:text-gray-400 focus:z-10 focus:outline-none focus:ring ring-gray-300 focus:border-blue-300 active:bg-gray-100 active:text-gray-500 transition ease-in-out duration-150">
+                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                                            </a>
+                                        <% } %>
+
+                                        <% 
+                                            let startP = Math.max(1, currentPage - 2);
+                                            let endP = Math.min(totalPages, currentPage + 2);
+                                            for (let p = startP; p <= endP; p++) { 
+                                        %>
+                                            <% if (p === currentPage) { %>
+                                                <span class="relative inline-flex items-center px-4 py-2 -ml-px text-sm font-medium text-white bg-indigo-600 border border-indigo-600 leading-5"><%= p %></span>
+                                            <% } else { %>
+                                                <a href="?page=<%= p %><%= queryString %>" class="relative inline-flex items-center px-4 py-2 -ml-px text-sm font-medium text-gray-700 bg-white border border-gray-300 leading-5 hover:text-gray-500 focus:z-10 focus:outline-none focus:ring ring-gray-300 focus:border-blue-300 active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150"><%= p %></a>
+                                            <% } %>
+                                        <% } %>
+
+                                        <% if (currentPage < totalPages) { %>
+                                            <a href="?page=<%= currentPage + 1 %><%= queryString %>" class="relative inline-flex items-center px-2 py-2 -ml-px text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md leading-5 hover:text-gray-400 focus:z-10 focus:outline-none focus:ring ring-gray-300 focus:border-blue-300 active:bg-gray-100 active:text-gray-500 transition ease-in-out duration-150">
+                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                                            </a>
+                                        <% } %>
+                                    </span>
+                                </div>
+                            </div>
+                        </nav>
+                    </div>
+                <% } %>
+            </div>
+        </main>
+    </div>
+
+    <!-- Print Modal -->
+    <%- include('../partials/card_modal') %>
+</body>
+</html>
