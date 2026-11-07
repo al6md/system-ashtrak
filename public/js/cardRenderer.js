@@ -11,17 +11,17 @@ export function entoar(str) {
 export function formatClassName(cardClass, lang = 'ar') {
   const c = String(cardClass || '').trim();
   if (lang === 'ar') {
-    if (c === '1') return 'الأول';
-    if (c === '2') return 'الثاني';
-    if (c === '3') return 'الثالث';
-    if (c === '4') return 'الرابع';
-    if (c.toLowerCase().includes('ممتاز') || c === '0') return 'الممتازة';
+    if (c === '1' || c === 'الأولى' || c === 'الاولى' || c === 'الاول') return 'الأول';
+    if (c === '2' || c === 'الثانية') return 'الثاني';
+    if (c === '3' || c === 'الثالثة') return 'الثالث';
+    if (c === '4' || c === 'الرابعة') return 'الرابع';
+    if (c.toLowerCase().includes('ممتاز') || c === '0') return 'الممتاز';
     return c;
   } else {
-    if (c === '1') return 'First';
-    if (c === '2') return 'Second';
-    if (c === '3') return 'Third';
-    if (c === '4') return 'Fourth';
+    if (c === '1' || c === 'الأولى' || c === 'الاولى' || c === 'الأول' || c === 'الاول') return 'First';
+    if (c === '2' || c === 'الثانية' || c === 'الثاني') return 'Second';
+    if (c === '3' || c === 'الثالثة' || c === 'الثالث') return 'Third';
+    if (c === '4' || c === 'الرابعة' || c === 'الرابع') return 'Fourth';
     if (c.toLowerCase().includes('ممتاز') || c === '0') return 'Excellent';
     return c;
   }
