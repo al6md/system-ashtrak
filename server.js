@@ -26,15 +26,27 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Uploads Directory (supports Vercel serverless /tmp and local)
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const uploadDir = isServerless ? path.join(os.tmpdir(), 'uploads') : path.join(__dirname, 'public', 'uploads');
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (_) {}
+
 // Automatic on-demand photo fetch & local disk cache for /uploads/:filename
 app.get('/uploads/:filename', async (req, res) => {
   try {
     const filename = path.basename(req.params.filename);
-    const uploadDir = path.join(__dirname, 'public', 'uploads');
-    const localPath = path.join(uploadDir, filename);
+    const primaryPath = path.join(uploadDir, filename);
+    const fallbackPath = path.join(__dirname, 'public', 'uploads', filename);
 
-    if (fs.existsSync(localPath)) {
-      return res.sendFile(localPath);
+    if (fs.existsSync(primaryPath)) {
+      return res.sendFile(primaryPath);
+    }
+    if (fs.existsSync(fallbackPath)) {
+      return res.sendFile(fallbackPath);
     }
 
     // Extract original remote hash filename from trader_<no>_<hash> / company_<no>_<hash> / broker_<no>_<hash>
@@ -53,10 +65,12 @@ app.get('/uploads/:filename', async (req, res) => {
         if (resp.ok) {
           const buf = Buffer.from(await resp.arrayBuffer());
           if (buf.length > 100) {
-            if (!fs.existsSync(uploadDir)) {
-              fs.mkdirSync(uploadDir, { recursive: true });
-            }
-            fs.writeFileSync(localPath, buf);
+            try {
+              if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+              }
+              fs.writeFileSync(primaryPath, buf);
+            } catch (_) {}
             const ext = path.extname(filename).toLowerCase();
             res.setHeader('Content-Type', ext === '.png' ? 'image/png' : 'image/jpeg');
             return res.send(buf);
@@ -87,10 +101,11 @@ app.use((req, res, next) => {
 // File uploads configuration for person_pic
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, 'public', 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    try {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+    } catch (_) {}
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
