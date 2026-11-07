@@ -35,7 +35,24 @@ try {
   }
 } catch (_) {}
 
-// Automatic on-demand photo fetch & local disk cache for /uploads/:filename
+// Helper: Persist uploaded photo into Turso Cloud Database so it never disappears on Vercel serverless
+async function saveUploadedPhotoToCloud(file) {
+  if (!file || !file.path) return;
+  try {
+    const buf = fs.readFileSync(file.path);
+    const base64 = buf.toString('base64');
+    const mimeType = file.mimetype || (file.filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+    const now = new Date().toISOString();
+    await db.prepare(`
+      INSERT OR REPLACE INTO uploaded_photos (filename, mime_type, data_base64, created_at)
+      VALUES (?, ?, ?, ?)
+    `).run(file.filename, mimeType, base64, now);
+  } catch (err) {
+    console.warn('[PhotoCloud] Failed to persist photo to Turso DB:', err.message);
+  }
+}
+
+// Automatic on-demand photo fetch & cloud/local disk cache for /uploads/:filename
 app.get('/uploads/:filename', async (req, res) => {
   try {
     const filename = path.basename(req.params.filename);
@@ -48,6 +65,23 @@ app.get('/uploads/:filename', async (req, res) => {
     if (fs.existsSync(fallbackPath)) {
       return res.sendFile(fallbackPath);
     }
+
+    // Check Turso Cloud Database for user-uploaded photos (permanent across Vercel deployments/restarts)
+    try {
+      const photoRow = await db.prepare("SELECT mime_type, data_base64 FROM uploaded_photos WHERE filename = ?").get(filename);
+      if (photoRow && photoRow.data_base64) {
+        const buf = Buffer.from(photoRow.data_base64, 'base64');
+        try {
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+          fs.writeFileSync(primaryPath, buf);
+        } catch (_) {}
+        res.setHeader('Content-Type', photoRow.mime_type || 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        return res.send(buf);
+      }
+    } catch (_) {}
 
     // Extract original remote hash filename from trader_<no>_<hash> / company_<no>_<hash> / broker_<no>_<hash>
     const match = filename.match(/^(?:trader|company|broker)_[^_]+_(.+)$/i);
@@ -314,6 +348,9 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
     const uuid = crypto.randomUUID();
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const photoPath = req.file ? '/uploads/' + req.file.filename : null;
+    if (req.file) {
+      await saveUploadedPhotoToCloud(req.file);
+    }
     const resolvedType = member_type === 'broker' ? 'broker' : (member_type === 'company' ? 'company' : 'trader');
 
     await db.prepare(`
@@ -367,6 +404,7 @@ app.patch('/traders/:uuid', upload.single('person_pic'), async (req, res) => {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
     if (req.file) {
+      await saveUploadedPhotoToCloud(req.file);
       const photoPath = '/uploads/' + req.file.filename;
       await db.prepare(`
         UPDATE traders SET
