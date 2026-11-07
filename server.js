@@ -9,6 +9,7 @@ import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 import multer from 'multer';
 import { notifyAdded as accessSyncAdd, notifySaved as accessSyncNotify, notifyDeleted as accessSyncDelete } from './accessHubSync.js';
+import { uploadPhotoToIsolatedDrive, downloadPhotoFromIsolatedDrive } from './gdrivePhotos.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,20 +36,30 @@ try {
   }
 } catch (_) {}
 
-// Helper: Persist uploaded photo into Turso Cloud Database so it never disappears on Vercel serverless
-async function saveUploadedPhotoToCloud(file) {
+// Helper: Persist uploaded photo into isolated Google Drive folder (outside ShareExchange) + Turso metadata
+async function saveUploadedPhotoToCloud(file, traderInfo = null) {
   if (!file || !file.path) return;
   try {
     const buf = fs.readFileSync(file.path);
     const base64 = buf.toString('base64');
     const mimeType = file.mimetype || (file.filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
     const now = new Date().toISOString();
+
+    let driveFileId = null;
+    try {
+      const driveRes = await uploadPhotoToIsolatedDrive(buf, file.filename, mimeType, db, traderInfo);
+      driveFileId = driveRes?.id || null;
+      console.log(`[GDrive-Isolated] Uploaded "${file.filename}" -> Drive ID: ${driveFileId}`);
+    } catch (driveErr) {
+      console.warn('[GDrive-Isolated] Upload failed, using DB fallback:', driveErr.message);
+    }
+
     await db.prepare(`
-      INSERT OR REPLACE INTO uploaded_photos (filename, mime_type, data_base64, created_at)
-      VALUES (?, ?, ?, ?)
-    `).run(file.filename, mimeType, base64, now);
+      INSERT OR REPLACE INTO uploaded_photos (filename, mime_type, data_base64, drive_file_id, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(file.filename, mimeType, base64, driveFileId, now);
   } catch (err) {
-    console.warn('[PhotoCloud] Failed to persist photo to Turso DB:', err.message);
+    console.warn('[PhotoCloud] Failed to persist photo:', err.message);
   }
 }
 
@@ -66,20 +77,46 @@ app.get('/uploads/:filename', async (req, res) => {
       return res.sendFile(fallbackPath);
     }
 
-    // Check Turso Cloud Database for user-uploaded photos (permanent across Vercel deployments/restarts)
+    // 1. Check Turso Cloud metadata & isolated Google Drive storage
     try {
-      const photoRow = await db.prepare("SELECT mime_type, data_base64 FROM uploaded_photos WHERE filename = ?").get(filename);
-      if (photoRow && photoRow.data_base64) {
-        const buf = Buffer.from(photoRow.data_base64, 'base64');
-        try {
-          if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-          }
-          fs.writeFileSync(primaryPath, buf);
-        } catch (_) {}
-        res.setHeader('Content-Type', photoRow.mime_type || 'image/jpeg');
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        return res.send(buf);
+      const photoRow = await db.prepare("SELECT mime_type, data_base64, drive_file_id FROM uploaded_photos WHERE filename = ?").get(filename);
+      if (photoRow) {
+        let buf = null;
+        if (photoRow.data_base64) {
+          buf = Buffer.from(photoRow.data_base64, 'base64');
+        } else if (photoRow.drive_file_id) {
+          const dRes = await downloadPhotoFromIsolatedDrive(photoRow.drive_file_id, filename, db);
+          buf = dRes?.buffer || null;
+        }
+        if (buf && buf.length > 50) {
+          try {
+            if (!fs.existsSync(uploadDir)) {
+              fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            fs.writeFileSync(primaryPath, buf);
+          } catch (_) {}
+          res.setHeader('Content-Type', photoRow.mime_type || 'image/jpeg');
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          return res.send(buf);
+        }
+      }
+
+      // If not in uploaded_photos table, check isolated Google Drive folder by filename
+      if (/^trader_\d+-/i.test(filename)) {
+        const dRes = await downloadPhotoFromIsolatedDrive(null, filename, db);
+        if (dRes && dRes.buffer) {
+          const ext = path.extname(filename).toLowerCase();
+          const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
+          try {
+            if (!fs.existsSync(uploadDir)) {
+              fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            fs.writeFileSync(primaryPath, dRes.buffer);
+          } catch (_) {}
+          res.setHeader('Content-Type', mimeType);
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          return res.send(dRes.buffer);
+        }
       }
     } catch (_) {}
 
@@ -348,10 +385,10 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
     const uuid = crypto.randomUUID();
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const photoPath = req.file ? '/uploads/' + req.file.filename : null;
-    if (req.file) {
-      await saveUploadedPhotoToCloud(req.file);
-    }
     const resolvedType = member_type === 'broker' ? 'broker' : (member_type === 'company' ? 'company' : 'trader');
+    if (req.file) {
+      await saveUploadedPhotoToCloud(req.file, { name, card_no, commercial_name, member_type: resolvedType });
+    }
 
     await db.prepare(`
       INSERT INTO traders (
@@ -413,7 +450,12 @@ async function handleUpdateOrDeleteTrader(req, res) {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
     if (req.file) {
-      await saveUploadedPhotoToCloud(req.file);
+      await saveUploadedPhotoToCloud(req.file, {
+        name: name || traderBefore?.name,
+        card_no: card_no || traderBefore?.card_no,
+        commercial_name: commercial_name || traderBefore?.commercial_name,
+        member_type: traderBefore?.member_type || 'trader'
+      });
       const photoPath = '/uploads/' + req.file.filename;
       await db.prepare(`
         UPDATE traders SET
