@@ -9,6 +9,7 @@ import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 import multer from 'multer';
 import { notifySaved as accessSyncNotify } from './accessHubSync.js';
+import { syncTraderPhotoToDrive } from './gdrivePhotos.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -332,6 +333,15 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
 
     accessSyncNotify(db, uuid); // مزامنة تلقائية مع Share (في الخلفية، لا تؤثر على الحفظ)
 
+    if (req.file) {
+      const ext = path.extname(req.file.originalname || req.file.filename) || '.jpg';
+      syncTraderPhotoToDrive(
+        { name, card_no, commercial_name, member_type: resolvedType },
+        req.file.path,
+        ext
+      ).catch(err => console.error('[GDrive] Photo sync error:', err.message));
+    }
+
     const redirectPath = resolvedType === 'broker' ? '/brokers' : (resolvedType === 'company' ? '/companies' : '/traders');
     res.redirect(redirectPath);
   } catch (err) {
@@ -381,6 +391,13 @@ app.patch('/traders/:uuid', upload.single('person_pic'), async (req, res) => {
         phone_number || '', address || '', affiliation_date || '', expire_date || '', photoPath,
         now, req.params.uuid, req.params.uuid
       );
+
+      const ext = path.extname(req.file.originalname || req.file.filename) || '.jpg';
+      syncTraderPhotoToDrive(
+        { name, card_no, commercial_name, member_type: traderBefore?.member_type || 'trader' },
+        req.file.path,
+        ext
+      ).catch(err => console.error('[GDrive] Photo sync error:', err.message));
     } else {
       await db.prepare(`
         UPDATE traders SET

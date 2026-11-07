@@ -3,3 +3,8 @@ node_modules/
 *.log
 __pycache__/
 .DS_Store
+
+scratch/
+*.bak*
+access_backfill/
+data/*.db*
