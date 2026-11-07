@@ -8,3 +8,5 @@ scratch/
 *.bak*
 access_backfill/
 data/*.db*
+data/access_sync*
+data/photos_gdrive_ledger.json

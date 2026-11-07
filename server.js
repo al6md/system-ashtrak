@@ -8,7 +8,7 @@ import { db } from './db.js';
 import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 import multer from 'multer';
-import { notifySaved as accessSyncNotify } from './accessHubSync.js';
+import { notifySaved as accessSyncNotify, notifyDeleted as accessSyncDelete } from './accessHubSync.js';
 import { syncTraderPhotoToDrive } from './gdrivePhotos.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -430,6 +430,8 @@ app.delete('/traders/:uuid', async (req, res) => {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     // Soft delete like original Laravel
     await db.prepare("UPDATE traders SET deleted_at = ? WHERE uuid = ? OR id = ?").run(now, req.params.uuid, req.params.uuid);
+    
+    accessSyncDelete(db, req.params.uuid); // مزامنة الحذف مع نظام الشير (Access Hub) فورياً في الخلفية
     const redirectPath = trader?.member_type === 'broker' ? '/brokers' : (trader?.member_type === 'company' ? '/companies' : '/traders');
     res.redirect(redirectPath);
   } catch (err) {

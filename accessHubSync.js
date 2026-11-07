@@ -1,5 +1,6 @@
 // ربط نظام الاشتراكات بنظام Share COC (Access Hub).
-// - يعمل في الخلفية بعد نجاح الحفظ المحلي، ولا يرمي أي خطأ ولا يؤثر على النظام عند فشله.
+// - يدعم المزامنة الفورية للإضافة، التعديل، والحذف.
+// - يعمل في الخلفية بعد نجاح الحفظ/الحذف المحلي، ولا يرمي أي خطأ ولا يؤثر على النظام عند فشله.
 // - للإيقاف الفوري: ACCESS_SYNC_ENABLED=false
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,6 @@ const GUID = process.env.ACCESS_SYNC_GUID || 'SUBS-SYNC-64564f5f-9443-4446-ab98-
 const FILE_NAME = 'اسماء التجار والدلالين من جهاز الاشتراكات';
 const ENABLED = String(process.env.ACCESS_SYNC_ENABLED ?? 'true').toLowerCase() !== 'false';
 const SYNC_COMPANIES = String(process.env.ACCESS_SYNC_COMPANIES ?? 'true').toLowerCase() === 'true';
-const CUTOFF_DATE = '2024-01-01'; // لا يُرسل/يُحدَّث ما هو أقدم إلا إذا كان مرسلاً سابقاً
 
 const LEDGER_PATH = path.join(DATA, 'access_sync_live.json');      // ما أُرسل عبر الربط المباشر
 const BACKFILL_LEDGER = path.join(__dirname, 'access_backfill', 'ledger.json'); // ما أُرسل عبر الترحيل (قراءة فقط)
@@ -21,7 +21,6 @@ const QUEUE_PATH = path.join(DATA, 'access_sync_queue.json');
 const CLASS = { '0': 'الممتاز', '1': 'الاول', '2': 'الثاني', '3': 'الثالث', '4': 'الرابع' };
 const readJson = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch { return d; } };
 const writeJson = (p, v) => { try { fs.writeFileSync(p, JSON.stringify(v, null, 1)); } catch (e) { console.warn('[AccessSync] write failed', p, e.message); } };
-const validDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || '') && d >= '1980-01-01' && d <= '2027-12-31';
 
 export function mapRow(r) {
   const type = r.member_type === 'broker' ? 'broker' : r.member_type === 'company' ? 'company' : 'trader';
@@ -66,47 +65,157 @@ export function mapRow(r) {
   return { type, table: type === 'broker' ? 'الدلالين' : 'التجار', record };
 }
 
-let queue = readJson(QUEUE_PATH, []); // [{key, tries}]
+let queue = readJson(QUEUE_PATH, []); // [{key, action, tries}]
 let busy = false;
 
 function adhIdFor(uuid) {
-  return readJson(LEDGER_PATH, {})[uuid]?.adh_id || readJson(BACKFILL_LEDGER, {})[uuid]?.adh_id || null;
+  if (!uuid) return null;
+  const live = readJson(LEDGER_PATH, {});
+  const back = readJson(BACKFILL_LEDGER, {});
+  return live[uuid]?.adh_id || back[uuid]?.adh_id || null;
 }
 
-async function call(method, body) {
+async function call(method, body = {}, query = '') {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 15000);
   try {
-    const res = await fetch(API_URL, { method, signal: ctl.signal, headers: { 'Content-Type': 'application/json', 'x-machine-guid': GUID }, body: JSON.stringify({ ...body, guid: GUID }) });
+    const url = query ? `${API_URL}${query}` : API_URL;
+    const isNoBody = method === 'GET' || method === 'DELETE';
+    const res = await fetch(url, {
+      method,
+      signal: ctl.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-machine-guid': GUID,
+        'x-admin-role': 'admin'
+      },
+      body: isNoBody ? undefined : JSON.stringify({ ...body, guid: GUID })
+    });
     const j = await res.json().catch(() => ({}));
     if (!res.ok || !j.success) throw new Error(`HTTP ${res.status} ${j.error || ''}`);
     return j;
-  } finally { clearTimeout(t); }
+  } finally {
+    clearTimeout(t);
+  }
 }
 
-// يرجع true عند الانتهاء (نجاح أو تجاوز مقصود)، وfalse إن وجب إعادة المحاولة
-async function syncOne(db, key) {
+/**
+ * البحث في Access Hub للبحث عن معرّف القيد السحابي _adh_id بحال لم يكن مسجلاً في السجل المحلي
+ */
+async function findAdhIdBySearch(cardNo, name, table) {
+  const q = cardNo || name;
+  if (!q) return null;
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 10000);
+  try {
+    const url = `${API_URL}?file=${encodeURIComponent(FILE_NAME)}&table=${encodeURIComponent(table)}&search=${encodeURIComponent(q)}&limit=25`;
+    const res = await fetch(url, {
+      method: 'GET',
+      signal: ctl.signal,
+      headers: {
+        'x-machine-guid': GUID,
+        'x-admin-role': 'admin'
+      }
+    });
+    const data = await res.json().catch(() => ({}));
+    const rows = data.rows || [];
+    const match = rows.find(r => 
+      (cardNo && String(r.IDNo || '').trim() === String(cardNo).trim()) ||
+      (name && String(r.ArabicName || '').trim() === String(name).trim()) ||
+      (name && String(r['اسم الشركة'] || '').trim() === String(name).trim())
+    );
+    return match?._adh_id || null;
+  } catch (err) {
+    console.warn('[AccessSync] Search fallback error:', err.message);
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/**
+ * معالجة مزامنة عنصر واحد (إضافة أو تعديل أو حذف)
+ */
+async function syncOne(db, item) {
+  const key = item.key;
+  const explicitAction = item.action || 'save';
+
   const row = await db.prepare('SELECT * FROM traders WHERE uuid = ? OR id = ?').get(key, key);
-  if (!row || (row.deleted_at && row.deleted_at !== '')) return true;
+  const isDeleted = explicitAction === 'delete' || Boolean(row && row.deleted_at && row.deleted_at !== '');
+
+  // 1. حالة الحذف (DELETE)
+  if (isDeleted) {
+    let adhId = adhIdFor(row?.uuid || key);
+    let table = 'التجار';
+
+    if (row) {
+      const m = mapRow(row);
+      table = m.table;
+      if (!adhId) {
+        adhId = await findAdhIdBySearch(row.card_no || row.incorporation_certificate_no, row.name || row.company_name, table);
+      }
+    }
+
+    if (adhId) {
+      await call('DELETE', {}, `?id=${encodeURIComponent(adhId)}`);
+      const led = readJson(LEDGER_PATH, {});
+      const k = row?.uuid || key;
+      led[k] = {
+        ...(led[k] || {}),
+        adh_id: adhId,
+        table,
+        deleted: true,
+        deleted_at: new Date().toISOString()
+      };
+      writeJson(LEDGER_PATH, led);
+      console.log(`[AccessSync] DELETED from Share COC: [${table}] ${row?.name || row?.company_name || key}`);
+      return true;
+    } else {
+      console.log(`[AccessSync] Record already not present or deleted in Share: ${row?.name || key}`);
+      return true;
+    }
+  }
+
+  // 2. حالة الإضافة أو التعديل (SAVE / UPDATE)
+  if (!row) return true;
   const m = mapRow(row);
   if (m.type === 'company' && !SYNC_COMPANIES) return true;
   if (!row.name && !row.company_name) return true;
-  const adhId = adhIdFor(row.uuid);
+
+  let adhId = adhIdFor(row.uuid);
+
+  // إذا لم يكن المعرف في السجل المحلي، نحاول البحث عنه في Share
+  if (!adhId) {
+    adhId = await findAdhIdBySearch(row.card_no || row.incorporation_certificate_no, row.name || row.company_name, m.table);
+  }
+
+  // إذا وجدنا القيد في Share، نرسل طلب التعديل PUT
   if (adhId) {
     await call('PUT', { id: adhId, updates: m.record });
-    console.log('[AccessSync] updated', m.table, row.name || row.company_name);
+    const led = readJson(LEDGER_PATH, {});
+    led[row.uuid] = {
+      adh_id: adhId,
+      table: m.table,
+      name: row.name || row.company_name,
+      updated_at: new Date().toISOString()
+    };
+    writeJson(LEDGER_PATH, led);
+    console.log(`[AccessSync] UPDATED in Share COC: [${m.table}] ${row.name || row.company_name}`);
     return true;
   }
-  // سجل لم يُرسل سابقاً: يُرسل فقط إن كان جديداً وتاريخه سليم (لتفادي تكرار السجلات القديمة)
-  if (!validDate(row.affiliation_date) || row.affiliation_date < CUTOFF_DATE) {
-    console.log('[AccessSync] skipped (old/invalid date, not previously synced):', row.name || row.company_name);
-    return true;
-  }
+
+  // إذا لم يكن موجوداً أصلاً، نرسل طلب الإضافة POST
   const j = await call('POST', { file: FILE_NAME, table: m.table, record: m.record });
+  const newAdhId = j.record?._adh_id;
   const led = readJson(LEDGER_PATH, {});
-  led[row.uuid] = { adh_id: j.record?._adh_id, table: m.table, name: row.name || row.company_name, sent_at: new Date().toISOString() };
+  led[row.uuid] = {
+    adh_id: newAdhId,
+    table: m.table,
+    name: row.name || row.company_name,
+    sent_at: new Date().toISOString()
+  };
   writeJson(LEDGER_PATH, led);
-  console.log('[AccessSync] added', m.table, row.name || row.company_name);
+  console.log(`[AccessSync] ADDED to Share COC: [${m.table}] ${row.name || row.company_name}`);
   return true;
 }
 
@@ -117,26 +226,48 @@ async function drain(db) {
     while (queue.length) {
       const item = queue[0];
       try {
-        await syncOne(db, item.key);
+        await syncOne(db, item);
         queue.shift();
       } catch (e) {
         item.tries = (item.tries || 0) + 1;
         console.warn(`[AccessSync] failed (${item.tries}):`, e.message);
-        if (item.tries >= 30) queue.shift(); // بعد 30 محاولة يُسقط ويُسجَّل
+        if (item.tries >= 10) queue.shift(); // بعد 10 محاولات يسقط لتجنب تجميد الطابور
         writeJson(QUEUE_PATH, queue);
-        break; // إعادة المحاولة في الدورة التالية
+        break;
       }
       writeJson(QUEUE_PATH, queue);
     }
-  } finally { busy = false; }
+  } finally {
+    busy = false;
+  }
 }
 
 let timerStarted = false;
-export function notifySaved(db, key) {
+
+function enqueue(db, key, action = 'save') {
   try {
     if (!ENABLED || !key) return;
-    if (!queue.some((q) => q.key === key)) { queue.push({ key, tries: 0 }); writeJson(QUEUE_PATH, queue); }
+    const existing = queue.find(q => q.key === key);
+    if (existing) {
+      existing.action = action;
+    } else {
+      queue.push({ key, action, tries: 0 });
+      writeJson(QUEUE_PATH, queue);
+    }
     setImmediate(() => drain(db).catch(() => {}));
-    if (!timerStarted) { timerStarted = true; setInterval(() => drain(db).catch(() => {}), 120000).unref(); }
-  } catch (e) { console.warn('[AccessSync] notify error', e.message); }
+    if (!timerStarted) {
+      timerStarted = true;
+      setInterval(() => drain(db).catch(() => {}), 60000).unref();
+    }
+  } catch (e) {
+    console.warn('[AccessSync] notify error:', e.message);
+  }
+}
+
+export function notifySaved(db, key) {
+  enqueue(db, key, 'save');
+}
+
+export function notifyDeleted(db, key) {
+  enqueue(db, key, 'delete');
 }
