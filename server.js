@@ -1405,8 +1405,8 @@ app.get('/traders/validate/:uuid', async (req, res) => {
         <div class="container w-full bg-white p-6 rounded-lg shadow">
             <div id="foreground">
                 <img id="ArPersonPic" src="${photoUrl}" alt="Photo"/>
-                <p id="ArName" class="ArText">التاجر: ${trader.name}</p>
-                <p id="ArClass" class="ArText">الصنف: ${formatClassName(trader.card_class, 'ar')}</p>
+                <p id="ArName" class="ArText">${trader.member_type === 'broker' ? 'الدلال' : 'التاجر'}: ${trader.name}</p>
+                <p id="ArClass" class="ArText">الصنف: ${trader.member_type === 'broker' ? 'دلالية' : formatClassName(trader.card_class, 'ar')}</p>
                 <p id="ArCommercialName" class="ArText">الاسم التجاري: ${trader.commercial_name || '-'} / <span id="ArCommercialNameNo">${trader.commercial_name_no || ''}</span></p>
                 <p id="ArActivity" class="ArText">النشاط: ${trader.activity || '-'}</p>
                 <p id="CardNo" class="ArText font-bold text-blue-700">رقم الهوية: ${trader.card_no} ${trader.renewal_no ? '/ ' + trader.renewal_no : ''}</p>
