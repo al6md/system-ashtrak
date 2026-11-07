@@ -4,10 +4,11 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { DatabaseSync } from 'node:sqlite';
+import { db } from './db.js';
 import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 import multer from 'multer';
+import { notifySaved as accessSyncNotify } from './accessHubSync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -80,9 +81,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Database setup
-const dbPath = path.join(__dirname, 'data', 'cardval.db');
-const db = new DatabaseSync(dbPath);
+// Database setup (Turso Cloud Database with persistent multi-user support)
+// db is imported from ./db.js
 
 // File uploads configuration for person_pic
 const storage = multer.diskStorage({
@@ -131,13 +131,13 @@ app.get('/', (req, res) => {
 });
 
 // Dashboard
-app.get('/dashboard', (req, res) => {
-  const totalTraders = db.prepare("SELECT COUNT(*) as count FROM traders WHERE member_type = 'trader'").get().count;
-  const totalBrokers = db.prepare("SELECT COUNT(*) as count FROM traders WHERE member_type = 'broker'").get().count;
-  const totalCompanies = db.prepare("SELECT COUNT(*) as count FROM traders WHERE member_type = 'company'").get().count;
+app.get('/dashboard', async (req, res) => {
+  const totalTraders = (await db.prepare("SELECT COUNT(*) as count FROM traders WHERE member_type = 'trader'").get())?.count || 0;
+  const totalBrokers = (await db.prepare("SELECT COUNT(*) as count FROM traders WHERE member_type = 'broker'").get())?.count || 0;
+  const totalCompanies = (await db.prepare("SELECT COUNT(*) as count FROM traders WHERE member_type = 'company'").get())?.count || 0;
   const today = new Date().toISOString().split('T')[0];
-  const activeMembers = db.prepare("SELECT COUNT(*) as count FROM traders WHERE expire_date >= ?").get(today).count;
-  const withPhotos = db.prepare("SELECT COUNT(*) as count FROM traders WHERE photo_path IS NOT NULL AND photo_path != ''").get().count;
+  const activeMembers = (await db.prepare("SELECT COUNT(*) as count FROM traders WHERE expire_date >= ?").get(today))?.count || 0;
+  const withPhotos = (await db.prepare("SELECT COUNT(*) as count FROM traders WHERE photo_path IS NOT NULL AND photo_path != ''").get())?.count || 0;
 
   res.render('dashboard', {
     currentPath: '/dashboard',
@@ -152,7 +152,7 @@ app.get('/dashboard', (req, res) => {
 });
 
 // Traders Feed List (Exact original layout)
-app.get('/traders', (req, res) => {
+app.get('/traders', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = 15;
@@ -248,11 +248,11 @@ app.get('/traders', (req, res) => {
 
     const whereSql = where.join(' AND ');
 
-    const countRow = db.prepare(`SELECT COUNT(*) as count FROM traders WHERE ${whereSql}`).get(...params);
+    const countRow = (await db.prepare(`SELECT COUNT(*) as count FROM traders WHERE ${whereSql}`).get(...params)) || { count: 0 };
     const totalCount = countRow.count;
     const totalPages = Math.ceil(totalCount / limit);
 
-    const traders = db.prepare(`
+    const traders = await db.prepare(`
       SELECT * FROM traders 
       WHERE ${whereSql} 
       ORDER BY id ASC 
@@ -288,7 +288,7 @@ app.get('/traders/create', (req, res) => {
 });
 
 // Store New Trader / Broker
-app.post('/traders', upload.single('person_pic'), (req, res) => {
+app.post('/traders', upload.single('person_pic'), async (req, res) => {
   try {
     const {
       name, english_name, commercial_name, activity, english_activity,
@@ -301,7 +301,7 @@ app.post('/traders', upload.single('person_pic'), (req, res) => {
     const photoPath = req.file ? '/uploads/' + req.file.filename : null;
     const resolvedType = member_type === 'broker' ? 'broker' : (member_type === 'company' ? 'company' : 'trader');
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO traders (
         uuid, name, english_name, commercial_name, activity, english_activity,
         card_no, stamp_no, renewal_no, card_class, commercial_name_no, speciality,
@@ -315,6 +315,8 @@ app.post('/traders', upload.single('person_pic'), (req, res) => {
       resolvedType, now, now
     );
 
+    accessSyncNotify(db, uuid); // مزامنة تلقائية مع Share (في الخلفية، لا تؤثر على الحفظ)
+
     const redirectPath = resolvedType === 'broker' ? '/brokers' : (resolvedType === 'company' ? '/companies' : '/traders');
     res.redirect(redirectPath);
   } catch (err) {
@@ -323,9 +325,9 @@ app.post('/traders', upload.single('person_pic'), (req, res) => {
 });
 
 // Edit Trader / Broker Page
-app.get('/traders/:uuid/edit', (req, res) => {
+app.get('/traders/:uuid/edit', async (req, res) => {
   try {
-    const trader = db.prepare("SELECT * FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
+    const trader = await db.prepare("SELECT * FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
     if (!trader) {
       return res.status(404).send('Trader not found');
     }
@@ -337,9 +339,9 @@ app.get('/traders/:uuid/edit', (req, res) => {
 });
 
 // Update Trader / Broker (PATCH)
-app.patch('/traders/:uuid', upload.single('person_pic'), (req, res) => {
+app.patch('/traders/:uuid', upload.single('person_pic'), async (req, res) => {
   try {
-    const traderBefore = db.prepare("SELECT member_type FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
+    const traderBefore = await db.prepare("SELECT member_type FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
 
     const {
       name, english_name, commercial_name, activity, english_activity,
@@ -351,7 +353,7 @@ app.patch('/traders/:uuid', upload.single('person_pic'), (req, res) => {
 
     if (req.file) {
       const photoPath = '/uploads/' + req.file.filename;
-      db.prepare(`
+      await db.prepare(`
         UPDATE traders SET
           name = ?, english_name = ?, commercial_name = ?, activity = ?, english_activity = ?,
           card_no = ?, stamp_no = ?, renewal_no = ?, card_class = ?, commercial_name_no = ?, speciality = ?,
@@ -365,7 +367,7 @@ app.patch('/traders/:uuid', upload.single('person_pic'), (req, res) => {
         now, req.params.uuid, req.params.uuid
       );
     } else {
-      db.prepare(`
+      await db.prepare(`
         UPDATE traders SET
           name = ?, english_name = ?, commercial_name = ?, activity = ?, english_activity = ?,
           card_no = ?, stamp_no = ?, renewal_no = ?, card_class = ?, commercial_name_no = ?, speciality = ?,
@@ -380,6 +382,8 @@ app.patch('/traders/:uuid', upload.single('person_pic'), (req, res) => {
       );
     }
 
+    accessSyncNotify(db, req.params.uuid); // مزامنة التعديل مع Share (في الخلفية)
+
     const redirectPath = traderBefore?.member_type === 'broker' ? '/brokers' : (traderBefore?.member_type === 'company' ? '/companies' : '/traders');
     res.redirect(redirectPath);
   } catch (err) {
@@ -388,12 +392,12 @@ app.patch('/traders/:uuid', upload.single('person_pic'), (req, res) => {
 });
 
 // Delete Trader / Broker
-app.delete('/traders/:uuid', (req, res) => {
+app.delete('/traders/:uuid', async (req, res) => {
   try {
-    const trader = db.prepare("SELECT member_type FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
+    const trader = await db.prepare("SELECT member_type FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     // Soft delete like original Laravel
-    db.prepare("UPDATE traders SET deleted_at = ? WHERE uuid = ? OR id = ?").run(now, req.params.uuid, req.params.uuid);
+    await db.prepare("UPDATE traders SET deleted_at = ? WHERE uuid = ? OR id = ?").run(now, req.params.uuid, req.params.uuid);
     const redirectPath = trader?.member_type === 'broker' ? '/brokers' : (trader?.member_type === 'company' ? '/companies' : '/traders');
     res.redirect(redirectPath);
   } catch (err) {
@@ -402,7 +406,7 @@ app.delete('/traders/:uuid', (req, res) => {
 });
 
 // Export CSV (Identical to original format)
-app.get('/traders/export/csv', (req, res) => {
+app.get('/traders/export/csv', async (req, res) => {
   try {
     const today = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 14);
     const filename = `traders-${today}.csv`;
@@ -421,7 +425,7 @@ app.get('/traders/export/csv', (req, res) => {
     ];
     res.write(headers.map(h => `"${h}"`).join(',') + '\n');
 
-    const rows = db.prepare("SELECT * FROM traders WHERE member_type = 'trader' ORDER BY id ASC").all();
+    const rows = await db.prepare("SELECT * FROM traders WHERE member_type = 'trader' ORDER BY id ASC").all();
 
     for (const r of rows) {
       const line = [
@@ -440,7 +444,7 @@ app.get('/traders/export/csv', (req, res) => {
 });
 
 // Brokers View
-app.get('/brokers', (req, res) => {
+app.get('/brokers', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = 15;
@@ -550,11 +554,11 @@ app.get('/brokers', (req, res) => {
     }
 
     const whereSql = where.join(' AND ');
-    const countRow = db.prepare(`SELECT COUNT(*) as count FROM traders WHERE ${whereSql}`).get(...params);
+    const countRow = (await db.prepare(`SELECT COUNT(*) as count FROM traders WHERE ${whereSql}`).get(...params)) || { count: 0 };
     const totalCount = countRow ? countRow.count : 0;
     const totalPages = Math.ceil(totalCount / limit);
 
-    const brokers = db.prepare(`
+    const brokers = await db.prepare(`
       SELECT * FROM traders 
       WHERE ${whereSql} 
       ORDER BY id ASC 
@@ -582,7 +586,7 @@ app.get('/brokers', (req, res) => {
 });
 
 // Export Brokers CSV
-app.get('/brokers/export/csv', (req, res) => {
+app.get('/brokers/export/csv', async (req, res) => {
   try {
     const today = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 14);
     const filename = `brokers-${today}.csv`;
@@ -664,7 +668,7 @@ app.get('/brokers/export/csv', (req, res) => {
       where.push("(deleted_at IS NULL OR deleted_at = '')");
     }
 
-    const rows = db.prepare(`SELECT * FROM traders WHERE ${where.join(' AND ')} ORDER BY id ASC`).all(...params);
+    const rows = await db.prepare(`SELECT * FROM traders WHERE ${where.join(' AND ')} ORDER BY id ASC`).all(...params);
 
     for (const r of rows) {
       const line = [
@@ -683,12 +687,12 @@ app.get('/brokers/export/csv', (req, res) => {
 });
 
 // Redirect /brokers/:uuid/edit to /traders/:uuid/edit
-app.get('/brokers/:uuid/edit', (req, res) => {
+app.get('/brokers/:uuid/edit', async (req, res) => {
   res.redirect(`/traders/${req.params.uuid}/edit`);
 });
 
 // Companies View
-app.get('/companies', (req, res) => {
+app.get('/companies', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = 15;
@@ -823,11 +827,11 @@ app.get('/companies', (req, res) => {
     }
 
     const whereSql = where.join(' AND ');
-    const countRow = db.prepare(`SELECT COUNT(*) as count FROM traders WHERE ${whereSql}`).get(...params);
+    const countRow = (await db.prepare(`SELECT COUNT(*) as count FROM traders WHERE ${whereSql}`).get(...params)) || { count: 0 };
     const totalCount = countRow ? countRow.count : 0;
     const totalPages = Math.ceil(totalCount / limit);
 
-    const companies = db.prepare(`
+    const companies = await db.prepare(`
       SELECT * FROM traders 
       WHERE ${whereSql} 
       ORDER BY id ASC 
@@ -855,7 +859,7 @@ app.get('/companies', (req, res) => {
 });
 
 // Export Companies CSV
-app.get('/companies/export/csv', (req, res) => {
+app.get('/companies/export/csv', async (req, res) => {
   try {
     const filename = `companies-export-${new Date().toISOString().slice(0, 10)}.csv`;
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -870,7 +874,7 @@ app.get('/companies/export/csv', (req, res) => {
     ];
     res.write(headers.map(h => `"${h}"`).join(',') + '\n');
 
-    const rows = db.prepare("SELECT * FROM traders WHERE member_type = 'company' ORDER BY id ASC").all();
+    const rows = await db.prepare("SELECT * FROM traders WHERE member_type = 'company' ORDER BY id ASC").all();
 
     for (const r of rows) {
       const line = [
@@ -889,7 +893,7 @@ app.get('/companies/export/csv', (req, res) => {
 });
 
 // Company Edit / Actions redirect to trader unified handler
-app.get('/companies/:uuid/edit', (req, res) => {
+app.get('/companies/:uuid/edit', async (req, res) => {
   res.redirect('/traders/' + req.params.uuid + '/edit');
 });
 
@@ -996,11 +1000,11 @@ const DEFAULT_BROKER_CARD_TYPOGRAPHY = {
 };
 
 // Profile Page
-app.get('/profile', (req, res) => {
+app.get('/profile', async (req, res) => {
   try {
     let settings = DEFAULT_CARD_TYPOGRAPHY;
     try {
-      const row = db.prepare("SELECT value FROM settings WHERE key = 'card_typography'").get();
+      const row = await db.prepare("SELECT value FROM settings WHERE key = 'card_typography'").get();
       if (row && row.value) {
         settings = JSON.parse(row.value);
       }
@@ -1010,7 +1014,7 @@ app.get('/profile', (req, res) => {
 
     let companySettings = DEFAULT_COMPANY_CARD_TYPOGRAPHY;
     try {
-      const cRow = db.prepare("SELECT value FROM settings WHERE key = 'company_card_typography'").get();
+      const cRow = await db.prepare("SELECT value FROM settings WHERE key = 'company_card_typography'").get();
       if (cRow && cRow.value) {
         companySettings = JSON.parse(cRow.value);
       }
@@ -1020,7 +1024,7 @@ app.get('/profile', (req, res) => {
 
     let brokerSettings = DEFAULT_BROKER_CARD_TYPOGRAPHY;
     try {
-      const bRow = db.prepare("SELECT value FROM settings WHERE key = 'broker_card_typography'").get();
+      const bRow = await db.prepare("SELECT value FROM settings WHERE key = 'broker_card_typography'").get();
       if (bRow && bRow.value) {
         brokerSettings = JSON.parse(bRow.value);
       }
@@ -1029,7 +1033,7 @@ app.get('/profile', (req, res) => {
     }
 
     // Sample trader for live preview
-    const sampleTrader = db.prepare("SELECT * FROM traders WHERE member_type = 'trader' AND photo_path IS NOT NULL LIMIT 1").get() || {
+    const sampleTrader = (await db.prepare("SELECT * FROM traders WHERE member_type = 'trader' AND photo_path IS NOT NULL LIMIT 1").get()) || {
       name: 'حسين عبد الاله جعفر',
       english_name: 'Hussein Abdul-Ilah Jaafar',
       commercial_name: 'اسواق بركات الرحمن',
@@ -1047,7 +1051,7 @@ app.get('/profile', (req, res) => {
     };
 
     // Sample company for live preview
-    const sampleCompany = db.prepare("SELECT * FROM traders WHERE member_type = 'company' AND photo_path IS NOT NULL LIMIT 1").get() || {
+    const sampleCompany = (await db.prepare("SELECT * FROM traders WHERE member_type = 'company' AND photo_path IS NOT NULL LIMIT 1").get()) || {
       name: 'محمد عبد الكريم عبد الحسين',
       english_name: 'MOHAMMED ABDULKAREEM A. AL',
       company_name: 'الطلبات',
@@ -1071,7 +1075,7 @@ app.get('/profile', (req, res) => {
     };
 
     // Sample broker for live preview
-    const sampleBroker = db.prepare("SELECT * FROM traders WHERE member_type = 'broker' AND photo_path IS NOT NULL LIMIT 1").get() || {
+    const sampleBroker = (await db.prepare("SELECT * FROM traders WHERE member_type = 'broker' AND photo_path IS NOT NULL LIMIT 1").get()) || {
       name: 'حسين حازم فرحان',
       english_name: 'HUSSEIN HAZIM FARHAN',
       commercial_name: 'مكتب طريق العلماء',
@@ -1106,14 +1110,14 @@ app.get('/profile', (req, res) => {
 });
 
 // Profile Update (Mock)
-app.patch('/profile', (req, res) => {
+app.patch('/profile', async (req, res) => {
   res.redirect('/profile?saved=1');
 });
 
 // Get Card Typography Settings API
-app.get('/api/settings/card-typography', (req, res) => {
+app.get('/api/settings/card-typography', async (req, res) => {
   try {
-    const row = db.prepare("SELECT value FROM settings WHERE key = 'card_typography'").get();
+    const row = await db.prepare("SELECT value FROM settings WHERE key = 'card_typography'").get();
     if (row && row.value) {
       const parsed = JSON.parse(row.value);
       if (parsed.back) {
@@ -1130,10 +1134,10 @@ app.get('/api/settings/card-typography', (req, res) => {
 });
 
 // Save Card Typography Settings API
-app.post('/api/settings/card-typography', (req, res) => {
+app.post('/api/settings/card-typography', async (req, res) => {
   try {
     const newSettings = req.body.settings || req.body;
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('card_typography', ?)").run(JSON.stringify(newSettings));
+    await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('card_typography', ?)").run(JSON.stringify(newSettings));
     res.json({ success: true, message: 'Settings saved successfully' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1141,9 +1145,9 @@ app.post('/api/settings/card-typography', (req, res) => {
 });
 
 // Reset Card Typography Settings API
-app.post('/api/settings/card-typography/reset', (req, res) => {
+app.post('/api/settings/card-typography/reset', async (req, res) => {
   try {
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('card_typography', ?)").run(JSON.stringify(DEFAULT_CARD_TYPOGRAPHY));
+    await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('card_typography', ?)").run(JSON.stringify(DEFAULT_CARD_TYPOGRAPHY));
     res.json({ success: true, settings: DEFAULT_CARD_TYPOGRAPHY, message: 'Settings reset to defaults' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1151,9 +1155,9 @@ app.post('/api/settings/card-typography/reset', (req, res) => {
 });
 
 // Get Company Card Typography Settings API
-app.get('/api/settings/company-card-typography', (req, res) => {
+app.get('/api/settings/company-card-typography', async (req, res) => {
   try {
-    const row = db.prepare("SELECT value FROM settings WHERE key = 'company_card_typography'").get();
+    const row = await db.prepare("SELECT value FROM settings WHERE key = 'company_card_typography'").get();
     if (row && row.value) {
       return res.json({ success: true, settings: JSON.parse(row.value) });
     }
@@ -1164,10 +1168,10 @@ app.get('/api/settings/company-card-typography', (req, res) => {
 });
 
 // Save Company Card Typography Settings API
-app.post('/api/settings/company-card-typography', (req, res) => {
+app.post('/api/settings/company-card-typography', async (req, res) => {
   try {
     const newSettings = req.body.settings || req.body;
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_card_typography', ?)").run(JSON.stringify(newSettings));
+    await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_card_typography', ?)").run(JSON.stringify(newSettings));
     res.json({ success: true, message: 'Company settings saved successfully' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1175,9 +1179,9 @@ app.post('/api/settings/company-card-typography', (req, res) => {
 });
 
 // Reset Company Card Typography Settings API
-app.post('/api/settings/company-card-typography/reset', (req, res) => {
+app.post('/api/settings/company-card-typography/reset', async (req, res) => {
   try {
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_card_typography', ?)").run(JSON.stringify(DEFAULT_COMPANY_CARD_TYPOGRAPHY));
+    await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_card_typography', ?)").run(JSON.stringify(DEFAULT_COMPANY_CARD_TYPOGRAPHY));
     res.json({ success: true, settings: DEFAULT_COMPANY_CARD_TYPOGRAPHY, message: 'Company settings reset to defaults' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1185,9 +1189,9 @@ app.post('/api/settings/company-card-typography/reset', (req, res) => {
 });
 
 // Get Broker Card Typography Settings API
-app.get('/api/settings/broker-card-typography', (req, res) => {
+app.get('/api/settings/broker-card-typography', async (req, res) => {
   try {
-    const row = db.prepare("SELECT value FROM settings WHERE key = 'broker_card_typography'").get();
+    const row = await db.prepare("SELECT value FROM settings WHERE key = 'broker_card_typography'").get();
     if (row && row.value) {
       const parsed = JSON.parse(row.value);
       return res.json({ success: true, settings: parsed });
@@ -1199,10 +1203,10 @@ app.get('/api/settings/broker-card-typography', (req, res) => {
 });
 
 // Save Broker Card Typography Settings API
-app.post('/api/settings/broker-card-typography', (req, res) => {
+app.post('/api/settings/broker-card-typography', async (req, res) => {
   try {
     const newSettings = req.body.settings || req.body;
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('broker_card_typography', ?)").run(JSON.stringify(newSettings));
+    await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('broker_card_typography', ?)").run(JSON.stringify(newSettings));
     res.json({ success: true, message: 'Broker settings saved successfully' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1210,9 +1214,9 @@ app.post('/api/settings/broker-card-typography', (req, res) => {
 });
 
 // Reset Broker Card Typography Settings API
-app.post('/api/settings/broker-card-typography/reset', (req, res) => {
+app.post('/api/settings/broker-card-typography/reset', async (req, res) => {
   try {
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('broker_card_typography', ?)").run(JSON.stringify(DEFAULT_BROKER_CARD_TYPOGRAPHY));
+    await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('broker_card_typography', ?)").run(JSON.stringify(DEFAULT_BROKER_CARD_TYPOGRAPHY));
     res.json({ success: true, settings: DEFAULT_BROKER_CARD_TYPOGRAPHY, message: 'Broker settings reset to defaults' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1220,9 +1224,9 @@ app.post('/api/settings/broker-card-typography/reset', (req, res) => {
 });
 
 // Single Trader JSON API
-app.get('/api/traders/:id', (req, res) => {
+app.get('/api/traders/:id', async (req, res) => {
   try {
-    const trader = db.prepare("SELECT * FROM traders WHERE uuid = ? OR id = ? OR card_no = ?").get(req.params.id, req.params.id, req.params.id);
+    const trader = await db.prepare("SELECT * FROM traders WHERE uuid = ? OR id = ? OR card_no = ?").get(req.params.id, req.params.id, req.params.id);
     if (!trader) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, trader });
   } catch (err) {
@@ -1231,10 +1235,10 @@ app.get('/api/traders/:id', (req, res) => {
 });
 
 // Save Custom Typography for Single Trader
-app.post('/api/traders/:id/typography', (req, res) => {
+app.post('/api/traders/:id/typography', async (req, res) => {
   try {
     const typoJson = JSON.stringify(req.body.typography || req.body);
-    db.prepare("UPDATE traders SET custom_typography = ? WHERE id = ? OR uuid = ?").run(typoJson, req.params.id, req.params.id);
+    await db.prepare("UPDATE traders SET custom_typography = ? WHERE id = ? OR uuid = ?").run(typoJson, req.params.id, req.params.id);
     res.json({ success: true, message: 'Custom typography saved for this trader' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1242,9 +1246,9 @@ app.post('/api/traders/:id/typography', (req, res) => {
 });
 
 // Reset Custom Typography for Single Trader
-app.post('/api/traders/:id/typography/reset', (req, res) => {
+app.post('/api/traders/:id/typography/reset', async (req, res) => {
   try {
-    db.prepare("UPDATE traders SET custom_typography = NULL WHERE id = ? OR uuid = ?").run(req.params.id, req.params.id);
+    await db.prepare("UPDATE traders SET custom_typography = NULL WHERE id = ? OR uuid = ?").run(req.params.id, req.params.id);
     res.json({ success: true, message: 'Reset to global settings for this trader' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1254,7 +1258,7 @@ app.post('/api/traders/:id/typography/reset', (req, res) => {
 // Trader QR Code Data URL
 app.get('/api/traders/:id/qr', async (req, res) => {
   try {
-    const trader = db.prepare("SELECT * FROM traders WHERE id = ? OR uuid = ?").get(req.params.id, req.params.id);
+    const trader = await db.prepare("SELECT * FROM traders WHERE id = ? OR uuid = ?").get(req.params.id, req.params.id);
     if (!trader) return res.status(404).json({ success: false, error: 'Not found' });
 
     const host = req.get('host');
@@ -1274,9 +1278,9 @@ app.get('/api/traders/:id/qr', async (req, res) => {
 });
 
 // Official Public Validation Page
-app.get('/traders/validate/:uuid', (req, res) => {
+app.get('/traders/validate/:uuid', async (req, res) => {
   try {
-    const trader = db.prepare("SELECT * FROM traders WHERE uuid = ?").get(req.params.uuid);
+    const trader = await db.prepare("SELECT * FROM traders WHERE uuid = ?").get(req.params.uuid);
     if (!trader) {
       return res.status(404).send(`
         <!DOCTYPE html>
