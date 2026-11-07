@@ -8,7 +8,7 @@ import { db } from './db.js';
 import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 import multer from 'multer';
-import { notifySaved as accessSyncNotify, notifyDeleted as accessSyncDelete } from './accessHubSync.js';
+import { notifyAdded as accessSyncAdd, notifySaved as accessSyncNotify, notifyDeleted as accessSyncDelete } from './accessHubSync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -330,7 +330,7 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
       resolvedType, now, now
     );
 
-    accessSyncNotify(db, uuid); // مزامنة تلقائية مع Share (في الخلفية، لا تؤثر على الحفظ)
+    await accessSyncAdd(db, uuid); // مزامنة فورية مع نظام الشير (Access Hub) ليظهر في أول سطر (#1)
 
     const redirectPath = resolvedType === 'broker' ? '/brokers' : (resolvedType === 'company' ? '/companies' : '/traders');
     res.redirect(redirectPath);
@@ -356,7 +356,7 @@ app.get('/traders/:uuid/edit', async (req, res) => {
 // Update Trader / Broker (PATCH)
 app.patch('/traders/:uuid', upload.single('person_pic'), async (req, res) => {
   try {
-    const traderBefore = await db.prepare("SELECT member_type FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
+    const traderBefore = await db.prepare("SELECT * FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
 
     const {
       name, english_name, commercial_name, activity, english_activity,
@@ -397,7 +397,7 @@ app.patch('/traders/:uuid', upload.single('person_pic'), async (req, res) => {
       );
     }
 
-    accessSyncNotify(db, req.params.uuid); // مزامنة التعديل مع Share (في الخلفية)
+    await accessSyncNotify(db, req.params.uuid, traderBefore); // مزامنة التعديل مع Share فورياً
 
     const redirectPath = traderBefore?.member_type === 'broker' ? '/brokers' : (traderBefore?.member_type === 'company' ? '/companies' : '/traders');
     res.redirect(redirectPath);
@@ -409,12 +409,12 @@ app.patch('/traders/:uuid', upload.single('person_pic'), async (req, res) => {
 // Delete Trader / Broker
 app.delete('/traders/:uuid', async (req, res) => {
   try {
-    const trader = await db.prepare("SELECT member_type FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
+    const trader = await db.prepare("SELECT * FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     // Soft delete like original Laravel
     await db.prepare("UPDATE traders SET deleted_at = ? WHERE uuid = ? OR id = ?").run(now, req.params.uuid, req.params.uuid);
     
-    accessSyncDelete(db, req.params.uuid); // مزامنة الحذف مع نظام الشير (Access Hub) فورياً في الخلفية
+    await accessSyncDelete(db, req.params.uuid, trader); // مزامنة الحذف مع نظام الشير (Access Hub) فورياً
     const redirectPath = trader?.member_type === 'broker' ? '/brokers' : (trader?.member_type === 'company' ? '/companies' : '/traders');
     res.redirect(redirectPath);
   } catch (err) {
