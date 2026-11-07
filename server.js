@@ -98,38 +98,6 @@ app.get('/uploads/:filename', async (req, res) => {
       }
     } catch (_) {}
 
-    // Extract original remote hash filename from trader_<no>_<hash> / company_<no>_<hash> / broker_<no>_<hash>
-    const match = filename.match(/^(?:trader|company|broker)_[^_]+_(.+)$/i);
-    const remoteFile = match ? match[1] : filename;
-
-    const candidateUrls = [
-      `https://membership.k-coc.org/storage/traders/${remoteFile}`,
-      `https://membership.k-coc.org/storage/companies/${remoteFile}`,
-      `https://membership.k-coc.org/storage/brokers/${remoteFile}`
-    ];
-
-    for (const remoteUrl of candidateUrls) {
-      try {
-        const resp = await fetch(remoteUrl, { signal: AbortSignal.timeout(8000) });
-        if (resp.ok) {
-          const buf = Buffer.from(await resp.arrayBuffer());
-          if (buf.length > 100) {
-            try {
-              if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-              }
-              fs.writeFileSync(primaryPath, buf);
-            } catch (_) {}
-            const ext = path.extname(filename).toLowerCase();
-            res.setHeader('Content-Type', ext === '.png' ? 'image/png' : 'image/jpeg');
-            return res.send(buf);
-          }
-        }
-      } catch (_) {
-        // try next candidate
-      }
-    }
-
     return res.redirect('/templates/avatar_placeholder.png');
   } catch (err) {
     return res.redirect('/templates/avatar_placeholder.png');
