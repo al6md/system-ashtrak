@@ -390,9 +390,18 @@ app.get('/traders/:uuid/edit', async (req, res) => {
   }
 });
 
-// Update Trader / Broker (PATCH)
-app.patch('/traders/:uuid', upload.single('person_pic'), async (req, res) => {
+// Update or Delete Trader / Broker (supports POST with multipart _method=patch/delete as well as PATCH/PUT)
+async function handleUpdateOrDeleteTrader(req, res) {
   try {
+    if (req.body && String(req.body._method || '').toUpperCase() === 'DELETE') {
+      const trader = await db.prepare("SELECT * FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
+      const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      await db.prepare("UPDATE traders SET deleted_at = ? WHERE uuid = ? OR id = ?").run(now, req.params.uuid, req.params.uuid);
+      await accessSyncDelete(db, req.params.uuid, trader);
+      const redirectPath = trader?.member_type === 'broker' ? '/brokers' : (trader?.member_type === 'company' ? '/companies' : '/traders');
+      return res.redirect(redirectPath);
+    }
+
     const traderBefore = await db.prepare("SELECT * FROM traders WHERE uuid = ? OR id = ?").get(req.params.uuid, req.params.uuid);
 
     const {
@@ -442,7 +451,11 @@ app.patch('/traders/:uuid', upload.single('person_pic'), async (req, res) => {
   } catch (err) {
     res.status(500).send('Error updating trader: ' + err.message);
   }
-});
+}
+
+app.patch('/traders/:uuid', upload.single('person_pic'), handleUpdateOrDeleteTrader);
+app.post('/traders/:uuid', upload.single('person_pic'), handleUpdateOrDeleteTrader);
+app.put('/traders/:uuid', upload.single('person_pic'), handleUpdateOrDeleteTrader);
 
 // Delete Trader / Broker
 app.delete('/traders/:uuid', async (req, res) => {
