@@ -270,7 +270,7 @@ app.get('/traders', async (req, res) => {
     const traders = await db.prepare(`
       SELECT * FROM traders 
       WHERE ${whereSql} 
-      ORDER BY id ASC 
+      ORDER BY created_at DESC, id DESC 
       LIMIT ? OFFSET ?
     `).all(...params, limit, offset);
 
@@ -442,7 +442,7 @@ app.get('/traders/export/csv', async (req, res) => {
     ];
     res.write(headers.map(h => `"${h}"`).join(',') + '\n');
 
-    const rows = await db.prepare("SELECT * FROM traders WHERE member_type = 'trader' ORDER BY id ASC").all();
+    const rows = await db.prepare("SELECT * FROM traders WHERE member_type = 'trader' ORDER BY created_at DESC, id DESC").all();
 
     for (const r of rows) {
       const line = [
@@ -578,7 +578,7 @@ app.get('/brokers', async (req, res) => {
     const brokers = await db.prepare(`
       SELECT * FROM traders 
       WHERE ${whereSql} 
-      ORDER BY id ASC 
+      ORDER BY created_at DESC, id DESC 
       LIMIT ? OFFSET ?
     `).all(...params, limit, offset);
 
@@ -685,7 +685,7 @@ app.get('/brokers/export/csv', async (req, res) => {
       where.push("(deleted_at IS NULL OR deleted_at = '')");
     }
 
-    const rows = await db.prepare(`SELECT * FROM traders WHERE ${where.join(' AND ')} ORDER BY id ASC`).all(...params);
+    const rows = await db.prepare(`SELECT * FROM traders WHERE ${where.join(' AND ')} ORDER BY created_at DESC, id DESC`).all(...params);
 
     for (const r of rows) {
       const line = [
@@ -851,7 +851,7 @@ app.get('/companies', async (req, res) => {
     const companies = await db.prepare(`
       SELECT * FROM traders 
       WHERE ${whereSql} 
-      ORDER BY id ASC 
+      ORDER BY created_at DESC, id DESC 
       LIMIT ? OFFSET ?
     `).all(...params, limit, offset);
 
@@ -891,7 +891,7 @@ app.get('/companies/export/csv', async (req, res) => {
     ];
     res.write(headers.map(h => `"${h}"`).join(',') + '\n');
 
-    const rows = await db.prepare("SELECT * FROM traders WHERE member_type = 'company' ORDER BY id ASC").all();
+    const rows = await db.prepare("SELECT * FROM traders WHERE member_type = 'company' ORDER BY created_at DESC, id DESC").all();
 
     for (const r of rows) {
       const line = [
