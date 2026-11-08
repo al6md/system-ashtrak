@@ -1801,7 +1801,7 @@
             { key: 'ceo_size', label: 'المدير المفوض (CEO Name)', prop: 'ceo' },
             { key: 'class_act_size', label: 'الصنف والنشاط (Class & Activity)', prop: 'class_act' },
             { key: 'cert_size', label: 'رقم إجازة التأسيس (License No)', prop: 'cert' },
-            { key: 'comm_date_size', label: 'الاسم التجاري وتاريخه (Commercial Name)', prop: 'comm_date' },
+            { key: 'comm_date_size', label: 'الاسم التجاري (الرقم فقط)', prop: 'comm_date' },
             { key: 'card_no_size', label: 'رقم الهوية والشريط الأسود (ID No)', prop: 'card_no' },
             { key: 'aff_date_size', label: 'تاريخ الانتساب (Affiliation Date)', prop: 'aff_date' },
             { key: 'exp_date_size', label: 'تاريخ النفاذ (Expiration Date)', prop: 'exp_date' }
@@ -2157,13 +2157,11 @@
             if (sampleCompany.incorporation_certificate_symbol) cert += ' (' + sampleCompany.incorporation_certificate_symbol + ')';
             drawAutoFitText(ctx, cert, s.cert_x || 725, s.cert_y || 435, photoLeftMargin, true);
 
-            // 5. الاسم التجاري وتاريخه
+            // 5. الاسم التجاري (الرقم فقط)
             ctx.font = `bold ${s.comm_date_size || 24}px "PT Bold Heading", sans-serif`;
-            let commDate = '';
-            if (sampleCompany.commercial_name_no) commDate += 'رقم ' + entoar(sampleCompany.commercial_name_no);
-            if (sampleCompany.affiliation_date) commDate += (commDate ? ' بتاريخ ' : '') + entoar(sampleCompany.affiliation_date);
-            if (!commDate) commDate = sampleCompany.commercial_name || '-';
-            drawAutoFitText(ctx, commDate, s.comm_date_x || 695, s.comm_date_y || 485, photoLeftMargin, true);
+            const commNo = sampleCompany.commercial_name_no ? entoar(sampleCompany.commercial_name_no) : (sampleCompany.commercial_name || '-');
+            const compCommX = (s.comm_date_x && s.comm_date_x !== 695) ? s.comm_date_x : 800;
+            drawAutoFitText(ctx, commNo, compCommX, s.comm_date_y || 485, photoLeftMargin, true);
 
             // 6. رقم الهوية والشريط الأسود (white text)
             ctx.fillStyle = '#FFFFFF';

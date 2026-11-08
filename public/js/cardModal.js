@@ -54,7 +54,7 @@ const COMPANY_FRONT_FIELDS = [
     { key: 'ceo', label: 'المدير المفوض', sizeKey: 'ceo_size', xKey: 'ceo_x', yKey: 'ceo_y' },
     { key: 'class_act', label: 'الصنف والنشاط', sizeKey: 'class_act_size', xKey: 'class_act_x', yKey: 'class_act_y' },
     { key: 'cert', label: 'إجازة التأسيس', sizeKey: 'cert_size', xKey: 'cert_x', yKey: 'cert_y' },
-    { key: 'comm_date', label: 'الاسم التجاري وتاريخه', sizeKey: 'comm_date_size', xKey: 'comm_date_x', yKey: 'comm_date_y' },
+    { key: 'comm_date', label: 'الاسم التجاري (الرقم)', sizeKey: 'comm_date_size', xKey: 'comm_date_x', yKey: 'comm_date_y' },
     { key: 'card_no', label: 'رقم الهوية', sizeKey: 'card_no_size', xKey: 'card_no_x', yKey: 'card_no_y' },
     { key: 'aff_date', label: 'الانتساب', sizeKey: 'aff_date_size', xKey: 'aff_date_x', yKey: 'aff_date_y' },
     { key: 'exp_date', label: 'النفاذ', sizeKey: 'exp_date_size', xKey: 'exp_date_x', yKey: 'exp_date_y' }
@@ -99,7 +99,7 @@ const DEFAULT_COMPANY_TYPOGRAPHY = {
         ceo_size: 24, ceo_x: 815, ceo_y: 338,
         class_act_size: 24, class_act_x: 775, class_act_y: 385,
         cert_size: 24, cert_x: 725, cert_y: 435,
-        comm_date_size: 24, comm_date_x: 695, comm_date_y: 485,
+        comm_date_size: 24, comm_date_x: 800, comm_date_y: 485,
         card_no_size: 30, card_no_x: 845, card_no_y: 560,
         aff_date_size: 23, aff_date_x: 885, aff_date_y: 626,
         exp_date_size: 23, exp_date_x: 465, exp_date_y: 626
@@ -336,11 +336,9 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
         drawAutoFitText(ctx, cert, s.cert_x || 725, s.cert_y || 435, photoLeftMargin, true);
 
         ctx.font = `bold ${s.comm_date_size || 24}px "PT Bold Heading", sans-serif`;
-        let commDate = '';
-        if (trader.commercial_name_no) commDate += 'رقم ' + entoar(trader.commercial_name_no);
-        if (trader.affiliation_date) commDate += (commDate ? ' بتاريخ ' : '') + entoar(trader.affiliation_date);
-        if (!commDate) commDate = trader.commercial_name || '-';
-        drawAutoFitText(ctx, commDate, s.comm_date_x || 695, s.comm_date_y || 485, photoLeftMargin, true);
+        const commNo = trader.commercial_name_no ? entoar(trader.commercial_name_no) : (trader.commercial_name || '-');
+        const compCommX = (s.comm_date_x && s.comm_date_x !== 695) ? s.comm_date_x : 800;
+        drawAutoFitText(ctx, commNo, compCommX, s.comm_date_y || 485, photoLeftMargin, true);
 
         ctx.fillStyle = '#FFFFFF';
         ctx.font = `bold ${s.card_no_size || 30}px "PT Bold Heading", sans-serif`;

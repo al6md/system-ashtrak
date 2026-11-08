@@ -1092,7 +1092,7 @@ const DEFAULT_COMPANY_CARD_TYPOGRAPHY = {
     ceo_size: 24, ceo_x: 815, ceo_y: 338,
     class_act_size: 24, class_act_x: 775, class_act_y: 385,
     cert_size: 24, cert_x: 725, cert_y: 435,
-    comm_date_size: 24, comm_date_x: 695, comm_date_y: 485,
+    comm_date_size: 24, comm_date_x: 800, comm_date_y: 485,
     card_no_size: 30, card_no_x: 845, card_no_y: 560,
     aff_date_size: 23, aff_date_x: 885, aff_date_y: 626,
     exp_date_size: 23, exp_date_x: 465, exp_date_y: 626
