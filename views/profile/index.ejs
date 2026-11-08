@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -2380,7 +2380,8 @@
 
             // 3. Commercial Name No:
             ctx.font = `bold ${s.comm_no_size || 28}px "Myriad Pro", Arial, sans-serif`;
-            drawAutoFitText(ctx, sampleBroker.commercial_name_no || '-', s.comm_no_x || 395, s.comm_no_y || 425, qrLeftBroker);
+            const brokerCommNo = (sampleBroker.commercial_name_no && sampleBroker.commercial_name_no !== '-') ? sampleBroker.commercial_name_no : '49465';
+            drawAutoFitText(ctx, brokerCommNo, s.comm_no_x || 395, s.comm_no_y || 425, qrLeftBroker);
 
             // 4. Activity:
             ctx.font = `bold ${s.activity_size || 28}px "Myriad Pro", Arial, sans-serif`;

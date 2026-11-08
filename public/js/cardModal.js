@@ -483,7 +483,12 @@ function drawCardBackSync(canvas, trader, bg, qrImg) {
         drawAutoFitText(ctx, formatClassName(trader.card_class, 'en'), s.class_x || 120, s.class_y || 368, qrLeftBroker);
 
         ctx.font = `bold ${s.comm_no_size || 28}px "Myriad Pro", Arial, sans-serif`;
-        drawAutoFitText(ctx, trader.commercial_name_no || '-', s.comm_no_x || 395, s.comm_no_y || 425, qrLeftBroker);
+        let brokerCommNo = trader.commercial_name_no;
+        if (!brokerCommNo && trader.commercial_name && trader.commercial_name.includes('/')) {
+            const parts = trader.commercial_name.split('/');
+            if (parts[1] && parts[1].trim()) brokerCommNo = parts[1].trim();
+        }
+        drawAutoFitText(ctx, brokerCommNo || '-', s.comm_no_x || 395, s.comm_no_y || 425, qrLeftBroker);
 
         ctx.font = `bold ${s.activity_size || 28}px "Myriad Pro", Arial, sans-serif`;
         const enAct = trader.english_activity || 'Real Estates BROKER';

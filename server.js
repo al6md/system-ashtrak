@@ -1207,9 +1207,9 @@ app.get('/profile', async (req, res) => {
             sql: `SELECT key, value FROM settings WHERE key IN ('card_typography', 'company_card_typography', 'broker_card_typography')`,
             args: [],
           },
-          { sql: `SELECT * FROM traders WHERE member_type = 'trader' AND photo_path IS NOT NULL LIMIT 1`, args: [] },
-          { sql: `SELECT * FROM traders WHERE member_type = 'company' AND photo_path IS NOT NULL LIMIT 1`, args: [] },
-          { sql: `SELECT * FROM traders WHERE member_type = 'broker' AND photo_path IS NOT NULL LIMIT 1`, args: [] },
+          { sql: `SELECT * FROM traders WHERE member_type = 'trader' AND photo_path IS NOT NULL AND commercial_name_no IS NOT NULL AND commercial_name_no != '' LIMIT 1`, args: [] },
+          { sql: `SELECT * FROM traders WHERE member_type = 'company' AND photo_path IS NOT NULL AND commercial_name_no IS NOT NULL AND commercial_name_no != '' LIMIT 1`, args: [] },
+          { sql: `SELECT * FROM traders WHERE member_type = 'broker' AND photo_path IS NOT NULL AND commercial_name_no IS NOT NULL AND commercial_name_no != '' LIMIT 1`, args: [] },
         ],
         'read'
       );
