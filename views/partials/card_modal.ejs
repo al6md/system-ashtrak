@@ -1,5 +1,5 @@
 <!-- ID Card Preview & Print Modal (Integrated with Cardval - Fast Cached Assets) -->
-<link rel="stylesheet" href="/css/cardModal.css?v=4">
+<link rel="stylesheet" href="/css/cardModal.css?v=5">
 <div id="printModal" class="fixed inset-0 z-50 bg-gray-900 bg-opacity-75" style="display: none; overflow-y: auto; padding: 1rem 0.5rem; box-sizing: border-box;">
     <div style="min-height: 100%; display: flex; align-items: center; justify-content: center; width: 100%;">
         <div class="bg-white rounded-lg shadow-xl w-full" style="max-width: 1040px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; margin: auto; border: 1px solid #e5e7eb;">
@@ -40,11 +40,12 @@
 
                         <!-- Action Buttons (Matching Cardval Dark Button UI) -->
                         <div style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.4rem; width: 100%;">
-                            <button type="button" onclick="printCR80()" class="modal-act-btn btn-dark">🖨️ CR80 Plastic</button>
-                            <button type="button" onclick="printA4()" class="modal-act-btn btn-dark">📄 Print A4</button>
-                            <button type="button" onclick="downloadImage('front')" class="modal-act-btn btn-outline">⬇️ Front PNG</button>
-                            <button type="button" onclick="downloadImage('back')" class="modal-act-btn btn-outline">⬇️ Back PNG</button>
-                            <a id="verifyLink" href="#" target="_blank" class="modal-act-btn btn-outline">🔗 Verification</a>
+                            <button type="button" onclick="printCR80('both')" class="modal-act-btn btn-dark" title="طباعة الوجهين (صفحة 1 للأمام وصفحة 2 للخلف)">🖨️ طباعة بلاستيك (الوجهين)</button>
+                            <button type="button" onclick="printCR80('current')" class="modal-act-btn btn-dark" title="طباعة الوجه المعروض حالياً فقط (للطابعات وجه واحد)">🖨️ طباعة الوجه المعروض</button>
+                            <button type="button" onclick="printA4()" class="modal-act-btn btn-dark" title="طباعة الوجهين معاً في ورقة A4 واحدة">📄 طباعة A4</button>
+                            <button type="button" onclick="downloadImage('front')" class="modal-act-btn btn-outline">⬇️ تحميل الأمامي</button>
+                            <button type="button" onclick="downloadImage('back')" class="modal-act-btn btn-outline">⬇️ تحميل الخلفي</button>
+                            <a id="verifyLink" href="#" target="_blank" class="modal-act-btn btn-outline">🔗 فحص الهوية</a>
                         </div>
                     </div>
 
@@ -139,4 +140,4 @@
         </div>
     </div>
 </div>
-<script src="/js/cardModal.js?v=4" defer></script>
+<script src="/js/cardModal.js?v=5" defer></script>

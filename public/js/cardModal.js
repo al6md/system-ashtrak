@@ -942,13 +942,31 @@ async function ensureBothCanvasesReady() {
     return { fCanvas, bCanvas };
 }
 
-async function printCR80() {
+async function printCR80(side = 'both') {
     const { fCanvas, bCanvas } = await ensureBothCanvasesReady();
     if (!fCanvas || !bCanvas) return;
+
+    let targetSide = side;
+    if (targetSide === 'current') {
+        targetSide = currentModalSide || 'front';
+    }
+
     const fData = fCanvas.toDataURL('image/png');
     const bData = bCanvas.toDataURL('image/png');
     const rawName = currentTrader ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name || '') : '';
     const safeName = escapeHtmlClient(rawName);
+
+    let pagesHtml = '';
+    if (targetSide === 'front') {
+        pagesHtml = `<div class="card-page"><img src="${fData}" alt="Front"></div>`;
+    } else if (targetSide === 'back') {
+        pagesHtml = `<div class="card-page"><img src="${bData}" alt="Back"></div>`;
+    } else {
+        pagesHtml = `
+            <div class="card-page"><img src="${fData}" alt="Front"></div>
+            <div class="card-page"><img src="${bData}" alt="Back"></div>
+        `;
+    }
 
     const html = `<!DOCTYPE html>
 <html>
@@ -965,28 +983,35 @@ async function printCR80() {
                 margin: 0 !important;
                 padding: 0 !important;
                 width: 85.6mm !important;
-                height: 53.98mm !important;
-                overflow: hidden !important;
+                height: auto !important;
+                overflow: visible !important;
+                background: #fff !important;
             }
             .card-page {
                 width: 85.6mm !important;
                 height: 53.98mm !important;
-                page-break-after: always;
-                page-break-inside: avoid;
+                page-break-after: always !important;
+                break-after: page !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                display: flex !important;
-                align-items: center;
-                justify-content: center;
+                display: block !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
             }
             .card-page:last-child {
                 page-break-after: auto !important;
+                break-after: auto !important;
             }
             img {
                 width: 85.6mm !important;
                 height: 53.98mm !important;
                 object-fit: fill !important;
                 display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
             }
         }
         body {
@@ -998,6 +1023,14 @@ async function printCR80() {
             width: 85.6mm;
             height: 53.98mm;
             display: block;
+            margin: 0;
+            padding: 0;
+            page-break-after: always;
+            break-after: page;
+        }
+        .card-page:last-child {
+            page-break-after: auto;
+            break-after: auto;
         }
         img {
             width: 85.6mm;
@@ -1007,8 +1040,7 @@ async function printCR80() {
     </style>
 </head>
 <body>
-    <div class="card-page"><img src="${fData}" alt="Front"></div>
-    <div class="card-page"><img src="${bData}" alt="Back"></div>
+    ${pagesHtml}
 </body>
 </html>`;
     printHtmlContent(html);
