@@ -46,7 +46,12 @@ export async function renderFrontCard(canvas, trader) {
   canvas.height = 644;
 
   // 1. Load Background Template
-  const bg = await loadImage('/templates/card_front_template.png');
+  const tplPath = (trader && trader.member_type === 'company')
+    ? '/templates/company_front_clean.png?v=3'
+    : ((trader && trader.member_type === 'broker')
+      ? '/templates/broker_front_clean.png?v=3'
+      : '/templates/card_front_template.png?v=3');
+  const bg = await loadImage(tplPath);
   if (bg) {
     ctx.drawImage(bg, 0, 0, 1024, 644);
   } else {

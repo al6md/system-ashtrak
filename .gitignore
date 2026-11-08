@@ -10,3 +10,5 @@ access_backfill/
 data/*.db*
 data/access_sync*
 data/photos_gdrive_ledger.json
+data/isolated_drive_photos_ledger.json
+public/templates/backup*/

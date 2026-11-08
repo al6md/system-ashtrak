@@ -20,6 +20,7 @@ export const GDRIVE_CONFIG = {
 };
 
 let configLoaded = false;
+let lastConfigCheck = 0;
 let cachedToken = null;
 let tokenExpiry = 0;
 
@@ -27,6 +28,11 @@ async function ensureConfigLoaded(db = defaultDb) {
   if (configLoaded && GDRIVE_CONFIG.clientId && GDRIVE_CONFIG.clientSecret && GDRIVE_CONFIG.refreshToken) {
     return;
   }
+  const now = Date.now();
+  if (now - lastConfigCheck < 300000 && lastConfigCheck > 0) {
+    return;
+  }
+  lastConfigCheck = now;
 
   // 1. محاولة القراءة من قاعدة البيانات السحابية Turso (تعمل على Vercel ومحلياً)
   if (db) {

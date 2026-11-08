@@ -1,8 +1,9 @@
 // ربط نظام الاشتراكات بنظام Share COC (Access Hub).
 // - يدعم المزامنة الفورية للإضافة، التعديل، والحذف.
-// - يعمل مع السحابة (Vercel + Turso) ومع السيرفر المحلي بدون التأثير على استقرار النظام.
+// - يعمل مع السحابة (Vercel + Turso) ومع السيرفر المحلي بأقصى سرعة (في الخلفية محلياً بدون تأخير استجابة المستخدم).
 // - للإيقاف الفوري: ACCESS_SYNC_ENABLED=false
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,14 +14,59 @@ const GUID = process.env.ACCESS_SYNC_GUID || 'SUBS-SYNC-64564f5f-9443-4446-ab98-
 const FILE_NAME = 'اسماء التجار والدلالين من جهاز الاشتراكات';
 const ENABLED = String(process.env.ACCESS_SYNC_ENABLED ?? 'true').toLowerCase() !== 'false';
 const SYNC_COMPANIES = String(process.env.ACCESS_SYNC_COMPANIES ?? 'true').toLowerCase() === 'true';
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
 const LEDGER_PATH = path.join(DATA, 'access_sync_live.json');      // ما أُرسل عبر الربط المباشر
-const BACKFILL_LEDGER = path.join(__dirname, 'access_backfill', 'ledger.json'); // ما أُرسل عبر الترحيل (قراءة فقط)
+const BACKFILL_LEDGER = path.join(__dirname, 'access_backfill', 'ledger.json'); // ما أُرسل عبر الترحيل (قراءة مرة واحدة فقط)
 const QUEUE_PATH = path.join(DATA, 'access_sync_queue.json');
 
 const CLASS = { '0': 'الممتاز', '1': 'الاول', '2': 'الثاني', '3': 'الثالث', '4': 'الرابع' };
-const readJson = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch { return d; } };
-const writeJson = (p, v) => { try { fs.writeFileSync(p, JSON.stringify(v, null, 1)); } catch (_) {} };
+const readJsonSyncOnce = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch { return d; } };
+
+// ذاكرة كاش داخلية لمنع قراءة ملفات كبيرة متزامنة (مثل 893KB في OneDrive) مع كل طلب
+let liveLedgerCache = null;
+let backfillLedgerCache = null;
+let ledgerWritePending = false;
+let queueWritePending = false;
+
+function getLiveLedger() {
+  if (!liveLedgerCache) liveLedgerCache = readJsonSyncOnce(LEDGER_PATH, {});
+  return liveLedgerCache;
+}
+
+function getBackfillLedger() {
+  if (!backfillLedgerCache) backfillLedgerCache = readJsonSyncOnce(BACKFILL_LEDGER, {});
+  return backfillLedgerCache;
+}
+
+function persistLedgerAsync() {
+  if (IS_SERVERLESS || ledgerWritePending || !liveLedgerCache) return;
+  ledgerWritePending = true;
+  setTimeout(async () => {
+    ledgerWritePending = false;
+    try {
+      await fsp.mkdir(DATA, { recursive: true });
+      await fsp.writeFile(LEDGER_PATH, JSON.stringify(liveLedgerCache, null, 1), 'utf-8');
+    } catch (_) {}
+  }, 150).unref?.();
+}
+
+let queue = IS_SERVERLESS ? [] : readJsonSyncOnce(QUEUE_PATH, []); // [{key, action, oldRow, currentRow, tries}]
+let busy = false;
+
+function persistQueueAsync() {
+  if (IS_SERVERLESS || queueWritePending) return;
+  queueWritePending = true;
+  setTimeout(async () => {
+    queueWritePending = false;
+    try {
+      await fsp.mkdir(DATA, { recursive: true });
+      // حفظ الحقول الضرورية فقط لتقليل حجم الملف على القرص
+      const compactQueue = queue.map(({ key, action, oldRow, tries }) => ({ key, action, oldRow, tries }));
+      await fsp.writeFile(QUEUE_PATH, JSON.stringify(compactQueue, null, 1), 'utf-8');
+    } catch (_) {}
+  }, 100).unref?.();
+}
 
 export function mapRow(r) {
   const type = r.member_type === 'broker' ? 'broker' : r.member_type === 'company' ? 'company' : 'trader';
@@ -65,21 +111,37 @@ export function mapRow(r) {
   return { type, table: type === 'broker' ? 'الدلالين' : 'التجار', record };
 }
 
-let queue = readJson(QUEUE_PATH, []); // [{key, action, oldRow, tries}]
-let busy = false;
-
 function adhIdFor(uuid) {
   if (!uuid) return null;
-  const live = readJson(LEDGER_PATH, {});
+  const live = getLiveLedger();
   if (live[uuid]?.adh_id) return live[uuid].adh_id;
-  const back = readJson(BACKFILL_LEDGER, {});
+  const back = getBackfillLedger();
   return back[uuid]?.adh_id || null;
+}
+
+function isUuidLike(val) {
+  return typeof val === 'string' && val.includes('-');
+}
+
+async function fetchRowByKey(db, key) {
+  if (!key) return null;
+  if (isUuidLike(key)) {
+    return await db.prepare('SELECT * FROM traders WHERE uuid = ?').get(key);
+  }
+  if (/^\d+$/.test(String(key))) {
+    return await db.prepare('SELECT * FROM traders WHERE id = ?').get(Number(key));
+  }
+  return await db.prepare('SELECT * FROM traders WHERE uuid = ?').get(String(key));
 }
 
 async function saveAdhIdToDb(db, uuid, adhId) {
   if (!uuid || !adhId) return;
   try {
-    await db.prepare('UPDATE traders SET adh_id = ? WHERE uuid = ? OR id = ?').run(adhId, uuid, uuid);
+    if (isUuidLike(uuid)) {
+      await db.prepare('UPDATE traders SET adh_id = ? WHERE uuid = ?').run(adhId, uuid);
+    } else {
+      await db.prepare('UPDATE traders SET adh_id = ? WHERE id = ?').run(adhId, uuid);
+    }
   } catch (_) {}
 }
 
@@ -131,7 +193,7 @@ async function findAdhIdBySearch(cardNo, name, table) {
     const data = await res.json().catch(() => ({}));
     const rows = data.rows || [];
 
-    // 1. مطابقة دقيقة للاسم + رقم الهوية معاً (الأهم لمنع تضارب أرقام الهويات المكررة عبر السنوات)
+    // 1. مطابقة دقيقة للاسم + رقم الهوية معاً
     if (cleanName && cleanCard) {
       const exactBoth = rows.find(r => {
         const rName = String(r.ArabicName || r['اسم الشركة'] || '').trim();
@@ -167,7 +229,11 @@ async function syncOne(db, item) {
   const explicitAction = item.action || 'save';
   const oldRow = item.oldRow || null;
 
-  const row = await db.prepare('SELECT * FROM traders WHERE uuid = ? OR id = ?').get(key, key);
+  // في حالة الحذف مع توفر oldRow، لا داعي لاستعلام إضافي من قاعدة البيانات السحابية
+  const row = (explicitAction === 'delete' && oldRow)
+    ? oldRow
+    : (item.currentRow || await fetchRowByKey(db, key));
+
   const isDeleted = explicitAction === 'delete' || Boolean(row && row.deleted_at && row.deleted_at !== '');
 
   // 1. حالة الحذف (DELETE)
@@ -190,7 +256,7 @@ async function syncOne(db, item) {
 
     if (adhId) {
       await call('DELETE', {}, `?id=${encodeURIComponent(adhId)}`);
-      const led = readJson(LEDGER_PATH, {});
+      const led = getLiveLedger();
       const k = refRow?.uuid || key;
       led[k] = {
         ...(led[k] || {}),
@@ -199,7 +265,7 @@ async function syncOne(db, item) {
         deleted: true,
         deleted_at: new Date().toISOString()
       };
-      writeJson(LEDGER_PATH, led);
+      persistLedgerAsync();
       console.log(`[AccessSync] DELETED from Share COC: [${table}] ${refRow?.name || refRow?.company_name || key}`);
       return true;
     } else {
@@ -214,10 +280,8 @@ async function syncOne(db, item) {
   if (m.type === 'company' && !SYNC_COMPANIES) return true;
   if (!row.name && !row.company_name) return true;
 
-  // إذا كانت العملية إضافة اسم جديد (explicitAction === 'add')، نرسله مباشرة عبر POST ليظهر في أعلى القائمة (#1)
   let adhId = explicitAction === 'add' ? null : (row.adh_id || oldRow?.adh_id || adhIdFor(row.uuid));
 
-  // في حالة التعديل فقط: إذا لم يكن المعرف محفوظاً، نبحث عنه باستخدام بيانات السجل قبل التعديل (أو الحالية)
   if (!adhId && explicitAction !== 'add') {
     const searchCard = oldRow ? (oldRow.card_no || oldRow.incorporation_certificate_no) : (row.card_no || row.incorporation_certificate_no);
     const searchName = oldRow ? (oldRow.name || oldRow.company_name) : (row.name || row.company_name);
@@ -230,15 +294,17 @@ async function syncOne(db, item) {
   // إذا وجدنا القيد في Share (تعديل)، نرسل طلب PUT
   if (adhId) {
     await call('PUT', { id: adhId, updates: m.record });
-    await saveAdhIdToDb(db, row.uuid, adhId);
-    const led = readJson(LEDGER_PATH, {});
+    if (row.adh_id !== adhId) {
+      await saveAdhIdToDb(db, row.uuid, adhId);
+    }
+    const led = getLiveLedger();
     led[row.uuid] = {
       adh_id: adhId,
       table: m.table,
       name: row.name || row.company_name,
       updated_at: new Date().toISOString()
     };
-    writeJson(LEDGER_PATH, led);
+    persistLedgerAsync();
     console.log(`[AccessSync] UPDATED in Share COC: [${m.table}] ${row.name || row.company_name}`);
     return true;
   }
@@ -249,14 +315,14 @@ async function syncOne(db, item) {
   if (newAdhId) {
     await saveAdhIdToDb(db, row.uuid, newAdhId);
   }
-  const led = readJson(LEDGER_PATH, {});
+  const led = getLiveLedger();
   led[row.uuid] = {
     adh_id: newAdhId,
     table: m.table,
     name: row.name || row.company_name,
     sent_at: new Date().toISOString()
   };
-  writeJson(LEDGER_PATH, led);
+  persistLedgerAsync();
   console.log(`[AccessSync] ADDED to Share COC: [${m.table}] ${row.name || row.company_name} -> ${newAdhId}`);
   return true;
 }
@@ -274,10 +340,10 @@ async function drain(db) {
         item.tries = (item.tries || 0) + 1;
         console.warn(`[AccessSync] failed (${item.tries}):`, e.message);
         if (item.tries >= 10) queue.shift();
-        writeJson(QUEUE_PATH, queue);
+        persistQueueAsync();
         break;
       }
-      writeJson(QUEUE_PATH, queue);
+      persistQueueAsync();
     }
   } finally {
     busy = false;
@@ -286,35 +352,43 @@ async function drain(db) {
 
 let timerStarted = false;
 
-async function enqueue(db, key, action = 'save', oldRow = null) {
+async function enqueue(db, key, action = 'save', oldRow = null, currentRow = null) {
   try {
     if (!ENABLED || !key) return;
     const existing = queue.find(q => q.key === key);
     if (existing) {
       existing.action = action;
       if (oldRow) existing.oldRow = oldRow;
+      if (currentRow) existing.currentRow = currentRow;
     } else {
-      queue.push({ key, action, oldRow, tries: 0 });
-      writeJson(QUEUE_PATH, queue);
+      queue.push({ key, action, oldRow, currentRow, tries: 0 });
+      persistQueueAsync();
     }
-    if (!timerStarted) {
+    if (!timerStarted && !IS_SERVERLESS) {
       timerStarted = true;
       setInterval(() => drain(db).catch(() => {}), 60000).unref();
     }
-    await drain(db);
+    if (IS_SERVERLESS) {
+      await drain(db);
+    } else {
+      // في السيرفر المحلي، تعمل المزامنة فوراً بالخلفية دون حجز استجابة المتصفح
+      setImmediate(() => {
+        drain(db).catch((err) => console.warn('[AccessSync] background drain error:', err.message));
+      });
+    }
   } catch (e) {
     console.warn('[AccessSync] notify error:', e.message);
   }
 }
 
-export async function notifyAdded(db, key) {
-  return enqueue(db, key, 'add');
+export async function notifyAdded(db, key, currentRow = null) {
+  return enqueue(db, key, 'add', null, currentRow);
 }
 
-export async function notifySaved(db, key, oldRow = null) {
-  return enqueue(db, key, 'save', oldRow);
+export async function notifySaved(db, key, oldRow = null, currentRow = null) {
+  return enqueue(db, key, 'save', oldRow, currentRow);
 }
 
 export async function notifyDeleted(db, key, oldRow = null) {
-  return enqueue(db, key, 'delete', oldRow);
+  return enqueue(db, key, 'delete', oldRow, null);
 }

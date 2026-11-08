@@ -89,3 +89,29 @@
         </div>
     </div>
 </nav>
+<script>
+if (!window.__cardvalNavPrefetch) {
+    window.__cardvalNavPrefetch = true;
+    const seen = new Set();
+    const prefetch = (href) => {
+        if (!href || seen.has(href) || href.includes('export/csv') || href.startsWith('#')) return;
+        seen.add(href);
+        const l = document.createElement('link');
+        l.rel = 'prefetch';
+        l.href = href;
+        document.head.appendChild(l);
+    };
+    let t = null;
+    document.addEventListener('mouseover', (e) => {
+        const a = e.target.closest && e.target.closest('a[href]');
+        if (!a || a.target === '_blank' || a.origin !== location.origin) return;
+        clearTimeout(t);
+        t = setTimeout(() => prefetch(a.href), 60);
+    }, { passive: true });
+    document.addEventListener('mousedown', (e) => {
+        const a = e.target.closest && e.target.closest('a[href]');
+        if (!a || a.target === '_blank' || a.origin !== location.origin) return;
+        prefetch(a.href);
+    }, { passive: true });
+}
+</script>

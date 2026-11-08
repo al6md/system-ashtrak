@@ -11,7 +11,7 @@
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
 
     <!-- Scripts and Styles -->
     <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
@@ -1864,13 +1864,19 @@
             }
         }
 
+        const _profileImgCache = new Map();
+        let _profileFontsReady = false;
+        let _profileFontsPromise = null;
+
         function loadImage(src) {
-            return new Promise(resolve => {
-                if (!src) return resolve(null);
+            if (!src) return Promise.resolve(null);
+            if (_profileImgCache.has(src)) return _profileImgCache.get(src);
+            const p = new Promise(resolve => {
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
                 img.onload = () => resolve(img);
                 img.onerror = () => {
+                    _profileImgCache.delete(src);
                     if (src !== '/templates/avatar_placeholder.png') {
                         loadImage('/templates/avatar_placeholder.png').then(resolve);
                     } else {
@@ -1879,18 +1885,25 @@
                 };
                 img.src = src;
             });
+            _profileImgCache.set(src, p);
+            return p;
         }
 
         async function ensureFonts() {
-            try {
-                await Promise.all([
-                    document.fonts.load('bold 28px "PT Bold Heading"'),
-                    document.fonts.load('bold 24px "Myriad Pro"')
-                ]);
-                await document.fonts.ready;
-            } catch (e) {
-                console.warn('Font loading check:', e);
-            }
+            if (_profileFontsReady) return;
+            if (_profileFontsPromise) return _profileFontsPromise;
+            _profileFontsPromise = (async () => {
+                try {
+                    await Promise.all([
+                        document.fonts.load('bold 28px "PT Bold Heading"'),
+                        document.fonts.load('bold 24px "Myriad Pro"')
+                    ]);
+                    _profileFontsReady = true;
+                } catch (e) {
+                    _profileFontsReady = true;
+                }
+            })();
+            return _profileFontsPromise;
         }
 
         function drawAutoFitText(ctx, text, x, y, maxBoundary, isRtl = false) {
@@ -1941,7 +1954,7 @@
             canvas.width = 1024;
             canvas.height = 644;
 
-            const bg = await loadImage('/templates/card_front_template.png');
+            const bg = await loadImage('/templates/card_front_template.png?v=3');
             if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
 
             const photoSrc = sampleTrader.photo_path || '/templates/avatar_placeholder.png';
@@ -2026,7 +2039,7 @@
 
             if (!sampleTraderQrUrl) {
                 try {
-                    const r = await fetch('/api/traders/' + (sampleTrader.id || 1) + '/qr');
+                    const r = await fetch('/api/traders/' + encodeURIComponent(sampleTrader.uuid || sampleTrader.id || 1) + '/qr');
                     const j = await r.json();
                     if (j.success) sampleTraderQrUrl = j.qr_url;
                 } catch (e) {}
@@ -2089,7 +2102,7 @@
             canvas.width = 1024;
             canvas.height = 644;
 
-            const bg = await loadImage('/templates/company_front_clean.png');
+            const bg = await loadImage('/templates/company_front_clean.png?v=3');
             if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
 
             const photoSrc = sampleCompany.photo_path || '/templates/avatar_placeholder.png';
@@ -2183,7 +2196,7 @@
 
             if (!sampleCompanyQrUrl) {
                 try {
-                    const r = await fetch('/api/traders/' + (sampleCompany.id || 1) + '/qr');
+                    const r = await fetch('/api/traders/' + encodeURIComponent(sampleCompany.uuid || sampleCompany.id || 1) + '/qr');
                     const j = await r.json();
                     if (j.success) sampleCompanyQrUrl = j.qr_url;
                 } catch (e) {}
@@ -2252,7 +2265,7 @@
             canvas.width = 1024;
             canvas.height = 644;
 
-            const bg = await loadImage('/templates/broker_front_clean.png');
+            const bg = await loadImage('/templates/broker_front_clean.png?v=3');
             if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
 
             const photoSrc = sampleBroker.photo_path || '/templates/avatar_placeholder.png';
@@ -2337,7 +2350,7 @@
 
             if (!sampleBrokerQrUrl) {
                 try {
-                    const r = await fetch('/api/traders/' + (sampleBroker.id || 1) + '/qr');
+                    const r = await fetch('/api/traders/' + encodeURIComponent(sampleBroker.uuid || sampleBroker.id || 1) + '/qr');
                     const j = await r.json();
                     if (j.success) sampleBrokerQrUrl = j.qr_url;
                 } catch (e) {}
@@ -2394,16 +2407,21 @@
         }
 
         // ================= TEMPLATE & SIDE CONTROLS =================
+        let _previewRaf = null;
         function renderCurrentPreview() {
-            if (currentActiveSide === 'front') {
-                if (activeTemplateType === 'trader') renderPreviewTraderFront();
-                else if (activeTemplateType === 'company') renderPreviewCompanyFront();
-                else renderPreviewBrokerFront();
-            } else {
-                if (activeTemplateType === 'trader') renderPreviewTraderBack();
-                else if (activeTemplateType === 'company') renderPreviewCompanyBack();
-                else renderPreviewBrokerBack();
-            }
+            if (_previewRaf) cancelAnimationFrame(_previewRaf);
+            _previewRaf = requestAnimationFrame(() => {
+                _previewRaf = null;
+                if (currentActiveSide === 'front') {
+                    if (activeTemplateType === 'trader') renderPreviewTraderFront();
+                    else if (activeTemplateType === 'company') renderPreviewCompanyFront();
+                    else renderPreviewBrokerFront();
+                } else {
+                    if (activeTemplateType === 'trader') renderPreviewTraderBack();
+                    else if (activeTemplateType === 'company') renderPreviewCompanyBack();
+                    else renderPreviewBrokerBack();
+                }
+            });
         }
 
         function switchCardTemplate(type) {

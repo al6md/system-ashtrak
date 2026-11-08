@@ -6,21 +6,26 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Read .env.turso if exists
+// Read .env and .env.turso if exists
 let envUrl = process.env.TURSO_DATABASE_URL;
 let envToken = process.env.TURSO_AUTH_TOKEN;
 
-const tursoEnvPath = path.join(__dirname, '.env.turso');
-if ((!envUrl || !envToken) && fs.existsSync(tursoEnvPath)) {
-  const raw = fs.readFileSync(tursoEnvPath, 'utf-8');
-  for (const line of raw.split('\n')) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('TURSO_DATABASE_URL=')) {
-      envUrl = trimmed.split('=')[1]?.trim();
-    }
-    if (trimmed.startsWith('TURSO_AUTH_TOKEN=')) {
-      envToken = trimmed.slice(trimmed.indexOf('=') + 1).trim();
-    }
+for (const envFile of ['.env', '.env.turso']) {
+  const envPath = path.join(__dirname, envFile);
+  if ((!envUrl || !envToken) && fs.existsSync(envPath)) {
+    try {
+      const raw = fs.readFileSync(envPath, 'utf-8');
+      for (const line of raw.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        if (trimmed.startsWith('TURSO_DATABASE_URL=') && !envUrl) {
+          envUrl = trimmed.slice(trimmed.indexOf('=') + 1).trim();
+        }
+        if (trimmed.startsWith('TURSO_AUTH_TOKEN=') && !envToken) {
+          envToken = trimmed.slice(trimmed.indexOf('=') + 1).trim();
+        }
+      }
+    } catch (_) {}
   }
 }
 
@@ -70,5 +75,20 @@ export const db = {
 
   async exec(sql) {
     return await turso.execute(sql);
+  },
+
+  async batch(statements, mode = 'read') {
+    const normalized = statements.map((s) =>
+      typeof s === 'string'
+        ? s
+        : { sql: s.sql, args: normalizeArgs(s.args || []) }
+    );
+    const results = await turso.batch(normalized, mode);
+    return results.map((res) => ({
+      rows: res.rows.map((r) => Object.assign({}, r)),
+      first: res.rows.length > 0 ? Object.assign({}, res.rows[0]) : null,
+      changes: res.rowsAffected,
+      lastInsertRowid: res.lastInsertRowid,
+    }));
   },
 };
