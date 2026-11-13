@@ -1845,6 +1845,16 @@
             return String(str).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
         }
 
+        // Render Arabic-Indic dates in LTR order (YYYY-MM-DD) while keeping right alignment at x
+        function drawArabicDate(ctx, dateStr, x, y) {
+            if (!dateStr) return;
+            ctx.save();
+            ctx.direction = 'ltr';
+            ctx.textAlign = 'right';
+            ctx.fillText(entoar(dateStr), x, y);
+            ctx.restore();
+        }
+
         function formatClassName(cardClass, lang = 'ar') {
             const c = String(cardClass || '').trim();
             if (lang === 'ar') {
@@ -2018,9 +2028,9 @@
             // 6. Dates
             ctx.fillStyle = '#000000';
             ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
-            ctx.fillText(entoar(sampleTrader.affiliation_date || ''), s.aff_date_x, s.aff_date_y);
+            drawArabicDate(ctx, sampleTrader.affiliation_date || '', s.aff_date_x, s.aff_date_y);
             ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
-            ctx.fillText(entoar(sampleTrader.expire_date || ''), s.exp_date_x, s.exp_date_y);
+            drawArabicDate(ctx, sampleTrader.expire_date || '', s.exp_date_x, s.exp_date_y);
 
             ctx.restore();
         }
@@ -2173,9 +2183,9 @@
             // 7. التواريخ
             ctx.fillStyle = '#000000';
             ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
-            ctx.fillText(entoar(sampleCompany.affiliation_date || ''), s.aff_date_x || 885, s.aff_date_y || 626);
+            drawArabicDate(ctx, sampleCompany.affiliation_date || '', s.aff_date_x || 885, s.aff_date_y || 626);
             ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
-            ctx.fillText(entoar(sampleCompany.expire_date || ''), s.exp_date_x || 465, s.exp_date_y || 626);
+            drawArabicDate(ctx, sampleCompany.expire_date || '', s.exp_date_x || 465, s.exp_date_y || 626);
 
             ctx.restore();
         }
@@ -2327,9 +2337,9 @@
             // 6. الانتساب والنفاذ
             ctx.fillStyle = '#000000';
             ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
-            ctx.fillText(entoar(sampleBroker.affiliation_date || ''), s.aff_date_x || 898, s.aff_date_y || 630);
+            drawArabicDate(ctx, sampleBroker.affiliation_date || '', s.aff_date_x || 898, s.aff_date_y || 630);
             ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
-            ctx.fillText(entoar(sampleBroker.expire_date || ''), s.exp_date_x || 470, s.exp_date_y || 630);
+            drawArabicDate(ctx, sampleBroker.expire_date || '', s.exp_date_x || 470, s.exp_date_y || 630);
 
             ctx.restore();
         }

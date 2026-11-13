@@ -8,6 +8,15 @@ export function entoar(str) {
   return String(str).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 }
 
+function drawArabicDate(ctx, dateStr, x, y) {
+  if (!dateStr) return;
+  ctx.save();
+  ctx.direction = 'ltr';
+  ctx.textAlign = 'right';
+  ctx.fillText(entoar(dateStr), x, y);
+  ctx.restore();
+}
+
 export function formatClassName(cardClass, lang = 'ar') {
   const c = String(cardClass || '').trim();
   if (lang === 'ar') {
@@ -129,10 +138,10 @@ export async function renderFrontCard(canvas, trader) {
   // الانتساب
   ctx.fillStyle = '#000000';
   ctx.font = 'bold 23px "PT Bold Heading", Cairo, sans-serif';
-  ctx.fillText(entoar(trader.affiliation_date || ''), 885, 626);
+  drawArabicDate(ctx, trader.affiliation_date || '', 885, 626);
 
   // النفاذ
-  ctx.fillText(entoar(trader.expire_date || ''), 465, 626);
+  drawArabicDate(ctx, trader.expire_date || '', 465, 626);
 
   ctx.restore();
 }

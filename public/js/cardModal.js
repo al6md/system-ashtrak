@@ -166,6 +166,16 @@ function entoar(str) {
     return String(str).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 }
 
+// Render Arabic-Indic dates in LTR order (YYYY-MM-DD) while keeping right alignment at x
+function drawArabicDate(ctx, dateStr, x, y) {
+    if (!dateStr) return;
+    ctx.save();
+    ctx.direction = 'ltr';
+    ctx.textAlign = 'right';
+    ctx.fillText(entoar(dateStr), x, y);
+    ctx.restore();
+}
+
 function formatClassName(cardClass, lang = 'ar') {
     const c = String(cardClass || '').trim();
     if (lang === 'ar') {
@@ -348,9 +358,9 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
 
         ctx.fillStyle = '#000000';
         ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
-        ctx.fillText(entoar(trader.affiliation_date || ''), s.aff_date_x || 885, s.aff_date_y || 626);
+        drawArabicDate(ctx, trader.affiliation_date || '', s.aff_date_x || 885, s.aff_date_y || 626);
         ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
-        ctx.fillText(entoar(trader.expire_date || ''), s.exp_date_x || 465, s.exp_date_y || 626);
+        drawArabicDate(ctx, trader.expire_date || '', s.exp_date_x || 465, s.exp_date_y || 626);
     } else if (isBroker) {
         const photoLeftBroker = 295;
         ctx.font = `bold ${s.name_size || 28}px "PT Bold Heading", sans-serif`;
@@ -375,9 +385,9 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
 
         ctx.fillStyle = '#000000';
         ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
-        ctx.fillText(entoar(trader.affiliation_date || ''), s.aff_date_x || 898, s.aff_date_y || 630);
+        drawArabicDate(ctx, trader.affiliation_date || '', s.aff_date_x || 898, s.aff_date_y || 630);
         ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
-        ctx.fillText(entoar(trader.expire_date || ''), s.exp_date_x || 470, s.exp_date_y || 630);
+        drawArabicDate(ctx, trader.expire_date || '', s.exp_date_x || 470, s.exp_date_y || 630);
     } else {
         const photoLeftTrader = 295;
         ctx.font = `bold ${s.name_size || 28}px "PT Bold Heading", sans-serif`;
@@ -402,9 +412,9 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
 
         ctx.fillStyle = '#000000';
         ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
-        ctx.fillText(entoar(trader.affiliation_date || ''), s.aff_date_x, s.aff_date_y);
+        drawArabicDate(ctx, trader.affiliation_date || '', s.aff_date_x, s.aff_date_y);
         ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
-        ctx.fillText(entoar(trader.expire_date || ''), s.exp_date_x, s.exp_date_y);
+        drawArabicDate(ctx, trader.expire_date || '', s.exp_date_x, s.exp_date_y);
     }
 
     ctx.restore();
