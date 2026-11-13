@@ -10,6 +10,8 @@ let currentModalQrUrl = null;
 let activeModalFieldKey = 'name';
 let redrawRafId = null;
 let modalRequestToken = 0;
+let modalReadyForPrint = false;
+let pendingPrintTimer = null;
 
 // Persistent in-memory caches (zero re-download / re-decode across opens & slider drags)
 const IMAGE_PROMISE_CACHE = new Map();
@@ -800,6 +802,7 @@ async function openPrintModal(traderId, uuid) {
     const bCanvas = document.getElementById('backCanvas');
 
     // Open modal shell immediately (< 5ms) so UI feels instant!
+    modalReadyForPrint = false;
     document.getElementById('modalTitle').innerText = 'جاري تجهيز الهوية...';
     modalEl.style.display = 'block';
     modalEl.classList.remove('hidden');
@@ -847,6 +850,9 @@ async function openPrintModal(traderId, uuid) {
             renderCardFront(fCanvas, currentTrader),
             renderCardBack(bCanvas, currentTrader, currentModalQrUrl)
         ]);
+        if (token === modalRequestToken) {
+            modalReadyForPrint = true;
+        }
     } catch (e) {
         if (token === modalRequestToken) {
             alert('Error loading card: ' + e.message);
@@ -856,6 +862,7 @@ async function openPrintModal(traderId, uuid) {
 
 function closePrintModal() {
     modalRequestToken++;
+    modalReadyForPrint = false;
     const modalEl = document.getElementById('printModal');
     if (modalEl) {
         modalEl.style.display = 'none';
@@ -886,85 +893,152 @@ function switchCardSide(side) {
     populateModalFieldPills();
 }
 
-function triggerWindowPrintWhenReady(win) {
-    const imgs = Array.from(win.document.images || []);
-    const readyPromises = imgs.map(img => {
-        if (img.complete) return Promise.resolve();
-        if (typeof img.decode === 'function') return img.decode().catch(() => {});
-        return new Promise(res => {
-            img.onload = res;
-            img.onerror = res;
-        });
-    });
-
-    Promise.all(readyPromises).then(() => {
-        requestAnimationFrame(() => {
-            try {
-                win.focus();
-                win.print();
-            } catch (err) {
-                console.warn('Print trigger error:', err);
+function flushPendingRedraw() {
+    if (!currentTrader) return;
+    if (redrawRafId) {
+        cancelAnimationFrame(redrawRafId);
+        redrawRafId = null;
+        if (currentModalSide === 'front') {
+            const tplPath = getFrontTemplatePath(currentTrader);
+            const photoSrc = currentTrader.photo_path || '/templates/avatar_placeholder.png';
+            if (RESOLVED_IMAGE_CACHE.has(tplPath) && RESOLVED_IMAGE_CACHE.has(photoSrc)) {
+                drawCardFrontSync(
+                    document.getElementById('frontCanvas'),
+                    currentTrader,
+                    RESOLVED_IMAGE_CACHE.get(tplPath),
+                    RESOLVED_IMAGE_CACHE.get(photoSrc)
+                );
             }
-        });
-    });
+        } else {
+            const tplPath = getBackTemplatePath(currentTrader);
+            const hasQr = !currentModalQrUrl || RESOLVED_IMAGE_CACHE.has(currentModalQrUrl);
+            if (RESOLVED_IMAGE_CACHE.has(tplPath) && hasQr) {
+                drawCardBackSync(
+                    document.getElementById('backCanvas'),
+                    currentTrader,
+                    RESOLVED_IMAGE_CACHE.get(tplPath),
+                    currentModalQrUrl ? RESOLVED_IMAGE_CACHE.get(currentModalQrUrl) : null
+                );
+            }
+        }
+    }
+}
+
+function openBlobPrintFallback(htmlContent) {
+    try {
+        const autoPrintHtml = htmlContent.replace(
+            '</body>',
+            '<script>window.addEventListener("load", function(){ setTimeout(function(){ window.focus(); window.print(); }, 80); });<\/script></body>'
+        );
+        const blob = new Blob([autoPrintHtml], { type: 'text/html;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (err) {
+        console.error('Fallback print failed:', err);
+    }
 }
 
 function printHtmlContent(htmlContent) {
-    let printWin = null;
-    try {
-        printWin = window.open('', '_blank');
-    } catch (e) {}
-
-    if (printWin) {
-        try {
-            printWin.document.open();
-            printWin.document.write(htmlContent);
-            printWin.document.close();
-            triggerWindowPrintWhenReady(printWin);
-            return;
-        } catch (e) {
-            console.warn('Popup write failed, falling back to iframe:', e);
-        }
+    if (pendingPrintTimer) {
+        clearTimeout(pendingPrintTimer);
+        pendingPrintTimer = null;
     }
 
     try {
-        let iframe = document.getElementById('cardPrintHiddenIframe');
-        if (!iframe) {
-            iframe = document.createElement('iframe');
-            iframe.id = 'cardPrintHiddenIframe';
-            iframe.style.position = 'fixed';
-            iframe.style.right = '0';
-            iframe.style.bottom = '0';
-            iframe.style.width = '0';
-            iframe.style.height = '0';
-            iframe.style.border = '0';
-            document.body.appendChild(iframe);
+        const existing = document.getElementById('cardPrintHiddenIframe');
+        if (existing) {
+            existing.remove();
         }
-        const doc = iframe.contentWindow.document;
+
+        const iframe = document.createElement('iframe');
+        iframe.id = 'cardPrintHiddenIframe';
+        iframe.style.position = 'fixed';
+        iframe.style.left = '-10000px';
+        iframe.style.top = '0';
+        iframe.style.width = '210mm';
+        iframe.style.height = '297mm';
+        iframe.style.border = '0';
+        iframe.style.opacity = '0';
+        iframe.style.pointerEvents = 'none';
+        iframe.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(iframe);
+
+        const win = iframe.contentWindow;
+        const doc = win && win.document;
+        if (!win || !doc) {
+            iframe.remove();
+            openBlobPrintFallback(htmlContent);
+            return;
+        }
+
+        let printed = false;
+        const firePrint = () => {
+            if (printed) return;
+            printed = true;
+
+            const imgs = Array.from(doc.images || []);
+            Promise.all(imgs.map(img => {
+                if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                if (typeof img.decode === 'function') return img.decode().catch(() => {});
+                return new Promise(res => {
+                    img.onload = res;
+                    img.onerror = res;
+                });
+            })).then(() => {
+                pendingPrintTimer = setTimeout(() => {
+                    pendingPrintTimer = null;
+                    try {
+                        win.focus();
+                        win.print();
+                    } catch (err) {
+                        console.warn('Iframe print failed, opening isolated print tab:', err);
+                        openBlobPrintFallback(htmlContent);
+                    }
+                }, 40);
+            });
+        };
+
+        iframe.onload = firePrint;
         doc.open();
         doc.write(htmlContent);
         doc.close();
-        triggerWindowPrintWhenReady(iframe.contentWindow);
+
+        if (doc.readyState === 'complete') {
+            firePrint();
+        }
     } catch (e) {
-        console.error('All print methods failed:', e);
+        console.warn('Hidden iframe setup failed, falling back:', e);
+        openBlobPrintFallback(htmlContent);
     }
 }
 
-async function ensureBothCanvasesReady() {
+async function getReadyCanvases() {
     const fCanvas = document.getElementById('frontCanvas');
     const bCanvas = document.getElementById('backCanvas');
-    if (currentTrader) {
+    if (!currentTrader) {
+        alert('جاري تجهيز بيانات الهوية، يرجى الانتظار لحظة ثم المحاولة مرة أخرى.');
+        return null;
+    }
+    if (modalReadyForPrint && fCanvas && bCanvas) {
+        flushPendingRedraw();
+        return { fCanvas, bCanvas };
+    }
+    flushPendingRedraw();
+    if (!modalReadyForPrint) {
         await Promise.all([
             renderCardFront(fCanvas, currentTrader),
             renderCardBack(bCanvas, currentTrader, currentModalQrUrl)
         ]);
+        modalReadyForPrint = true;
     }
-    return { fCanvas, bCanvas };
+    return (fCanvas && bCanvas) ? { fCanvas, bCanvas } : null;
 }
 
 async function printCR80(side = 'both') {
-    const { fCanvas, bCanvas } = await ensureBothCanvasesReady();
-    if (!fCanvas || !bCanvas) return;
+    const ready = await getReadyCanvases();
+    if (!ready) return;
+    const { fCanvas, bCanvas } = ready;
 
     let targetSide = side;
     if (targetSide === 'current') {
@@ -1067,8 +1141,9 @@ async function printCR80(side = 'both') {
 }
 
 async function printA4() {
-    const { fCanvas, bCanvas } = await ensureBothCanvasesReady();
-    if (!fCanvas || !bCanvas) return;
+    const ready = await getReadyCanvases();
+    if (!ready) return;
+    const { fCanvas, bCanvas } = ready;
     const fData = fCanvas.toDataURL('image/png');
     const bData = bCanvas.toDataURL('image/png');
     const rawName = currentTrader ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name || '') : '';
