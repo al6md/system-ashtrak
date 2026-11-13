@@ -361,6 +361,25 @@ function formatClassName(cardClass, lang = 'ar') {
   }
 }
 
+function normalizeGender(val) {
+  const v = String(val || '').trim().toLowerCase();
+  if (v === 'أنثى' || v === 'انثى' || v === 'female' || v === 'f') return 'أنثى';
+  return 'ذكر';
+}
+
+function appendGenderFilter(where, params, gender) {
+  const g = String(gender || '').trim();
+  if (!g) return;
+  if (g === 'أنثى' || g === 'انثى' || g.toLowerCase() === 'female') {
+    where.push("(gender IN ('أنثى', 'انثى', 'female', 'Female'))");
+  } else if (g === 'ذكر' || g.toLowerCase() === 'male') {
+    where.push("(gender = 'ذكر' OR gender IS NULL OR gender = '')");
+  } else {
+    where.push('gender = ?');
+    params.push(g);
+  }
+}
+
 // ==========================================
 // Shared Filter Builders & Paginated Query Runner
 // ==========================================
@@ -413,14 +432,15 @@ function buildTradersFilter(q) {
   const {
     search, name, english_name, commercial_name, activity,
     card_no, renewal_no, commercial_name_no, speciality,
-    card_class, affiliation_date_from, affiliation_date_to,
+    card_class, gender, affiliation_date_from, affiliation_date_to,
     expire_date_from, expire_date_to, status
   } = q;
 
   const isAdvancedSearch = Boolean(
     name || english_name || commercial_name || activity ||
     card_no || renewal_no || commercial_name_no || speciality ||
-    card_class || affiliation_date_from || affiliation_date_to ||
+    card_class || (gender && gender.trim() !== '') ||
+    affiliation_date_from || affiliation_date_to ||
     expire_date_from || expire_date_to || (status && status !== 'active')
   );
 
@@ -441,6 +461,7 @@ function buildTradersFilter(q) {
   if (commercial_name_no && commercial_name_no.trim()) { where.push('commercial_name_no = ?'); params.push(commercial_name_no.trim()); }
   if (speciality && speciality.trim()) { where.push('speciality LIKE ?'); params.push(`%${speciality.trim()}%`); }
   if (card_class && card_class !== '') { where.push('card_class = ?'); params.push(card_class); }
+  appendGenderFilter(where, params, gender);
   if (affiliation_date_from) { where.push('affiliation_date >= ?'); params.push(affiliation_date_from); }
   if (affiliation_date_to) { where.push('affiliation_date <= ?'); params.push(affiliation_date_to); }
   if (expire_date_from) { where.push('expire_date >= ?'); params.push(expire_date_from); }
@@ -459,7 +480,7 @@ function buildBrokersFilter(q) {
   const {
     search, name, english_name, commercial_name, card_no,
     stamp_no, renewal_no, activity, phone_number,
-    card_class, affiliation_date_from, affiliation_date_to, status
+    card_class, gender, affiliation_date_from, affiliation_date_to, status
   } = q;
 
   const isAdvancedSearch = Boolean(
@@ -467,8 +488,8 @@ function buildBrokersFilter(q) {
     (commercial_name && commercial_name.trim()) || (card_no && card_no.trim()) ||
     (stamp_no && stamp_no.trim()) || (renewal_no && renewal_no.trim()) ||
     (activity && activity.trim()) || (phone_number && phone_number.trim()) ||
-    (card_class && card_class !== '') || affiliation_date_from ||
-    affiliation_date_to || (status && status !== 'active')
+    (card_class && card_class !== '') || (gender && gender.trim() !== '') ||
+    affiliation_date_from || affiliation_date_to || (status && status !== 'active')
   );
 
   const where = ["member_type = 'broker'"];
@@ -488,6 +509,7 @@ function buildBrokersFilter(q) {
   if (activity && activity.trim()) { where.push('activity LIKE ?'); params.push(`%${activity.trim()}%`); }
   if (phone_number && phone_number.trim()) { where.push('phone_number LIKE ?'); params.push(`%${phone_number.trim()}%`); }
   if (card_class && card_class !== '') { where.push('card_class = ?'); params.push(card_class); }
+  appendGenderFilter(where, params, gender);
   if (affiliation_date_from) { where.push('affiliation_date >= ?'); params.push(affiliation_date_from); }
   if (affiliation_date_to) { where.push('affiliation_date <= ?'); params.push(affiliation_date_to); }
 
@@ -504,7 +526,7 @@ function buildCompaniesFilter(q) {
   const {
     search, name, company_name, english_name, english_company_name,
     commercial_name, ceo_name, activity, card_no, renewal_no,
-    commercial_name_no, incorporation_certificate_no, card_class,
+    commercial_name_no, incorporation_certificate_no, card_class, gender,
     affiliation_date_from, affiliation_date_to,
     expire_date_from, expire_date_to, status
   } = q;
@@ -516,8 +538,8 @@ function buildCompaniesFilter(q) {
     (activity && activity.trim()) || (card_no && card_no.trim()) ||
     (renewal_no && renewal_no.trim()) || (commercial_name_no && commercial_name_no.trim()) ||
     (incorporation_certificate_no && incorporation_certificate_no.trim()) ||
-    (card_class && card_class !== '') || affiliation_date_from ||
-    affiliation_date_to || expire_date_from || expire_date_to ||
+    (card_class && card_class !== '') || (gender && gender.trim() !== '') ||
+    affiliation_date_from || affiliation_date_to || expire_date_from || expire_date_to ||
     (status && status !== 'active')
   );
 
@@ -556,6 +578,7 @@ function buildCompaniesFilter(q) {
     params.push(`%${incorporation_certificate_no.trim()}%`);
   }
   if (card_class && card_class !== '') { where.push('card_class = ?'); params.push(card_class); }
+  appendGenderFilter(where, params, gender);
   if (affiliation_date_from) { where.push('affiliation_date >= ?'); params.push(affiliation_date_from); }
   if (affiliation_date_to) { where.push('affiliation_date <= ?'); params.push(affiliation_date_to); }
   if (expire_date_from) { where.push('expire_date >= ?'); params.push(expire_date_from); }
@@ -661,7 +684,7 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
   try {
     const {
       name, english_name, commercial_name, activity, english_activity,
-      card_no, stamp_no, renewal_no, card_class, commercial_name_no, speciality,
+      card_no, stamp_no, renewal_no, card_class, gender, commercial_name_no, speciality,
       phone_number, address, affiliation_date, expire_date, member_type,
       company_name, english_company_name, ceo_name, english_ceo_name,
       incorporation_certificate_no, incorporation_certificate_symbol
@@ -671,6 +694,7 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const photoPath = req.file ? '/uploads/' + req.file.filename : null;
     const resolvedType = member_type === 'broker' ? 'broker' : (member_type === 'company' ? 'company' : 'trader');
+    const resolvedGender = normalizeGender(gender);
 
     if (req.file) {
       const photoMeta = { name: name || company_name, card_no, commercial_name, member_type: resolvedType };
@@ -688,15 +712,15 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
     await db.prepare(`
       INSERT INTO traders (
         uuid, name, english_name, commercial_name, activity, english_activity,
-        card_no, stamp_no, renewal_no, card_class, commercial_name_no, speciality,
+        card_no, stamp_no, renewal_no, card_class, gender, commercial_name_no, speciality,
         phone_number, address, affiliation_date, expire_date, photo_path,
         company_name, english_company_name, ceo_name, english_ceo_name,
         incorporation_certificate_no, incorporation_certificate_symbol,
         member_type, created_by, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Site Admin', ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Site Admin', ?, ?)
     `).run(
       uuid, effectiveName, english_name || '', commercial_name || '', activity || '', english_activity || '',
-      card_no || '', stamp_no || '', renewal_no || '', card_class || '4', commercial_name_no || '', speciality || '',
+      card_no || '', stamp_no || '', renewal_no || '', card_class || '4', resolvedGender, commercial_name_no || '', speciality || '',
       phone_number || '', address || '', affiliation_date || '', expire_date || '', photoPath,
       company_name || '', english_company_name || '', ceo_name || '', english_ceo_name || '',
       incorporation_certificate_no || '', incorporation_certificate_symbol || '',
@@ -716,6 +740,7 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
       stamp_no: stamp_no || '',
       renewal_no: renewal_no || '',
       card_class: card_class || '4',
+      gender: resolvedGender,
       commercial_name_no: commercial_name_no || '',
       speciality: speciality || '',
       phone_number: phone_number || '',
@@ -796,11 +821,12 @@ async function handleUpdateOrDeleteTrader(req, res) {
 
     const {
       name, english_name, commercial_name, activity, english_activity,
-      card_no, stamp_no, renewal_no, card_class, commercial_name_no, speciality,
+      card_no, stamp_no, renewal_no, card_class, gender, commercial_name_no, speciality,
       phone_number, address, affiliation_date, expire_date
     } = req.body;
 
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const resolvedGender = normalizeGender(gender !== undefined ? gender : traderBefore.gender);
     let photoPath = traderBefore.photo_path;
 
     if (req.file) {
@@ -823,13 +849,13 @@ async function handleUpdateOrDeleteTrader(req, res) {
     await db.prepare(`
       UPDATE traders SET
         name = ?, english_name = ?, commercial_name = ?, activity = ?, english_activity = ?,
-        card_no = ?, stamp_no = ?, renewal_no = ?, card_class = ?, commercial_name_no = ?, speciality = ?,
+        card_no = ?, stamp_no = ?, renewal_no = ?, card_class = ?, gender = ?, commercial_name_no = ?, speciality = ?,
         phone_number = ?, address = ?, affiliation_date = ?, expire_date = ?, photo_path = ?,
         updated_at = ?
       WHERE id = ?
     `).run(
       name, english_name || '', commercial_name || '', activity || '', english_activity || '',
-      card_no, stamp_no || '', renewal_no || '', card_class || '4', commercial_name_no || '', speciality || '',
+      card_no, stamp_no || '', renewal_no || '', card_class || '4', resolvedGender, commercial_name_no || '', speciality || '',
       phone_number || '', address || '', affiliation_date || '', expire_date || '', photoPath,
       now, traderBefore.id
     );
@@ -847,6 +873,7 @@ async function handleUpdateOrDeleteTrader(req, res) {
       stamp_no: stamp_no || '',
       renewal_no: renewal_no || '',
       card_class: card_class || '4',
+      gender: resolvedGender,
       commercial_name_no: commercial_name_no || '',
       speciality: speciality || '',
       phone_number: phone_number || '',
@@ -891,7 +918,7 @@ app.get('/traders/export/csv', async (req, res) => {
 
     const headers = [
       'Name', 'English Name', 'Commercial Name', 'Activity', 'English Activity',
-      'Card No', 'Renewal No', 'Card Class', 'Commercial Name No', 'Speciality',
+      'Card No', 'Renewal No', 'Card Class', 'Gender', 'Commercial Name No', 'Speciality',
       'Phone Number', 'Address', 'Affiliation Date', 'Expire Date', 'Created By',
       'Created At', 'Updated At', 'Deleted At'
     ];
@@ -903,7 +930,7 @@ app.get('/traders/export/csv', async (req, res) => {
     for (const r of rows) {
       const line = [
         r.name || '', r.english_name || '', r.commercial_name || '', r.activity || '', r.english_activity || '',
-        r.card_no || '', r.renewal_no || '', r.card_class || '', r.commercial_name_no || '', r.speciality || '',
+        r.card_no || '', r.renewal_no || '', r.card_class || '', normalizeGender(r.gender), r.commercial_name_no || '', r.speciality || '',
         r.phone_number || '', r.address || '', r.affiliation_date || '', r.expire_date || '', r.created_by || 'Site Admin',
         r.created_at || '', r.updated_at || '', r.deleted_at || ''
       ].map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',');
@@ -959,7 +986,7 @@ app.get('/brokers/export/csv', async (req, res) => {
 
     const headers = [
       'Name', 'English Name', 'Commercial Name', 'Activity', 'English Activity',
-      'Card No', 'Stamp No', 'Renewal No', 'Card Class', 'Commercial Name No',
+      'Card No', 'Stamp No', 'Renewal No', 'Card Class', 'Gender', 'Commercial Name No',
       'Phone Number', 'Address', 'Affiliation Date', 'Expire Date', 'Created By',
       'Created At', 'Updated At', 'Deleted At'
     ];
@@ -971,7 +998,7 @@ app.get('/brokers/export/csv', async (req, res) => {
     for (const r of rows) {
       const line = [
         r.name || '', r.english_name || '', r.commercial_name || '', r.activity || '', r.english_activity || '',
-        r.card_no || '', r.stamp_no || '', r.renewal_no || '', r.card_class || '', r.commercial_name_no || '',
+        r.card_no || '', r.stamp_no || '', r.renewal_no || '', r.card_class || '', normalizeGender(r.gender), r.commercial_name_no || '',
         r.phone_number || '', r.address || '', r.affiliation_date || '', r.expire_date || '', r.created_by || 'Site Admin',
         r.created_at || '', r.updated_at || '', r.deleted_at || ''
       ].map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',');
@@ -1030,7 +1057,7 @@ app.get('/companies/export/csv', async (req, res) => {
 
     const headers = [
       'Company Name', 'English Company Name', 'CEO Name', 'English CEO Name', 'Activity',
-      'Card No', 'Renewal No', 'Card Class', 'Incorporation Certificate No', 'Incorporation Symbol',
+      'Card No', 'Renewal No', 'Card Class', 'Gender', 'Incorporation Certificate No', 'Incorporation Symbol',
       'Phone Number', 'Address', 'Affiliation Date', 'Expire Date', 'Created By',
       'Created At', 'Updated At', 'Deleted At'
     ];
@@ -1042,7 +1069,7 @@ app.get('/companies/export/csv', async (req, res) => {
     for (const r of rows) {
       const line = [
         r.company_name || r.commercial_name || '', r.english_company_name || '', r.ceo_name || r.name || '', r.english_ceo_name || r.english_name || '', r.activity || '',
-        r.card_no || '', r.renewal_no || '', r.card_class || '', r.incorporation_certificate_no || '', r.incorporation_certificate_symbol || '',
+        r.card_no || '', r.renewal_no || '', r.card_class || '', normalizeGender(r.gender), r.incorporation_certificate_no || '', r.incorporation_certificate_symbol || '',
         r.phone_number || '', r.address || '', r.affiliation_date || '', r.expire_date || '', r.created_by || 'Site Admin',
         r.created_at || '', r.updated_at || '', r.deleted_at || ''
       ].map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',');

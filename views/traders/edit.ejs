@@ -101,6 +101,13 @@
                         <option value="4" <%= trader.card_class === '4' ? 'selected' : '' %>>الرابع</option>
                     </select>
 
+                    <% const currentGender = (trader.gender === 'أنثى' || trader.gender === 'انثى' || String(trader.gender || '').toLowerCase() === 'female') ? 'أنثى' : 'ذكر'; %>
+                    <label for="gender" class="block text-sm font-medium text-gray-700 mt-3">Gender (الجنس)</label>
+                    <select name="gender" id="gender" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                        <option value="ذكر" <%= currentGender === 'ذكر' ? 'selected' : '' %>>ذكر</option>
+                        <option value="أنثى" <%= currentGender === 'أنثى' ? 'selected' : '' %>>أنثى</option>
+                    </select>
+
                     <label for="address" class="block text-sm font-medium text-gray-700 mt-3">Address</label>
                     <input name="address" id="address" type="text" placeholder="Address"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"

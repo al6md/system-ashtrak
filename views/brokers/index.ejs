@@ -91,6 +91,14 @@
                                     </select>
                                 </div>
                                 <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="gender">Gender (الجنس)</label>
+                                    <select id="gender" name="gender" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                        <option value="">Any</option>
+                                        <option value="ذكر" <%= query.gender === 'ذكر' ? 'selected' : '' %>>ذكر</option>
+                                        <option value="أنثى" <%= (query.gender === 'أنثى' || query.gender === 'انثى') ? 'selected' : '' %>>أنثى</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label class="block text-sm font-medium text-gray-700" for="affiliation_date_from">Affiliation from</label>
                                     <input id="affiliation_date_from" type="date" name="affiliation_date_from" value="<%= query.affiliation_date_from || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
                                 </div>
