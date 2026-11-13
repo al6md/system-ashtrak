@@ -8,13 +8,18 @@ export function entoar(str) {
   return String(str).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 }
 
+function formatArabicDate(dateStr) {
+  const s = String(dateStr || '').trim();
+  if (!s) return '';
+  const m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (m) return entoar(`${m[3]}-${m[2]}-${m[1]}`);
+  return entoar(s);
+}
+
 function drawArabicDate(ctx, dateStr, x, y) {
-  if (!dateStr) return;
-  ctx.save();
-  ctx.direction = 'ltr';
-  ctx.textAlign = 'right';
-  ctx.fillText(entoar(dateStr), x, y);
-  ctx.restore();
+  const formatted = formatArabicDate(dateStr);
+  if (!formatted) return;
+  ctx.fillText(formatted, x, y);
 }
 
 export function formatClassName(cardClass, lang = 'ar') {

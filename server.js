@@ -1536,6 +1536,12 @@ app.get('/traders/validate/:uuid', async (req, res) => {
     const arDisplayName = isComp ? (trader.company_name || trader.commercial_name || trader.name) : trader.name;
     const enDisplayName = isComp ? (trader.english_company_name || trader.english_name || trader.company_name) : trader.english_name;
 
+    const formatArDateForRtl = (d) => {
+      const s = String(d || '').trim();
+      const m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+      return m ? `${m[3]}-${m[2]}-${m[1]}` : (s || '-');
+    };
+
     res.send(`
 <!DOCTYPE html>
 <html lang="en" dir="rtl">
@@ -1588,8 +1594,8 @@ app.get('/traders/validate/:uuid', async (req, res) => {
                 <p id="ArCommercialName" class="ArText">الاسم التجاري: ${escapeHtml(trader.commercial_name || '-')} / <span id="ArCommercialNameNo">${escapeHtml(trader.commercial_name_no || '')}</span></p>
                 <p id="ArActivity" class="ArText">النشاط: ${escapeHtml(trader.activity || '-')}</p>
                 <p id="CardNo" class="ArText font-bold text-blue-700">رقم الهوية: ${escapeHtml(trader.card_no || '')} ${trader.renewal_no ? '/ ' + escapeHtml(trader.renewal_no) : ''}</p>
-                <p id="ArAffiliationDate" class="ArText">الانتماء: <span dir="ltr" style="display:inline-block;">${escapeHtml(trader.affiliation_date || '-')}</span></p>
-                <p id="ArExpireDate" class="ArText ${isExpired ? 'text-red-600' : 'text-green-700'}">النفاذ: <span dir="ltr" style="display:inline-block;">${escapeHtml(trader.expire_date || '-')}</span></p>
+                <p id="ArAffiliationDate" class="ArText">الانتماء: ${escapeHtml(formatArDateForRtl(trader.affiliation_date))}</p>
+                <p id="ArExpireDate" class="ArText ${isExpired ? 'text-red-600' : 'text-green-700'}">النفاذ: ${escapeHtml(formatArDateForRtl(trader.expire_date))}</p>
             </div>
             <div id="background">
                 <p id="EnName" class="EnText font-bold">${escapeHtml(enDisplayName || '-')}</p>
