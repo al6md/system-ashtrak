@@ -1201,7 +1201,7 @@ async function getQrBundleForUuid(req, uuid) {
   if (!qrDataUrl) {
     qrDataUrl = await QRCode.toDataURL(validateUrl, {
       margin: 0,
-      width: 300,
+      width: 900,
       color: { dark: '#000000', light: '#00000000' },
     });
     setBoundedMap(qrCache, validateUrl, qrDataUrl, 500);

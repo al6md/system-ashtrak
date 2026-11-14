@@ -511,8 +511,8 @@
 
                             <!-- Canvas Display (Crisp CR80 standard ratio 1024x644) -->
                             <div class="preview-canvas-wrap">
-                                <canvas id="previewFrontCanvas" width="1024" height="644" style="width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
-                                <canvas id="previewBackCanvas" width="1024" height="644" style="width: 100%; height: 100%; object-fit: contain; display: none;"></canvas>
+                                <canvas id="previewFrontCanvas" width="3434" height="2160" style="width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
+                                <canvas id="previewBackCanvas" width="3434" height="2160" style="width: 100%; height: 100%; object-fit: contain; display: none;"></canvas>
                             </div>
 
                             <!-- QUICK DIRECT TOOLBAR -->
@@ -1962,6 +1962,24 @@
         }
 
         // ================= RENDER TRADER FRONT & BACK =================
+        const CARD_LOGICAL_W = 1024;
+        const CARD_LOGICAL_H = 644;
+        const CARD_RENDER_W = 3434;
+        const CARD_RENDER_H = 2160;
+
+        function initHiResPreviewCanvas(canvas, bg) {
+            const ctx = canvas.getContext('2d');
+            if (canvas.width !== CARD_RENDER_W) canvas.width = CARD_RENDER_W;
+            if (canvas.height !== CARD_RENDER_H) canvas.height = CARD_RENDER_H;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, CARD_RENDER_W, CARD_RENDER_H);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            if (bg) ctx.drawImage(bg, 0, 0, CARD_RENDER_W, CARD_RENDER_H);
+            ctx.setTransform(CARD_RENDER_W / CARD_LOGICAL_W, 0, 0, CARD_RENDER_H / CARD_LOGICAL_H, 0, 0);
+            return ctx;
+        }
+
         function drawRoundedPhotoBox(ctx, photo, { x: boxX, y: boxY, w: boxW, h: boxH, radius }) {
             ctx.save();
             ctx.beginPath();
@@ -1988,12 +2006,8 @@
         async function renderPreviewTraderFront() {
             await ensureFonts();
             const canvas = document.getElementById('previewFrontCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 1024;
-            canvas.height = 644;
-
-            const bg = await loadImage('/templates/card_front_template.png?v=4');
-            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+            const bg = await loadImage('/templates/card_front_template.png?v=5');
+            const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const photoSrc = sampleTrader.photo_path || '/templates/avatar_placeholder.png';
             const photo = await loadImage(photoSrc);
@@ -2039,17 +2053,14 @@
             drawArabicDate(ctx, sampleTrader.expire_date || '', s.exp_date_x, s.exp_date_y);
 
             ctx.restore();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
         async function renderPreviewTraderBack() {
             await ensureFonts();
             const canvas = document.getElementById('previewBackCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 1024;
-            canvas.height = 644;
-
-            const bg = await loadImage('/templates/card_back_clean.png?v=4');
-            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+            const bg = await loadImage('/templates/card_back_clean.png?v=5');
+            const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const s = traderSettings.back;
 
@@ -2108,18 +2119,15 @@
             ctx.fillText(sampleTrader.expire_date || '-', s.exp_date_x, s.exp_date_y);
 
             ctx.restore();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
         // ================= RENDER COMPANY FRONT & BACK =================
         async function renderPreviewCompanyFront() {
             await ensureFonts();
             const canvas = document.getElementById('previewFrontCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 1024;
-            canvas.height = 644;
-
-            const bg = await loadImage('/templates/company_front_clean.png?v=4');
-            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+            const bg = await loadImage('/templates/company_front_clean.png?v=5');
+            const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const photoSrc = sampleCompany.photo_path || '/templates/avatar_placeholder.png';
             const photo = await loadImage(photoSrc);
@@ -2172,17 +2180,14 @@
             drawArabicDate(ctx, sampleCompany.expire_date || '', s.exp_date_x || 475, s.exp_date_y || 624);
 
             ctx.restore();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
         async function renderPreviewCompanyBack() {
             await ensureFonts();
             const canvas = document.getElementById('previewBackCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 1024;
-            canvas.height = 644;
-
-            const bg = await loadImage('/templates/company_back_clean.png?v=4');
-            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+            const bg = await loadImage('/templates/company_back_clean.png?v=5');
+            const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const s = companySettings.back;
 
@@ -2247,18 +2252,15 @@
             ctx.fillText(sampleCompany.expire_date || '-', s.exp_date_x || 638, s.exp_date_y || 628);
 
             ctx.restore();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
         // ================= RENDER BROKER FRONT & BACK =================
         async function renderPreviewBrokerFront() {
             await ensureFonts();
             const canvas = document.getElementById('previewFrontCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 1024;
-            canvas.height = 644;
-
-            const bg = await loadImage('/templates/broker_front_clean.png?v=4');
-            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+            const bg = await loadImage('/templates/broker_front_clean.png?v=5');
+            const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const photoSrc = sampleBroker.photo_path || '/templates/avatar_placeholder.png';
             const photo = await loadImage(photoSrc);
@@ -2304,17 +2306,14 @@
             drawArabicDate(ctx, sampleBroker.expire_date || '', s.exp_date_x || 470, s.exp_date_y || 626);
 
             ctx.restore();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
         async function renderPreviewBrokerBack() {
             await ensureFonts();
             const canvas = document.getElementById('previewBackCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 1024;
-            canvas.height = 644;
-
-            const bg = await loadImage('/templates/broker_back_clean.png?v=4');
-            if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+            const bg = await loadImage('/templates/broker_back_clean.png?v=5');
+            const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const s = brokerSettings.back;
 
@@ -2373,6 +2372,7 @@
             ctx.fillText(sampleBroker.expire_date || '-', s.exp_date_x || 733, s.exp_date_y || 624);
 
             ctx.restore();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
         // ================= TEMPLATE & SIDE CONTROLS =================

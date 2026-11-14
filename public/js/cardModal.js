@@ -163,6 +163,11 @@ const DEFAULT_TYPOGRAPHY = {
     }
 };
 
+const CARD_LOGICAL_W = 1024;
+const CARD_LOGICAL_H = 644;
+const CARD_RENDER_W = 3434;
+const CARD_RENDER_H = 2160;
+
 function getFrontPhotoBox(trader) {
     if (trader && trader.member_type === 'company') {
         return { x: 18, y: 265, w: 275, h: 355, radius: 22 };
@@ -299,6 +304,19 @@ function drawAutoFitText(ctx, text, x, y, maxBoundary, isRtl = false) {
     return scaleX;
 }
 
+function prepareHiResCardCanvas(canvas, bg) {
+    const ctx = canvas.getContext('2d');
+    if (canvas.width !== CARD_RENDER_W) canvas.width = CARD_RENDER_W;
+    if (canvas.height !== CARD_RENDER_H) canvas.height = CARD_RENDER_H;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, CARD_RENDER_W, CARD_RENDER_H);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    if (bg) ctx.drawImage(bg, 0, 0, CARD_RENDER_W, CARD_RENDER_H);
+    ctx.setTransform(CARD_RENDER_W / CARD_LOGICAL_W, 0, 0, CARD_RENDER_H / CARD_LOGICAL_H, 0, 0);
+    return ctx;
+}
+
 function drawCardFrontSync(canvas, trader, bg, photo) {
     if (!canvas || !trader) return;
     const isComp = trader.member_type === 'company';
@@ -310,12 +328,7 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
         ? activeCardTypography.front
         : ((globalTypography && globalTypography.front) ? globalTypography.front : fallbackDefaults.front);
 
-    const ctx = canvas.getContext('2d');
-    if (canvas.width !== 1024) canvas.width = 1024;
-    if (canvas.height !== 644) canvas.height = 644;
-    ctx.clearRect(0, 0, 1024, 644);
-
-    if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+    const ctx = prepareHiResCardCanvas(canvas, bg);
 
     const { x: boxX, y: boxY, w: boxW, h: boxH, radius } = getFrontPhotoBox(trader);
     const dFront = fallbackDefaults.front;
@@ -436,6 +449,7 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
     }
 
     ctx.restore();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 function drawCardBackSync(canvas, trader, bg, qrImg) {
@@ -449,12 +463,7 @@ function drawCardBackSync(canvas, trader, bg, qrImg) {
         ? activeCardTypography.back
         : ((globalTypography && globalTypography.back) ? globalTypography.back : fallbackDefaults.back);
 
-    const ctx = canvas.getContext('2d');
-    if (canvas.width !== 1024) canvas.width = 1024;
-    if (canvas.height !== 644) canvas.height = 644;
-    ctx.clearRect(0, 0, 1024, 644);
-
-    if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
+    const ctx = prepareHiResCardCanvas(canvas, bg);
 
     const dBack = fallbackDefaults.back;
     if (qrImg) {
@@ -568,18 +577,19 @@ function drawCardBackSync(canvas, trader, bg, qrImg) {
     }
 
     ctx.restore();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 function getFrontTemplatePath(trader) {
-    if (trader && trader.member_type === 'company') return '/templates/company_front_clean.png?v=4';
-    if (trader && trader.member_type === 'broker') return '/templates/broker_front_clean.png?v=4';
-    return '/templates/card_front_template.png?v=4';
+    if (trader && trader.member_type === 'company') return '/templates/company_front_clean.png?v=5';
+    if (trader && trader.member_type === 'broker') return '/templates/broker_front_clean.png?v=5';
+    return '/templates/card_front_template.png?v=5';
 }
 
 function getBackTemplatePath(trader) {
-    if (trader && trader.member_type === 'company') return '/templates/company_back_clean.png?v=4';
-    if (trader && trader.member_type === 'broker') return '/templates/broker_back_clean.png?v=4';
-    return '/templates/card_back_clean.png?v=4';
+    if (trader && trader.member_type === 'company') return '/templates/company_back_clean.png?v=5';
+    if (trader && trader.member_type === 'broker') return '/templates/broker_back_clean.png?v=5';
+    return '/templates/card_back_clean.png?v=5';
 }
 
 async function renderCardFront(canvas, trader) {
@@ -1093,6 +1103,8 @@ async function printCR80(side = 'both') {
                 height: auto !important;
                 overflow: visible !important;
                 background: #fff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .card-page {
                 width: 85.6mm !important;
@@ -1106,6 +1118,8 @@ async function printCR80(side = 'both') {
                 display: block !important;
                 overflow: hidden !important;
                 box-sizing: border-box !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .card-page:last-child {
                 page-break-after: auto !important;
@@ -1119,12 +1133,16 @@ async function printCR80(side = 'both') {
                 margin: 0 !important;
                 padding: 0 !important;
                 border: 0 !important;
+                image-rendering: -webkit-optimize-contrast;
+                image-rendering: high-quality;
             }
         }
         body {
             margin: 0;
             padding: 0;
             background: #fff;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
         .card-page {
             width: 85.6mm;
@@ -1143,6 +1161,8 @@ async function printCR80(side = 'both') {
             width: 85.6mm;
             height: 53.98mm;
             display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: high-quality;
         }
     </style>
 </head>
@@ -1174,9 +1194,11 @@ async function printA4() {
             margin: 15mm;
         }
         @media print {
-            body {
+            html, body {
                 margin: 0 !important;
                 padding: 10mm !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
         }
         body {
@@ -1185,6 +1207,8 @@ async function printA4() {
             margin: 0;
             padding: 20px;
             background: #fff;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
         h2 {
             margin: 0 0 8px 0;
@@ -1211,12 +1235,16 @@ async function printA4() {
             overflow: hidden;
             box-sizing: border-box;
             background: #fff;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
         .box img {
             width: 100%;
             height: 100%;
             object-fit: fill;
             display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: high-quality;
         }
     </style>
 </head>
@@ -1369,14 +1397,14 @@ window.addEventListener('load', () => {
         loadImage('/templates/avatar_placeholder.png');
         const p = window.location.pathname;
         if (p.startsWith('/companies')) {
-            loadImage('/templates/company_front_clean.png?v=4');
-            loadImage('/templates/company_back_clean.png?v=4');
+            loadImage('/templates/company_front_clean.png?v=5');
+            loadImage('/templates/company_back_clean.png?v=5');
         } else if (p.startsWith('/brokers')) {
-            loadImage('/templates/broker_front_clean.png?v=4');
-            loadImage('/templates/broker_back_clean.png?v=4');
+            loadImage('/templates/broker_front_clean.png?v=5');
+            loadImage('/templates/broker_back_clean.png?v=5');
         } else {
-            loadImage('/templates/card_front_template.png?v=4');
-            loadImage('/templates/card_back_clean.png?v=4');
+            loadImage('/templates/card_front_template.png?v=5');
+            loadImage('/templates/card_back_clean.png?v=5');
         }
     });
 });

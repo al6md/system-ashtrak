@@ -53,25 +53,39 @@ export function loadImage(src) {
   });
 }
 
-// Render Front Card on Canvas
-export async function renderFrontCard(canvas, trader) {
-  const ctx = canvas.getContext('2d');
-  canvas.width = 1024;
-  canvas.height = 644;
+const CARD_LOGICAL_W = 1024;
+const CARD_LOGICAL_H = 644;
+const CARD_RENDER_W = 3434;
+const CARD_RENDER_H = 2160;
 
-  // 1. Load Background Template
-  const tplPath = (trader && trader.member_type === 'company')
-    ? '/templates/company_front_clean.png?v=4'
-    : ((trader && trader.member_type === 'broker')
-      ? '/templates/broker_front_clean.png?v=4'
-      : '/templates/card_front_template.png?v=4');
-  const bg = await loadImage(tplPath);
+function initHiResCardCanvas(canvas, bg) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = CARD_RENDER_W;
+  canvas.height = CARD_RENDER_H;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, CARD_RENDER_W, CARD_RENDER_H);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   if (bg) {
-    ctx.drawImage(bg, 0, 0, 1024, 644);
+    ctx.drawImage(bg, 0, 0, CARD_RENDER_W, CARD_RENDER_H);
   } else {
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, 1024, 644);
+    ctx.fillRect(0, 0, CARD_RENDER_W, CARD_RENDER_H);
   }
+  ctx.setTransform(CARD_RENDER_W / CARD_LOGICAL_W, 0, 0, CARD_RENDER_H / CARD_LOGICAL_H, 0, 0);
+  return ctx;
+}
+
+// Render Front Card on Canvas
+export async function renderFrontCard(canvas, trader) {
+  // 1. Load Background Template
+  const tplPath = (trader && trader.member_type === 'company')
+    ? '/templates/company_front_clean.png?v=5'
+    : ((trader && trader.member_type === 'broker')
+      ? '/templates/broker_front_clean.png?v=5'
+      : '/templates/card_front_template.png?v=5');
+  const bg = await loadImage(tplPath);
+  const ctx = initHiResCardCanvas(canvas, bg);
 
   // 2. Draw Trader Photo (Inside rounded box)
   const photoSrc = trader.photo_path || '/templates/avatar_placeholder.png';
@@ -150,27 +164,19 @@ export async function renderFrontCard(canvas, trader) {
   drawArabicDate(ctx, trader.expire_date || '', 472, 616);
 
   ctx.restore();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 // Render Back Card on Canvas
 export async function renderBackCard(canvas, trader, qrDataUrl) {
-  const ctx = canvas.getContext('2d');
-  canvas.width = 1024;
-  canvas.height = 644;
-
   // 1. Load Clean Back Template
   const backTplPath = (trader && trader.member_type === 'company')
-    ? '/templates/company_back_clean.png?v=4'
+    ? '/templates/company_back_clean.png?v=5'
     : ((trader && trader.member_type === 'broker')
-      ? '/templates/broker_back_clean.png?v=4'
-      : '/templates/card_back_clean.png?v=4');
+      ? '/templates/broker_back_clean.png?v=5'
+      : '/templates/card_back_clean.png?v=5');
   const bg = await loadImage(backTplPath);
-  if (bg) {
-    ctx.drawImage(bg, 0, 0, 1024, 644);
-  } else {
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, 1024, 644);
-  }
+  const ctx = initHiResCardCanvas(canvas, bg);
 
   // 2. Draw Dynamic QR Code
   if (qrDataUrl) {
@@ -222,4 +228,5 @@ export async function renderBackCard(canvas, trader, qrDataUrl) {
   ctx.fillText(trader.expire_date || '-', 733, 630);
 
   ctx.restore();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
