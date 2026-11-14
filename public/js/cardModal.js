@@ -198,6 +198,15 @@ function drawArabicDate(ctx, dateStr, x, y) {
     ctx.fillText(formatted, x, y);
 }
 
+/** Formats the Arabic front incorporation license with its symbol first followed by a slash and Arabic-Indic digits. */
+function formatIncorporationLicense(certNo, certSymbol) {
+    const rawNum = String(certNo || '').trim();
+    const formattedNum = rawNum ? entoar(rawNum) : '';
+    const sym = String(certSymbol || '').trim();
+    if (sym && formattedNum) return `${sym} / ${formattedNum}`;
+    return sym || formattedNum || '-';
+}
+
 function formatClassName(cardClass, lang = 'ar') {
     const c = String(cardClass || '').trim();
     if (lang === 'ar') {
@@ -372,8 +381,7 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
         drawAutoFitText(ctx, classAct, s.class_act_x ?? dFront.class_act_x, s.class_act_y ?? dFront.class_act_y, photoLeftMargin, true);
 
         ctx.font = `bold ${s.cert_size || dFront.cert_size}px "PT Bold Heading", sans-serif`;
-        let cert = trader.incorporation_certificate_no ? entoar(trader.incorporation_certificate_no) : '-';
-        if (trader.incorporation_certificate_symbol) cert += ' (' + trader.incorporation_certificate_symbol + ')';
+        const cert = formatIncorporationLicense(trader.incorporation_certificate_no, trader.incorporation_certificate_symbol);
         drawAutoFitText(ctx, cert, s.cert_x ?? dFront.cert_x, s.cert_y ?? dFront.cert_y, photoLeftMargin, true);
 
         ctx.font = `bold ${s.comm_date_size || dFront.comm_date_size}px "PT Bold Heading", sans-serif`;
@@ -494,8 +502,7 @@ function drawCardBackSync(canvas, trader, bg, qrImg) {
         drawAutoFitText(ctx, classActEn, s.class_act_en_x ?? dBack.class_act_en_x, s.class_act_en_y ?? dBack.class_act_en_y, qrLeft);
 
         ctx.font = `bold ${s.license_en_size || dBack.license_en_size}px "Myriad Pro", Arial, sans-serif`;
-        let licText = trader.incorporation_certificate_no || '-';
-        if (trader.incorporation_certificate_symbol) licText += ' (' + trader.incorporation_certificate_symbol + ')';
+        const licText = String(trader.incorporation_certificate_no || '').trim() || '-';
         drawAutoFitText(ctx, licText, s.license_en_x ?? dBack.license_en_x, s.license_en_y ?? dBack.license_en_y, qrLeft);
 
         ctx.font = `bold ${s.comm_no_size || dBack.comm_no_size}px "Myriad Pro", Arial, sans-serif`;
