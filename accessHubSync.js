@@ -392,3 +392,29 @@ export async function notifySaved(db, key, oldRow = null, currentRow = null) {
 export async function notifyDeleted(db, key, oldRow = null) {
   return enqueue(db, key, 'delete', oldRow, null);
 }
+
+/**
+ * انتظار تفريغ طابور المزامنة بالكامل وحفظ السجل والانتظار حتى انتهاء الإرسال (للسكربتات)
+ */
+export async function flushQueue(db) {
+  while (busy || queue.length > 0) {
+    if (!busy && queue.length > 0) {
+      await drain(db);
+    }
+    if (queue.length > 0 && !busy) {
+      // Stop loop if an item failed permanently/back-off paused drain
+      break;
+    }
+    if (busy || queue.length > 0) {
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  }
+  if (liveLedgerCache) {
+    await fsp.mkdir(DATA, { recursive: true });
+    await fsp.writeFile(LEDGER_PATH, JSON.stringify(liveLedgerCache, null, 1), 'utf-8');
+  }
+  await fsp.mkdir(DATA, { recursive: true });
+  const compactQueue = queue.map(({ key, action, oldRow, tries }) => ({ key, action, oldRow, tries }));
+  await fsp.writeFile(QUEUE_PATH, JSON.stringify(compactQueue, null, 1), 'utf-8');
+  return { remaining: queue.length };
+}
