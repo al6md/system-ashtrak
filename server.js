@@ -1093,69 +1093,69 @@ app.get('/companies/:uuid/edit', (req, res) => {
 
 const DEFAULT_CARD_TYPOGRAPHY = {
   front: {
-    name_size: 28, name_x: 900, name_y: 308,
-    class_size: 26, class_x: 890, class_y: 366,
-    comm_size: 24, comm_x: 795, comm_y: 432,
-    activity_size: 24, activity_x: 885, activity_y: 490,
-    card_no_size: 30, card_no_x: 845, card_no_y: 560,
-    aff_date_size: 23, aff_date_x: 885, aff_date_y: 626,
-    exp_date_size: 23, exp_date_x: 465, exp_date_y: 626
+    name_size: 38, name_x: 905, name_y: 309,
+    class_size: 38, class_x: 897, class_y: 369,
+    comm_size: 33, comm_x: 800, comm_y: 429,
+    activity_size: 33, activity_x: 895, activity_y: 487,
+    card_no_size: 36, card_no_x: 849, card_no_y: 551,
+    aff_date_size: 28, aff_date_x: 908, aff_date_y: 616,
+    exp_date_size: 28, exp_date_x: 472, exp_date_y: 616
   },
   back: {
-    name_size: 26, name_x: 14, name_y: 305,
-    class_size: 24, class_x: 118, class_y: 368,
-    comm_no_size: 24, comm_no_x: 390, comm_no_y: 423,
-    activity_size: 22, activity_x: 165, activity_y: 474,
-    card_no_size: 30, card_no_x: 125, card_no_y: 560,
-    aff_date_size: 22, aff_date_x: 170, aff_date_y: 620,
-    exp_date_size: 22, exp_date_x: 735, exp_date_y: 620,
-    qr_x: 757, qr_y: 210, qr_size: 238
+    name_size: 36, name_x: 14, name_y: 305,
+    class_size: 36, class_x: 118, class_y: 376,
+    comm_no_size: 36, comm_no_x: 396, comm_no_y: 433,
+    activity_size: 36, activity_x: 163, activity_y: 484,
+    card_no_size: 34, card_no_x: 124, card_no_y: 570,
+    aff_date_size: 27, aff_date_x: 169, aff_date_y: 630,
+    exp_date_size: 27, exp_date_x: 733, exp_date_y: 630,
+    qr_x: 758, qr_y: 210, qr_size: 238
   }
 };
 
 const DEFAULT_COMPANY_CARD_TYPOGRAPHY = {
   front: {
-    comp_size: 26, comp_x: 900, comp_y: 285,
-    ceo_size: 24, ceo_x: 815, ceo_y: 338,
-    class_act_size: 24, class_act_x: 775, class_act_y: 385,
-    cert_size: 24, cert_x: 725, cert_y: 435,
-    comm_date_size: 24, comm_date_x: 800, comm_date_y: 485,
-    card_no_size: 30, card_no_x: 845, card_no_y: 560,
-    aff_date_size: 23, aff_date_x: 885, aff_date_y: 626,
-    exp_date_size: 23, exp_date_x: 465, exp_date_y: 626
+    comp_size: 38, comp_x: 900, comp_y: 281,
+    ceo_size: 36, ceo_x: 817, ceo_y: 334,
+    class_act_size: 33, class_act_x: 778, class_act_y: 381,
+    cert_size: 31, cert_x: 728, cert_y: 429,
+    comm_date_size: 33, comm_date_x: 805, comm_date_y: 477,
+    card_no_size: 35, card_no_x: 853, card_no_y: 567,
+    aff_date_size: 27, aff_date_x: 897, aff_date_y: 624,
+    exp_date_size: 28, exp_date_x: 475, exp_date_y: 624
   },
   back: {
-    comp_en_size: 36, comp_en_x: 195, comp_en_y: 322,
+    comp_en_size: 36, comp_en_x: 190, comp_en_y: 322,
     ceo_en_size: 33, ceo_en_x: 105, ceo_en_y: 364,
-    class_act_en_size: 33, class_act_en_x: 272, class_act_en_y: 410,
-    license_en_size: 33, license_en_x: 215, license_en_y: 453,
-    comm_no_size: 33, comm_no_x: 398, comm_no_y: 496,
-    card_no_size: 30, card_no_x: 125, card_no_y: 560,
-    aff_date_size: 23, aff_date_x: 170, aff_date_y: 620,
-    exp_date_size: 24, exp_date_x: 649, exp_date_y: 620,
-    qr_x: 754, qr_y: 212, qr_size: 234
+    class_act_en_size: 33, class_act_en_x: 274, class_act_en_y: 410,
+    license_en_size: 33, license_en_x: 214, license_en_y: 460,
+    comm_no_size: 33, comm_no_x: 396, comm_no_y: 504,
+    card_no_size: 32, card_no_x: 127, card_no_y: 573,
+    aff_date_size: 27, aff_date_x: 174, aff_date_y: 628,
+    exp_date_size: 27, exp_date_x: 638, exp_date_y: 628,
+    qr_x: 753, qr_y: 217, qr_size: 237
   }
 };
 
 const DEFAULT_BROKER_CARD_TYPOGRAPHY = {
   front: {
-    name_size: 28, name_x: 910, name_y: 308,
-    class_size: 26, class_x: 898, class_y: 368,
-    comm_size: 24, comm_x: 800, comm_y: 432,
-    activity_size: 24, activity_x: 898, activity_y: 496,
-    card_no_size: 30, card_no_x: 860, card_no_y: 560,
-    aff_date_size: 23, aff_date_x: 898, aff_date_y: 630,
-    exp_date_size: 23, exp_date_x: 470, exp_date_y: 630
+    name_size: 36, name_x: 904, name_y: 309,
+    class_size: 36, class_x: 892, class_y: 371,
+    comm_size: 32, comm_x: 796, comm_y: 432,
+    activity_size: 32, activity_x: 891, activity_y: 493,
+    card_no_size: 35, card_no_x: 844, card_no_y: 557,
+    aff_date_size: 27, aff_date_x: 890, aff_date_y: 626,
+    exp_date_size: 27, exp_date_x: 470, exp_date_y: 626
   },
   back: {
-    name_size: 28, name_x: 130, name_y: 308,
-    class_size: 28, class_x: 120, class_y: 368,
-    comm_no_size: 28, comm_no_x: 395, comm_no_y: 425,
-    activity_size: 28, activity_x: 165, activity_y: 478,
-    card_no_size: 30, card_no_x: 125, card_no_y: 560,
-    aff_date_size: 24, aff_date_x: 170, aff_date_y: 625,
-    exp_date_size: 24, exp_date_x: 735, exp_date_y: 625,
-    qr_x: 758, qr_y: 207, qr_size: 238
+    name_size: 36, name_x: 13, name_y: 301,
+    class_size: 34, class_x: 116, class_y: 371,
+    comm_no_size: 34, comm_no_x: 394, comm_no_y: 430,
+    activity_size: 34, activity_x: 160, activity_y: 479,
+    card_no_size: 34, card_no_x: 122, card_no_y: 565,
+    aff_date_size: 27, aff_date_x: 168, aff_date_y: 624,
+    exp_date_size: 27, exp_date_x: 733, exp_date_y: 624,
+    qr_x: 759, qr_y: 207, qr_size: 238
   }
 };
 

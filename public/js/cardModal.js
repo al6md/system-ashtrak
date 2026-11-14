@@ -97,71 +97,81 @@ const BROKER_BACK_FIELDS = [
 
 const DEFAULT_COMPANY_TYPOGRAPHY = {
     front: {
-        comp_size: 26, comp_x: 900, comp_y: 285,
-        ceo_size: 24, ceo_x: 815, ceo_y: 338,
-        class_act_size: 24, class_act_x: 775, class_act_y: 385,
-        cert_size: 24, cert_x: 725, cert_y: 435,
-        comm_date_size: 24, comm_date_x: 800, comm_date_y: 485,
-        card_no_size: 30, card_no_x: 845, card_no_y: 560,
-        aff_date_size: 23, aff_date_x: 885, aff_date_y: 626,
-        exp_date_size: 23, exp_date_x: 465, exp_date_y: 626
+        comp_size: 38, comp_x: 900, comp_y: 281,
+        ceo_size: 36, ceo_x: 817, ceo_y: 334,
+        class_act_size: 33, class_act_x: 778, class_act_y: 381,
+        cert_size: 31, cert_x: 728, cert_y: 429,
+        comm_date_size: 33, comm_date_x: 805, comm_date_y: 477,
+        card_no_size: 35, card_no_x: 853, card_no_y: 567,
+        aff_date_size: 27, aff_date_x: 897, aff_date_y: 624,
+        exp_date_size: 28, exp_date_x: 475, exp_date_y: 624
     },
     back: {
-        comp_en_size: 36, comp_en_x: 195, comp_en_y: 322,
+        comp_en_size: 36, comp_en_x: 190, comp_en_y: 322,
         ceo_en_size: 33, ceo_en_x: 105, ceo_en_y: 364,
-        class_act_en_size: 33, class_act_en_x: 272, class_act_en_y: 410,
-        license_en_size: 33, license_en_x: 215, license_en_y: 461,
-        comm_no_size: 33, comm_no_x: 398, comm_no_y: 502,
-        card_no_size: 30, card_no_x: 125, card_no_y: 560,
-        aff_date_size: 28, aff_date_x: 170, aff_date_y: 630,
-        exp_date_size: 29, exp_date_x: 649, exp_date_y: 629,
-        qr_x: 754, qr_y: 212, qr_size: 234
+        class_act_en_size: 33, class_act_en_x: 274, class_act_en_y: 410,
+        license_en_size: 33, license_en_x: 214, license_en_y: 460,
+        comm_no_size: 33, comm_no_x: 396, comm_no_y: 504,
+        card_no_size: 32, card_no_x: 127, card_no_y: 573,
+        aff_date_size: 27, aff_date_x: 174, aff_date_y: 628,
+        exp_date_size: 27, exp_date_x: 638, exp_date_y: 628,
+        qr_x: 753, qr_y: 217, qr_size: 237
     }
 };
 
 const DEFAULT_BROKER_TYPOGRAPHY = {
     front: {
-        name_size: 28, name_x: 910, name_y: 308,
-        class_size: 26, class_x: 898, class_y: 368,
-        comm_size: 24, comm_x: 800, comm_y: 432,
-        activity_size: 24, activity_x: 898, activity_y: 496,
-        card_no_size: 30, card_no_x: 860, card_no_y: 560,
-        aff_date_size: 23, aff_date_x: 898, aff_date_y: 630,
-        exp_date_size: 23, exp_date_x: 470, exp_date_y: 630
+        name_size: 36, name_x: 904, name_y: 309,
+        class_size: 36, class_x: 892, class_y: 371,
+        comm_size: 32, comm_x: 796, comm_y: 432,
+        activity_size: 32, activity_x: 891, activity_y: 493,
+        card_no_size: 35, card_no_x: 844, card_no_y: 557,
+        aff_date_size: 27, aff_date_x: 890, aff_date_y: 626,
+        exp_date_size: 27, exp_date_x: 470, exp_date_y: 626
     },
     back: {
-        name_size: 28, name_x: 130, name_y: 308,
-        class_size: 28, class_x: 120, class_y: 368,
-        comm_no_size: 28, comm_no_x: 395, comm_no_y: 425,
-        activity_size: 28, activity_x: 165, activity_y: 478,
-        card_no_size: 30, card_no_x: 125, card_no_y: 560,
-        aff_date_size: 24, aff_date_x: 170, aff_date_y: 625,
-        exp_date_size: 24, exp_date_x: 735, exp_date_y: 625,
-        qr_x: 758, qr_y: 207, qr_size: 238
+        name_size: 36, name_x: 13, name_y: 301,
+        class_size: 34, class_x: 116, class_y: 371,
+        comm_no_size: 34, comm_no_x: 394, comm_no_y: 430,
+        activity_size: 34, activity_x: 160, activity_y: 479,
+        card_no_size: 34, card_no_x: 122, card_no_y: 565,
+        aff_date_size: 27, aff_date_x: 168, aff_date_y: 624,
+        exp_date_size: 27, exp_date_x: 733, exp_date_y: 624,
+        qr_x: 759, qr_y: 207, qr_size: 238
     }
 };
 
 const DEFAULT_TYPOGRAPHY = {
     front: {
-        name_size: 28, name_x: 900, name_y: 308,
-        class_size: 26, class_x: 890, class_y: 366,
-        comm_size: 24, comm_x: 795, comm_y: 432,
-        activity_size: 24, activity_x: 885, activity_y: 490,
-        card_no_size: 30, card_no_x: 845, card_no_y: 560,
-        aff_date_size: 23, aff_date_x: 885, aff_date_y: 626,
-        exp_date_size: 23, exp_date_x: 465, exp_date_y: 626
+        name_size: 38, name_x: 905, name_y: 309,
+        class_size: 38, class_x: 897, class_y: 369,
+        comm_size: 33, comm_x: 800, comm_y: 429,
+        activity_size: 33, activity_x: 895, activity_y: 487,
+        card_no_size: 36, card_no_x: 849, card_no_y: 551,
+        aff_date_size: 28, aff_date_x: 908, aff_date_y: 616,
+        exp_date_size: 28, exp_date_x: 472, exp_date_y: 616
     },
     back: {
-        name_size: 26, name_x: 14, name_y: 305,
-        class_size: 24, class_x: 118, class_y: 368,
-        comm_no_size: 24, comm_no_x: 390, comm_no_y: 423,
-        activity_size: 22, activity_x: 165, activity_y: 474,
-        card_no_size: 30, card_no_x: 125, card_no_y: 560,
-        aff_date_size: 22, aff_date_x: 170, aff_date_y: 620,
-        exp_date_size: 22, exp_date_x: 735, exp_date_y: 620,
-        qr_x: 757, qr_y: 210, qr_size: 238
+        name_size: 36, name_x: 14, name_y: 305,
+        class_size: 36, class_x: 118, class_y: 376,
+        comm_no_size: 36, comm_no_x: 396, comm_no_y: 433,
+        activity_size: 36, activity_x: 163, activity_y: 484,
+        card_no_size: 34, card_no_x: 124, card_no_y: 570,
+        aff_date_size: 27, aff_date_x: 169, aff_date_y: 630,
+        exp_date_size: 27, exp_date_x: 733, exp_date_y: 630,
+        qr_x: 758, qr_y: 210, qr_size: 238
     }
 };
+
+function getFrontPhotoBox(trader) {
+    if (trader && trader.member_type === 'company') {
+        return { x: 18, y: 265, w: 275, h: 355, radius: 22 };
+    }
+    if (trader && trader.member_type === 'broker') {
+        return { x: 23, y: 267, w: 272, h: 353, radius: 22 };
+    }
+    return { x: 20, y: 268, w: 275, h: 342, radius: 22 };
+}
 
 function entoar(str) {
     if (!str) return '';
@@ -307,7 +317,8 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
 
     if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
 
-    const boxX = 14, boxY = 266, boxW = 274, boxH = 354, radius = 24;
+    const { x: boxX, y: boxY, w: boxW, h: boxH, radius } = getFrontPhotoBox(trader);
+    const dFront = fallbackDefaults.front;
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(boxX + radius, boxY);
@@ -336,92 +347,92 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
     ctx.fillStyle = '#000000';
 
     if (isComp) {
-        const photoLeftMargin = 295;
-        ctx.font = `bold ${s.comp_size || 26}px "PT Bold Heading", sans-serif`;
-        drawAutoFitText(ctx, trader.company_name || trader.commercial_name || trader.name || '', s.comp_x || 900, s.comp_y || 285, photoLeftMargin, true);
+        const photoLeftMargin = 298;
+        ctx.font = `bold ${s.comp_size || dFront.comp_size}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.company_name || trader.commercial_name || trader.name || '', s.comp_x ?? dFront.comp_x, s.comp_y ?? dFront.comp_y, photoLeftMargin, true);
 
-        ctx.font = `bold ${s.ceo_size || 24}px "PT Bold Heading", sans-serif`;
-        drawAutoFitText(ctx, trader.ceo_name || trader.name || '', s.ceo_x || 815, s.ceo_y || 338, photoLeftMargin, true);
+        ctx.font = `bold ${s.ceo_size || dFront.ceo_size}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.ceo_name || trader.name || '', s.ceo_x ?? dFront.ceo_x, s.ceo_y ?? dFront.ceo_y, photoLeftMargin, true);
 
-        ctx.font = `bold ${s.class_act_size || 24}px "PT Bold Heading", sans-serif`;
+        ctx.font = `bold ${s.class_act_size || dFront.class_act_size}px "PT Bold Heading", sans-serif`;
         const classAct = formatClassName(trader.card_class, 'ar') + ' / ' + (trader.activity || '-');
-        drawAutoFitText(ctx, classAct, s.class_act_x || 775, s.class_act_y || 385, photoLeftMargin, true);
+        drawAutoFitText(ctx, classAct, s.class_act_x ?? dFront.class_act_x, s.class_act_y ?? dFront.class_act_y, photoLeftMargin, true);
 
-        ctx.font = `bold ${s.cert_size || 24}px "PT Bold Heading", sans-serif`;
+        ctx.font = `bold ${s.cert_size || dFront.cert_size}px "PT Bold Heading", sans-serif`;
         let cert = trader.incorporation_certificate_no ? entoar(trader.incorporation_certificate_no) : '-';
         if (trader.incorporation_certificate_symbol) cert += ' (' + trader.incorporation_certificate_symbol + ')';
-        drawAutoFitText(ctx, cert, s.cert_x || 725, s.cert_y || 435, photoLeftMargin, true);
+        drawAutoFitText(ctx, cert, s.cert_x ?? dFront.cert_x, s.cert_y ?? dFront.cert_y, photoLeftMargin, true);
 
-        ctx.font = `bold ${s.comm_date_size || 24}px "PT Bold Heading", sans-serif`;
+        ctx.font = `bold ${s.comm_date_size || dFront.comm_date_size}px "PT Bold Heading", sans-serif`;
         const commNo = trader.commercial_name_no ? entoar(trader.commercial_name_no) : (trader.commercial_name || '-');
-        const compCommX = (s.comm_date_x && s.comm_date_x !== 695) ? s.comm_date_x : 800;
-        drawAutoFitText(ctx, commNo, compCommX, s.comm_date_y || 485, photoLeftMargin, true);
+        const compCommX = (s.comm_date_x && s.comm_date_x !== 695) ? s.comm_date_x : dFront.comm_date_x;
+        drawAutoFitText(ctx, commNo, compCommX, s.comm_date_y ?? dFront.comm_date_y, photoLeftMargin, true);
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = `bold ${s.card_no_size || 30}px "PT Bold Heading", sans-serif`;
+        ctx.font = `bold ${s.card_no_size || dFront.card_no_size}px "PT Bold Heading", sans-serif`;
         let cardText = entoar(trader.card_no);
         if (trader.renewal_no) cardText += ' / ' + entoar(trader.renewal_no);
-        ctx.fillText(cardText, s.card_no_x || 845, s.card_no_y || 560);
+        ctx.fillText(cardText, s.card_no_x ?? dFront.card_no_x, s.card_no_y ?? dFront.card_no_y);
 
         ctx.fillStyle = '#000000';
-        ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
-        drawArabicDate(ctx, trader.affiliation_date || '', s.aff_date_x || 885, s.aff_date_y || 626);
-        ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
-        drawArabicDate(ctx, trader.expire_date || '', s.exp_date_x || 465, s.exp_date_y || 626);
+        ctx.font = `bold ${s.aff_date_size || dFront.aff_date_size}px "PT Bold Heading", sans-serif`;
+        drawArabicDate(ctx, trader.affiliation_date || '', s.aff_date_x ?? dFront.aff_date_x, s.aff_date_y ?? dFront.aff_date_y);
+        ctx.font = `bold ${s.exp_date_size || dFront.exp_date_size}px "PT Bold Heading", sans-serif`;
+        drawArabicDate(ctx, trader.expire_date || '', s.exp_date_x ?? dFront.exp_date_x, s.exp_date_y ?? dFront.exp_date_y);
     } else if (isBroker) {
-        const photoLeftBroker = 295;
-        ctx.font = `bold ${s.name_size || 28}px "PT Bold Heading", sans-serif`;
-        drawAutoFitText(ctx, trader.name || '', s.name_x || 910, s.name_y || 308, photoLeftBroker, true);
+        const photoLeftBroker = 298;
+        ctx.font = `bold ${s.name_size || dFront.name_size}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.name || '', s.name_x ?? dFront.name_x, s.name_y ?? dFront.name_y, photoLeftBroker, true);
 
-        ctx.font = `bold ${s.class_size || 26}px "PT Bold Heading", sans-serif`;
-        drawAutoFitText(ctx, 'دلالية', s.class_x || 898, s.class_y || 368, photoLeftBroker, true);
+        ctx.font = `bold ${s.class_size || dFront.class_size}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, 'دلالية', s.class_x ?? dFront.class_x, s.class_y ?? dFront.class_y, photoLeftBroker, true);
 
-        ctx.font = `bold ${s.comm_size || 24}px "PT Bold Heading", sans-serif`;
+        ctx.font = `bold ${s.comm_size || dFront.comm_size}px "PT Bold Heading", sans-serif`;
         let commText = trader.commercial_name || '';
         if (trader.commercial_name_no) commText += ' / ' + entoar(trader.commercial_name_no);
-        drawAutoFitText(ctx, commText, s.comm_x || 800, s.comm_y || 432, photoLeftBroker, true);
+        drawAutoFitText(ctx, commText, s.comm_x ?? dFront.comm_x, s.comm_y ?? dFront.comm_y, photoLeftBroker, true);
 
-        ctx.font = `bold ${s.activity_size || 24}px "PT Bold Heading", sans-serif`;
-        drawAutoFitText(ctx, trader.activity || 'دلالية العقارات', s.activity_x || 898, s.activity_y || 496, photoLeftBroker, true);
+        ctx.font = `bold ${s.activity_size || dFront.activity_size}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.activity || 'دلالية العقارات', s.activity_x ?? dFront.activity_x, s.activity_y ?? dFront.activity_y, photoLeftBroker, true);
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = `bold ${s.card_no_size || 30}px "PT Bold Heading", sans-serif`;
+        ctx.font = `bold ${s.card_no_size || dFront.card_no_size}px "PT Bold Heading", sans-serif`;
         let cardText = entoar(trader.card_no);
         if (trader.renewal_no) cardText += ' / ' + entoar(trader.renewal_no);
-        ctx.fillText(cardText, s.card_no_x || 860, s.card_no_y || 560);
+        ctx.fillText(cardText, s.card_no_x ?? dFront.card_no_x, s.card_no_y ?? dFront.card_no_y);
 
         ctx.fillStyle = '#000000';
-        ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
-        drawArabicDate(ctx, trader.affiliation_date || '', s.aff_date_x || 898, s.aff_date_y || 630);
-        ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
-        drawArabicDate(ctx, trader.expire_date || '', s.exp_date_x || 470, s.exp_date_y || 630);
+        ctx.font = `bold ${s.aff_date_size || dFront.aff_date_size}px "PT Bold Heading", sans-serif`;
+        drawArabicDate(ctx, trader.affiliation_date || '', s.aff_date_x ?? dFront.aff_date_x, s.aff_date_y ?? dFront.aff_date_y);
+        ctx.font = `bold ${s.exp_date_size || dFront.exp_date_size}px "PT Bold Heading", sans-serif`;
+        drawArabicDate(ctx, trader.expire_date || '', s.exp_date_x ?? dFront.exp_date_x, s.exp_date_y ?? dFront.exp_date_y);
     } else {
-        const photoLeftTrader = 295;
-        ctx.font = `bold ${s.name_size || 28}px "PT Bold Heading", sans-serif`;
-        drawAutoFitText(ctx, trader.name || '', s.name_x, s.name_y, photoLeftTrader, true);
+        const photoLeftTrader = 298;
+        ctx.font = `bold ${s.name_size || dFront.name_size}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.name || '', s.name_x ?? dFront.name_x, s.name_y ?? dFront.name_y, photoLeftTrader, true);
 
-        ctx.font = `bold ${s.class_size || 26}px "PT Bold Heading", sans-serif`;
-        drawAutoFitText(ctx, formatClassName(trader.card_class, 'ar'), s.class_x, s.class_y, photoLeftTrader, true);
+        ctx.font = `bold ${s.class_size || dFront.class_size}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, formatClassName(trader.card_class, 'ar'), s.class_x ?? dFront.class_x, s.class_y ?? dFront.class_y, photoLeftTrader, true);
 
-        ctx.font = `bold ${s.comm_size || 24}px "PT Bold Heading", sans-serif`;
+        ctx.font = `bold ${s.comm_size || dFront.comm_size}px "PT Bold Heading", sans-serif`;
         let commText = trader.commercial_name || '';
         if (trader.commercial_name_no) commText += ' / ' + entoar(trader.commercial_name_no);
-        drawAutoFitText(ctx, commText, s.comm_x, s.comm_y, photoLeftTrader, true);
+        drawAutoFitText(ctx, commText, s.comm_x ?? dFront.comm_x, s.comm_y ?? dFront.comm_y, photoLeftTrader, true);
 
-        ctx.font = `bold ${s.activity_size || 24}px "PT Bold Heading", sans-serif`;
-        drawAutoFitText(ctx, trader.activity || '', s.activity_x, s.activity_y, photoLeftTrader, true);
+        ctx.font = `bold ${s.activity_size || dFront.activity_size}px "PT Bold Heading", sans-serif`;
+        drawAutoFitText(ctx, trader.activity || '', s.activity_x ?? dFront.activity_x, s.activity_y ?? dFront.activity_y, photoLeftTrader, true);
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = `bold ${s.card_no_size || 30}px "PT Bold Heading", sans-serif`;
+        ctx.font = `bold ${s.card_no_size || dFront.card_no_size}px "PT Bold Heading", sans-serif`;
         let cardText = entoar(trader.card_no);
         if (trader.renewal_no) cardText += ' / ' + entoar(trader.renewal_no);
-        ctx.fillText(cardText, s.card_no_x, s.card_no_y);
+        ctx.fillText(cardText, s.card_no_x ?? dFront.card_no_x, s.card_no_y ?? dFront.card_no_y);
 
         ctx.fillStyle = '#000000';
-        ctx.font = `bold ${s.aff_date_size || 23}px "PT Bold Heading", sans-serif`;
-        drawArabicDate(ctx, trader.affiliation_date || '', s.aff_date_x, s.aff_date_y);
-        ctx.font = `bold ${s.exp_date_size || 23}px "PT Bold Heading", sans-serif`;
-        drawArabicDate(ctx, trader.expire_date || '', s.exp_date_x, s.exp_date_y);
+        ctx.font = `bold ${s.aff_date_size || dFront.aff_date_size}px "PT Bold Heading", sans-serif`;
+        drawArabicDate(ctx, trader.affiliation_date || '', s.aff_date_x ?? dFront.aff_date_x, s.aff_date_y ?? dFront.aff_date_y);
+        ctx.font = `bold ${s.exp_date_size || dFront.exp_date_size}px "PT Bold Heading", sans-serif`;
+        drawArabicDate(ctx, trader.expire_date || '', s.exp_date_x ?? dFront.exp_date_x, s.exp_date_y ?? dFront.exp_date_y);
     }
 
     ctx.restore();
@@ -445,10 +456,12 @@ function drawCardBackSync(canvas, trader, bg, qrImg) {
 
     if (bg) ctx.drawImage(bg, 0, 0, 1024, 644);
 
+    const dBack = fallbackDefaults.back;
     if (qrImg) {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(s.qr_x || 758, s.qr_y || 207, s.qr_size || 238, s.qr_size || 238);
-        ctx.drawImage(qrImg, s.qr_x || 758, s.qr_y || 207, s.qr_size || 238, s.qr_size || 238);
+        const qrX = s.qr_x ?? dBack.qr_x;
+        const qrY = s.qr_y ?? dBack.qr_y;
+        const qrSize = s.qr_size ?? dBack.qr_size;
+        ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
     }
 
     ctx.save();
@@ -457,116 +470,116 @@ function drawCardBackSync(canvas, trader, bg, qrImg) {
     ctx.fillStyle = '#000000';
 
     if (isComp) {
-        const qrLeft = (s.qr_x || 754) - 6;
-        ctx.font = `bold ${s.comp_en_size || 36}px "Myriad Pro", Arial, sans-serif`;
+        const qrLeft = (s.qr_x ?? dBack.qr_x) - 6;
+        ctx.font = `bold ${s.comp_en_size || dBack.comp_en_size}px "Myriad Pro", Arial, sans-serif`;
         const compEn = (trader.english_company_name || trader.company_name || '').toUpperCase();
-        drawAutoFitText(ctx, compEn, s.comp_en_x || 195, s.comp_en_y || 322, qrLeft);
+        drawAutoFitText(ctx, compEn, s.comp_en_x ?? dBack.comp_en_x, s.comp_en_y ?? dBack.comp_en_y, qrLeft);
 
-        ctx.font = `bold ${s.ceo_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+        ctx.font = `bold ${s.ceo_en_size || dBack.ceo_en_size}px "Myriad Pro", Arial, sans-serif`;
         const ceoEn = (trader.english_ceo_name || trader.english_name || trader.ceo_name || trader.name || '').toUpperCase();
-        drawAutoFitText(ctx, ceoEn, s.ceo_en_x || 105, s.ceo_en_y || 364, qrLeft);
+        drawAutoFitText(ctx, ceoEn, s.ceo_en_x ?? dBack.ceo_en_x, s.ceo_en_y ?? dBack.ceo_en_y, qrLeft);
 
-        ctx.font = `bold ${s.class_act_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+        ctx.font = `bold ${s.class_act_en_size || dBack.class_act_en_size}px "Myriad Pro", Arial, sans-serif`;
         const enAct = trader.english_activity || trader.activity || '-';
         const classActEn = formatClassName(trader.card_class, 'en') + ' / ' + enAct;
-        drawAutoFitText(ctx, classActEn, s.class_act_en_x || 272, s.class_act_en_y || 410, qrLeft);
+        drawAutoFitText(ctx, classActEn, s.class_act_en_x ?? dBack.class_act_en_x, s.class_act_en_y ?? dBack.class_act_en_y, qrLeft);
 
-        ctx.font = `bold ${s.license_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+        ctx.font = `bold ${s.license_en_size || dBack.license_en_size}px "Myriad Pro", Arial, sans-serif`;
         let licText = trader.incorporation_certificate_no || '-';
         if (trader.incorporation_certificate_symbol) licText += ' (' + trader.incorporation_certificate_symbol + ')';
-        drawAutoFitText(ctx, licText, s.license_en_x || 215, s.license_en_y || 461, qrLeft);
+        drawAutoFitText(ctx, licText, s.license_en_x ?? dBack.license_en_x, s.license_en_y ?? dBack.license_en_y, qrLeft);
 
-        ctx.font = `bold ${s.comm_no_size || 33}px "Myriad Pro", Arial, sans-serif`;
-        drawAutoFitText(ctx, trader.commercial_name_no || '-', s.comm_no_x || 398, s.comm_no_y || 502, qrLeft);
+        ctx.font = `bold ${s.comm_no_size || dBack.comm_no_size}px "Myriad Pro", Arial, sans-serif`;
+        drawAutoFitText(ctx, trader.commercial_name_no || '-', s.comm_no_x ?? dBack.comm_no_x, s.comm_no_y ?? dBack.comm_no_y, qrLeft);
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = `bold ${s.card_no_size || 30}px "Myriad Pro", Arial, sans-serif`;
+        ctx.font = `bold ${s.card_no_size || dBack.card_no_size}px "Myriad Pro", Arial, sans-serif`;
         let enCard = trader.card_no || '';
         if (trader.renewal_no) enCard += ' / ' + trader.renewal_no;
-        ctx.fillText(enCard, s.card_no_x || 125, s.card_no_y || 560);
+        ctx.fillText(enCard, s.card_no_x ?? dBack.card_no_x, s.card_no_y ?? dBack.card_no_y);
 
         ctx.fillStyle = '#000000';
-        ctx.font = `bold ${s.aff_date_size || 28}px "Myriad Pro", Arial, sans-serif`;
-        ctx.fillText(trader.affiliation_date || '-', s.aff_date_x || 170, s.aff_date_y || 630);
-        ctx.font = `bold ${s.exp_date_size || 29}px "Myriad Pro", Arial, sans-serif`;
-        ctx.fillText(trader.expire_date || '-', s.exp_date_x || 649, s.exp_date_y || 629);
+        ctx.font = `bold ${s.aff_date_size || dBack.aff_date_size}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.affiliation_date || '-', s.aff_date_x ?? dBack.aff_date_x, s.aff_date_y ?? dBack.aff_date_y);
+        ctx.font = `bold ${s.exp_date_size || dBack.exp_date_size}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.expire_date || '-', s.exp_date_x ?? dBack.exp_date_x, s.exp_date_y ?? dBack.exp_date_y);
     } else if (isBroker) {
-        const qrLeftBroker = (s.qr_x || 758) - 6;
-        ctx.font = `bold ${s.name_size || 28}px "Myriad Pro", Arial, sans-serif`;
+        const qrLeftBroker = (s.qr_x ?? dBack.qr_x) - 6;
+        ctx.font = `bold ${s.name_size || dBack.name_size}px "Myriad Pro", Arial, sans-serif`;
         const enName = (trader.english_name || trader.name || '').toUpperCase();
-        drawAutoFitText(ctx, enName, s.name_x || 130, s.name_y || 308, qrLeftBroker);
+        drawAutoFitText(ctx, enName, s.name_x !== undefined ? s.name_x : dBack.name_x, s.name_y ?? dBack.name_y, qrLeftBroker);
 
-        ctx.font = `bold ${s.class_size || 28}px "Myriad Pro", Arial, sans-serif`;
-        drawAutoFitText(ctx, formatClassName(trader.card_class, 'en'), s.class_x || 120, s.class_y || 368, qrLeftBroker);
+        ctx.font = `bold ${s.class_size || dBack.class_size}px "Myriad Pro", Arial, sans-serif`;
+        drawAutoFitText(ctx, formatClassName(trader.card_class, 'en'), s.class_x ?? dBack.class_x, s.class_y ?? dBack.class_y, qrLeftBroker);
 
-        ctx.font = `bold ${s.comm_no_size || 28}px "Myriad Pro", Arial, sans-serif`;
+        ctx.font = `bold ${s.comm_no_size || dBack.comm_no_size}px "Myriad Pro", Arial, sans-serif`;
         let brokerCommNo = trader.commercial_name_no;
         if (!brokerCommNo && trader.commercial_name && trader.commercial_name.includes('/')) {
             const parts = trader.commercial_name.split('/');
             if (parts[1] && parts[1].trim()) brokerCommNo = parts[1].trim();
         }
-        drawAutoFitText(ctx, brokerCommNo || '-', s.comm_no_x || 395, s.comm_no_y || 425, qrLeftBroker);
+        drawAutoFitText(ctx, brokerCommNo || '-', s.comm_no_x ?? dBack.comm_no_x, s.comm_no_y ?? dBack.comm_no_y, qrLeftBroker);
 
-        ctx.font = `bold ${s.activity_size || 28}px "Myriad Pro", Arial, sans-serif`;
+        ctx.font = `bold ${s.activity_size || dBack.activity_size}px "Myriad Pro", Arial, sans-serif`;
         const enAct = trader.english_activity || 'Real Estates BROKER';
-        drawAutoFitText(ctx, enAct, s.activity_x || 165, s.activity_y || 478, qrLeftBroker);
+        drawAutoFitText(ctx, enAct, s.activity_x ?? dBack.activity_x, s.activity_y ?? dBack.activity_y, qrLeftBroker);
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = `bold ${s.card_no_size || 30}px "Myriad Pro", Arial, sans-serif`;
+        ctx.font = `bold ${s.card_no_size || dBack.card_no_size}px "Myriad Pro", Arial, sans-serif`;
         let enCard = trader.card_no || '';
         if (trader.renewal_no) enCard += ' / ' + trader.renewal_no;
-        ctx.fillText(enCard, s.card_no_x || 125, s.card_no_y || 560);
+        ctx.fillText(enCard, s.card_no_x ?? dBack.card_no_x, s.card_no_y ?? dBack.card_no_y);
 
         ctx.fillStyle = '#000000';
-        ctx.font = `bold ${s.aff_date_size || 24}px "Myriad Pro", Arial, sans-serif`;
-        ctx.fillText(trader.affiliation_date || '-', s.aff_date_x || 170, s.aff_date_y || 625);
-        ctx.font = `bold ${s.exp_date_size || 24}px "Myriad Pro", Arial, sans-serif`;
-        ctx.fillText(trader.expire_date || '-', s.exp_date_x || 735, s.exp_date_y || 625);
+        ctx.font = `bold ${s.aff_date_size || dBack.aff_date_size}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.affiliation_date || '-', s.aff_date_x ?? dBack.aff_date_x, s.aff_date_y ?? dBack.aff_date_y);
+        ctx.font = `bold ${s.exp_date_size || dBack.exp_date_size}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.expire_date || '-', s.exp_date_x ?? dBack.exp_date_x, s.exp_date_y ?? dBack.exp_date_y);
     } else {
-        const qrLeftTrader = (s.qr_x || 757) - 6;
-        const nameSize = s.name_size !== undefined ? s.name_size : 36;
-        const nameX = s.name_x !== undefined ? s.name_x : 14;
-        const nameY = s.name_y !== undefined ? s.name_y : 305;
+        const qrLeftTrader = (s.qr_x ?? dBack.qr_x) - 6;
+        const nameSize = s.name_size !== undefined ? s.name_size : dBack.name_size;
+        const nameX = s.name_x !== undefined ? s.name_x : dBack.name_x;
+        const nameY = s.name_y !== undefined ? s.name_y : dBack.name_y;
         ctx.font = `bold ${nameSize}px "Myriad Pro", Arial, sans-serif`;
         const enName = (trader.english_name || trader.name || '').toUpperCase();
         drawAutoFitText(ctx, enName, nameX, nameY, qrLeftTrader);
 
-        ctx.font = `bold ${s.class_size || 36}px "Myriad Pro", Arial, sans-serif`;
-        drawAutoFitText(ctx, formatClassName(trader.card_class, 'en'), s.class_x, s.class_y, qrLeftTrader);
+        ctx.font = `bold ${s.class_size || dBack.class_size}px "Myriad Pro", Arial, sans-serif`;
+        drawAutoFitText(ctx, formatClassName(trader.card_class, 'en'), s.class_x ?? dBack.class_x, s.class_y ?? dBack.class_y, qrLeftTrader);
 
-        ctx.font = `bold ${s.comm_no_size || 36}px "Myriad Pro", Arial, sans-serif`;
-        drawAutoFitText(ctx, trader.commercial_name_no || '-', s.comm_no_x, s.comm_no_y, qrLeftTrader);
+        ctx.font = `bold ${s.comm_no_size || dBack.comm_no_size}px "Myriad Pro", Arial, sans-serif`;
+        drawAutoFitText(ctx, trader.commercial_name_no || '-', s.comm_no_x ?? dBack.comm_no_x, s.comm_no_y ?? dBack.comm_no_y, qrLeftTrader);
 
-        ctx.font = `bold ${s.activity_size || 36}px "Myriad Pro", Arial, sans-serif`;
+        ctx.font = `bold ${s.activity_size || dBack.activity_size}px "Myriad Pro", Arial, sans-serif`;
         const enTraderAct = trader.english_activity || trader.activity || '-';
-        drawAutoFitText(ctx, enTraderAct, s.activity_x, s.activity_y, qrLeftTrader);
+        drawAutoFitText(ctx, enTraderAct, s.activity_x ?? dBack.activity_x, s.activity_y ?? dBack.activity_y, qrLeftTrader);
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = `bold ${s.card_no_size || 34}px "Myriad Pro", Arial, sans-serif`;
+        ctx.font = `bold ${s.card_no_size || dBack.card_no_size}px "Myriad Pro", Arial, sans-serif`;
         let enCard = trader.card_no || '';
         if (trader.renewal_no) enCard += ' / ' + trader.renewal_no;
-        ctx.fillText(enCard, s.card_no_x, s.card_no_y);
+        ctx.fillText(enCard, s.card_no_x ?? dBack.card_no_x, s.card_no_y ?? dBack.card_no_y);
 
         ctx.fillStyle = '#000000';
-        ctx.font = `bold ${s.aff_date_size || 27}px "Myriad Pro", Arial, sans-serif`;
-        ctx.fillText(trader.affiliation_date || '-', s.aff_date_x, s.aff_date_y);
-        ctx.font = `bold ${s.exp_date_size || 28}px "Myriad Pro", Arial, sans-serif`;
-        ctx.fillText(trader.expire_date || '-', s.exp_date_x, s.exp_date_y);
+        ctx.font = `bold ${s.aff_date_size || dBack.aff_date_size}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.affiliation_date || '-', s.aff_date_x ?? dBack.aff_date_x, s.aff_date_y ?? dBack.aff_date_y);
+        ctx.font = `bold ${s.exp_date_size || dBack.exp_date_size}px "Myriad Pro", Arial, sans-serif`;
+        ctx.fillText(trader.expire_date || '-', s.exp_date_x ?? dBack.exp_date_x, s.exp_date_y ?? dBack.exp_date_y);
     }
 
     ctx.restore();
 }
 
 function getFrontTemplatePath(trader) {
-    if (trader && trader.member_type === 'company') return '/templates/company_front_clean.png?v=3';
-    if (trader && trader.member_type === 'broker') return '/templates/broker_front_clean.png?v=3';
-    return '/templates/card_front_template.png?v=3';
+    if (trader && trader.member_type === 'company') return '/templates/company_front_clean.png?v=4';
+    if (trader && trader.member_type === 'broker') return '/templates/broker_front_clean.png?v=4';
+    return '/templates/card_front_template.png?v=4';
 }
 
 function getBackTemplatePath(trader) {
-    if (trader && trader.member_type === 'company') return '/templates/company_back_clean.png';
-    if (trader && trader.member_type === 'broker') return '/templates/broker_back_clean.png';
-    return '/templates/card_back_clean.png';
+    if (trader && trader.member_type === 'company') return '/templates/company_back_clean.png?v=4';
+    if (trader && trader.member_type === 'broker') return '/templates/broker_back_clean.png?v=4';
+    return '/templates/card_back_clean.png?v=4';
 }
 
 async function renderCardFront(canvas, trader) {
@@ -1356,14 +1369,14 @@ window.addEventListener('load', () => {
         loadImage('/templates/avatar_placeholder.png');
         const p = window.location.pathname;
         if (p.startsWith('/companies')) {
-            loadImage('/templates/company_front_clean.png?v=3');
-            loadImage('/templates/company_back_clean.png');
+            loadImage('/templates/company_front_clean.png?v=4');
+            loadImage('/templates/company_back_clean.png?v=4');
         } else if (p.startsWith('/brokers')) {
-            loadImage('/templates/broker_front_clean.png?v=3');
-            loadImage('/templates/broker_back_clean.png');
+            loadImage('/templates/broker_front_clean.png?v=4');
+            loadImage('/templates/broker_back_clean.png?v=4');
         } else {
-            loadImage('/templates/card_front_template.png?v=3');
-            loadImage('/templates/card_back_clean.png');
+            loadImage('/templates/card_front_template.png?v=4');
+            loadImage('/templates/card_back_clean.png?v=4');
         }
     });
 });
