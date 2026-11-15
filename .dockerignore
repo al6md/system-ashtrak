@@ -1,0 +1,12 @@
+node_modules
+.git
+.env*
+*.bak*
+scratch
+exports
+access_backfill
+data/*.db*
+data/access_sync*
+data/isolated_drive_photos_ledger.json
+data/photos_gdrive_ledger.json
+public/templates/backup*

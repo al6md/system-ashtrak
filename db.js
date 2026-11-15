@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Read .env and .env.turso if exists
-let envUrl = process.env.TURSO_DATABASE_URL;
+let envUrl = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL;
 let envToken = process.env.TURSO_AUTH_TOKEN;
 
 for (const envFile of ['.env', '.env.turso']) {
@@ -18,7 +18,7 @@ for (const envFile of ['.env', '.env.turso']) {
       for (const line of raw.split('\n')) {
         const trimmed = line.trim();
         if (!trimmed || trimmed.startsWith('#')) continue;
-        if (trimmed.startsWith('TURSO_DATABASE_URL=') && !envUrl) {
+        if ((trimmed.startsWith('DATABASE_URL=') || trimmed.startsWith('TURSO_DATABASE_URL=')) && !envUrl) {
           envUrl = trimmed.slice(trimmed.indexOf('=') + 1).trim();
         }
         if (trimmed.startsWith('TURSO_AUTH_TOKEN=') && !envToken) {
@@ -29,14 +29,35 @@ for (const envFile of ['.env', '.env.turso']) {
   }
 }
 
-// Fallback to default cloud credentials
-const TURSO_URL = envUrl || 'libsql://cardval-al6md.aws-eu-central-1.turso.io';
-const TURSO_TOKEN = envToken || 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTQwNjI5MTUsImlkIjoiMDFhMWI2N2EtMTgwMS03NzFlLTg5NjQtNWQzOTg3MmQ4MzYxIiwia2lkIjoiN2lhYXVLZUFMU1ZnQ0ZLZDJlR0hvQmRaaUFFVGNKdmhBSDZ3ZmlBazBNMCIsInJpZCI6IjkyMDliNGRmLWY4OTEtNDhjMi05Yzg0LTUyOTBlYTVlNjMyMiJ9.VeS2k-VbYAH7iHB52fUICdF4qVIKCtlhYGtSPwjqEvQC6LUoWJK8ACKaqh21OO40Uktn66xl-T2MO7GgfpKpAg';
+// Fallback to local SQLite file if running on a persistent server, otherwise Turso cloud
+const defaultLocalDb = path.join(__dirname, 'data', 'cardval.db');
+const TURSO_URL = envUrl || `file:${defaultLocalDb}`;
+const TURSO_TOKEN = envToken || '';
+const isLocalFileDb = TURSO_URL.startsWith('file:');
 
-export const turso = createClient({
-  url: TURSO_URL,
-  authToken: TURSO_TOKEN,
-});
+if (isLocalFileDb) {
+  const localFilePath = TURSO_URL.slice('file:'.length);
+  if (localFilePath && localFilePath !== ':memory:') {
+    fs.mkdirSync(path.dirname(path.resolve(__dirname, localFilePath)), { recursive: true });
+  }
+}
+
+export const turso = createClient(
+  isLocalFileDb
+    ? { url: TURSO_URL }
+    : { url: TURSO_URL, authToken: TURSO_TOKEN }
+);
+
+if (isLocalFileDb) {
+  (async () => {
+    try {
+      await turso.execute('PRAGMA busy_timeout = 5000');
+      await turso.execute('PRAGMA journal_mode = WAL');
+      await turso.execute('PRAGMA synchronous = NORMAL');
+      await turso.execute('PRAGMA temp_store = MEMORY');
+    } catch (_) {}
+  })();
+}
 
 function normalizeArgs(args) {
   if (args.length === 1 && Array.isArray(args[0])) return args[0];
