@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 
 const DIR = 'c:/Users/tohiba/OneDrive/Desktop/نظام اشتراكات/access_backfill';
-const URL_ = 'https://web-dashboard-pi-self.vercel.app/api/access-hub';
+const URL_ = process.env.ACCESS_SYNC_URL || 'https://share.162.35.16.252.sslip.io/api/access-hub';
 const GUID = 'SUBS-SYNC-64564f5f-9443-4446-ab98-45e728ff48f3';
 const limit = Number(process.argv[2] || 5000);
 const fromYear = String(process.argv[3] || '2024');

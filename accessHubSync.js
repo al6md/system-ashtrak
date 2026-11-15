@@ -1,7 +1,6 @@
 // ربط نظام الاشتراكات بنظام Share COC (Access Hub).
-// - يدعم المزامنة الفورية للإضافة، التعديل، والحذف.
-// - يعمل مع السحابة (Vercel + Turso) ومع السيرفر المحلي بأقصى سرعة (في الخلفية محلياً بدون تأخير استجابة المستخدم).
-// - للإيقاف الفوري: ACCESS_SYNC_ENABLED=false
+// - يدعم المزامنة الفورية للإضافة، التعديل، والحذف في الخلفية بدون تأخير استجابة المستخدم.
+// - يعمل فقط عند ضبط متغير البيئة ACCESS_SYNC_URL، وللإيقاف الفوري: ACCESS_SYNC_ENABLED=false
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -9,12 +8,11 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA = path.join(__dirname, 'data');
-const API_URL = process.env.ACCESS_SYNC_URL || 'https://web-dashboard-pi-self.vercel.app/api/access-hub';
+const API_URL = (process.env.ACCESS_SYNC_URL || '').trim();
 const GUID = process.env.ACCESS_SYNC_GUID || 'SUBS-SYNC-64564f5f-9443-4446-ab98-45e728ff48f3';
 const FILE_NAME = 'اسماء التجار والدلالين من جهاز الاشتراكات';
-const ENABLED = String(process.env.ACCESS_SYNC_ENABLED ?? 'true').toLowerCase() !== 'false';
+const ENABLED = Boolean(API_URL) && String(process.env.ACCESS_SYNC_ENABLED ?? 'true').toLowerCase() !== 'false';
 const SYNC_COMPANIES = String(process.env.ACCESS_SYNC_COMPANIES ?? 'true').toLowerCase() === 'true';
-const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
 const LEDGER_PATH = path.join(DATA, 'access_sync_live.json');      // ما أُرسل عبر الربط المباشر
 const BACKFILL_LEDGER = path.join(__dirname, 'access_backfill', 'ledger.json'); // ما أُرسل عبر الترحيل (قراءة مرة واحدة فقط)
@@ -40,7 +38,7 @@ function getBackfillLedger() {
 }
 
 function persistLedgerAsync() {
-  if (IS_SERVERLESS || ledgerWritePending || !liveLedgerCache) return;
+  if (ledgerWritePending || !liveLedgerCache) return;
   ledgerWritePending = true;
   setTimeout(async () => {
     ledgerWritePending = false;
@@ -51,11 +49,11 @@ function persistLedgerAsync() {
   }, 150).unref?.();
 }
 
-let queue = IS_SERVERLESS ? [] : readJsonSyncOnce(QUEUE_PATH, []); // [{key, action, oldRow, currentRow, tries}]
+let queue = readJsonSyncOnce(QUEUE_PATH, []); // [{key, action, oldRow, currentRow, tries}]
 let busy = false;
 
 function persistQueueAsync() {
-  if (IS_SERVERLESS || queueWritePending) return;
+  if (queueWritePending) return;
   queueWritePending = true;
   setTimeout(async () => {
     queueWritePending = false;
@@ -364,18 +362,14 @@ async function enqueue(db, key, action = 'save', oldRow = null, currentRow = nul
       queue.push({ key, action, oldRow, currentRow, tries: 0 });
       persistQueueAsync();
     }
-    if (!timerStarted && !IS_SERVERLESS) {
+    if (!timerStarted) {
       timerStarted = true;
       setInterval(() => drain(db).catch(() => {}), 60000).unref();
     }
-    if (IS_SERVERLESS) {
-      await drain(db);
-    } else {
-      // في السيرفر المحلي، تعمل المزامنة فوراً بالخلفية دون حجز استجابة المتصفح
-      setImmediate(() => {
-        drain(db).catch((err) => console.warn('[AccessSync] background drain error:', err.message));
-      });
-    }
+    // في السيرفر المحلي، تعمل المزامنة فوراً بالخلفية دون حجز استجابة المتصفح
+    setImmediate(() => {
+      drain(db).catch((err) => console.warn('[AccessSync] background drain error:', err.message));
+    });
   } catch (e) {
     console.warn('[AccessSync] notify error:', e.message);
   }

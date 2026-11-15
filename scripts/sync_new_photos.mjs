@@ -501,7 +501,7 @@ async function main() {
       await getAccessToken(db);
       console.log('✓ الاتصال بمجلد Google Drive المعزول جاهز.');
     } catch (err) {
-      console.warn(`⚠️ تعذر تجهيز Google Drive (${err.message}). سيتم الحفظ محلياً وفي Turso فقط.`);
+      console.warn(`⚠️ تعذر تجهيز Google Drive (${err.message}). سيتم الحفظ محلياً فقط.`);
       effectiveDriveEnabled = false;
     }
   }

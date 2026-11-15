@@ -49,7 +49,7 @@ async function main() {
   await getAccessToken(db);
   console.log('✓ المجلد المعزول في Google Drive (خارج نظام الشير):', folderId);
 
-  // Load existing mappings from Turso DB
+  // Load existing mappings from local SQLite DB
   const existingDbRows = await db.all('SELECT filename, drive_file_id FROM uploaded_photos WHERE drive_file_id IS NOT NULL');
   const uploadedMap = new Map();
   for (const r of existingDbRows) {

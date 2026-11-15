@@ -34,7 +34,7 @@ async function ensureConfigLoaded(db = defaultDb) {
   }
   lastConfigCheck = now;
 
-  // 1. محاولة القراءة من قاعدة البيانات السحابية Turso (تعمل على Vercel ومحلياً)
+  // 1. محاولة القراءة من قاعدة البيانات المحلية SQLite
   if (db) {
     try {
       const row = await db.prepare("SELECT value FROM settings WHERE key = 'gdrive_oauth_config'").get();

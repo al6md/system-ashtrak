@@ -21,7 +21,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
 // Setup View Engine + Enable Template Compilation Cache (prevents OneDrive disk reads on every click)
 app.disable('x-powered-by');
@@ -53,7 +52,6 @@ app.use(
         if (
           u.hostname === 'localhost' ||
           u.hostname === '127.0.0.1' ||
-          u.hostname.endsWith('.vercel.app') ||
           /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(u.hostname)
         ) {
           return callback(null, true);
@@ -131,8 +129,8 @@ app.use(
   })
 );
 
-// Uploads Directory (supports Vercel serverless /tmp and local)
-const uploadDir = isServerless ? path.join(os.tmpdir(), 'uploads') : path.join(__dirname, 'public', 'uploads');
+// Local persistent uploads directory
+const uploadDir = path.join(__dirname, 'public', 'uploads');
 try {
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -698,13 +696,9 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
 
     if (req.file) {
       const photoMeta = { name: name || company_name, card_no, commercial_name, member_type: resolvedType };
-      if (isServerless) {
-        await saveUploadedPhotoToCloud(req.file, photoMeta);
-      } else {
-        setImmediate(() => {
-          saveUploadedPhotoToCloud(req.file, photoMeta).catch(() => {});
-        });
-      }
+      setImmediate(() => {
+        saveUploadedPhotoToCloud(req.file, photoMeta).catch(() => {});
+      });
     }
 
     const effectiveName = name || ceo_name || company_name || '';
@@ -837,13 +831,9 @@ async function handleUpdateOrDeleteTrader(req, res) {
         commercial_name: commercial_name || traderBefore.commercial_name,
         member_type: traderBefore.member_type || 'trader',
       };
-      if (isServerless) {
-        await saveUploadedPhotoToCloud(req.file, photoMeta);
-      } else {
-        setImmediate(() => {
-          saveUploadedPhotoToCloud(req.file, photoMeta).catch(() => {});
-        });
-      }
+      setImmediate(() => {
+        saveUploadedPhotoToCloud(req.file, photoMeta).catch(() => {});
+      });
     }
 
     await db.prepare(`
