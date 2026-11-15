@@ -12,7 +12,6 @@ import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 import multer from 'multer';
 import { notifyAdded as accessSyncAdd, notifySaved as accessSyncNotify, notifyDeleted as accessSyncDelete } from './accessHubSync.js';
-import { uploadPhotoToIsolatedDrive, downloadPhotoFromIsolatedDrive } from './gdrivePhotos.js';
 
 const gzipAsync = promisify(zlib.gzip);
 
@@ -150,7 +149,6 @@ const listCache = new Map();
 const countCache = new Map();
 const settingsCache = new Map();
 const qrCache = new Map();
-const missingPhotoCache = new Map(); // filename -> timestamp
 
 function setBoundedMap(map, key, val, maxEntries = 250) {
   if (map.size >= maxEntries) {
@@ -225,30 +223,7 @@ async function fileExistsFast(p) {
   }
 }
 
-// Helper: Upload photo exclusively to isolated Google Drive folder (outside ShareExchange) and save Drive File ID
-async function saveUploadedPhotoToCloud(file, traderInfo = null) {
-  if (!file || !file.path) return;
-  try {
-    const buf = await fsp.readFile(file.path);
-    const mimeType = file.mimetype || (file.filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
-    const now = new Date().toISOString();
-
-    const driveRes = await uploadPhotoToIsolatedDrive(buf, file.filename, mimeType, db, traderInfo);
-    const driveFileId = driveRes?.id || null;
-    console.log(`[GDrive-Isolated] Uploaded "${file.filename}" -> Drive ID: ${driveFileId}`);
-
-    if (driveFileId) {
-      await db.prepare(`
-        INSERT OR REPLACE INTO uploaded_photos (filename, mime_type, data_base64, drive_file_id, created_at)
-        VALUES (?, ?, NULL, ?, ?)
-      `).run(file.filename, mimeType, driveFileId, now);
-    }
-  } catch (err) {
-    console.warn('[GDrive-Isolated] Failed to upload photo to Google Drive:', err.message);
-  }
-}
-
-// Automatic on-demand photo fetch from isolated Google Drive folder for /uploads/:filename
+// Serve trader/broker/company photos directly from local persistent storage
 app.get('/uploads/:filename', async (req, res) => {
   try {
     const filename = path.basename(req.params.filename);
@@ -264,34 +239,6 @@ app.get('/uploads/:filename', async (req, res) => {
       return res.sendFile(fallbackPath);
     }
 
-    const negCachedAt = missingPhotoCache.get(filename);
-    if (negCachedAt && Date.now() - negCachedAt < 300_000) {
-      return res.redirect('/templates/avatar_placeholder.png');
-    }
-
-    // Fetch photo from isolated Google Drive folder (via mapped drive_file_id or filename search)
-    try {
-      const photoRow = await db.prepare('SELECT mime_type, drive_file_id FROM uploaded_photos WHERE filename = ?').get(filename);
-      const dRes = await downloadPhotoFromIsolatedDrive(photoRow?.drive_file_id || null, filename, db);
-      if (dRes && dRes.buffer && dRes.buffer.length > 50) {
-        const ext = path.extname(filename).toLowerCase();
-        const mimeType = photoRow?.mime_type || (ext === '.png' ? 'image/png' : 'image/jpeg');
-        if (!photoRow?.drive_file_id && dRes.driveFileId) {
-          db.prepare(`
-            INSERT OR REPLACE INTO uploaded_photos (filename, mime_type, data_base64, drive_file_id, created_at)
-            VALUES (?, ?, NULL, ?, ?)
-          `).run(filename, mimeType, dRes.driveFileId, new Date().toISOString()).catch(() => {});
-        }
-        fsp.mkdir(uploadDir, { recursive: true })
-          .then(() => fsp.writeFile(primaryPath, dRes.buffer))
-          .catch(() => {});
-        res.setHeader('Content-Type', mimeType);
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        return res.send(dRes.buffer);
-      }
-    } catch (_) {}
-
-    setBoundedMap(missingPhotoCache, filename, Date.now(), 500);
     return res.redirect('/templates/avatar_placeholder.png');
   } catch (err) {
     return res.redirect('/templates/avatar_placeholder.png');
@@ -694,13 +641,6 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
     const resolvedType = member_type === 'broker' ? 'broker' : (member_type === 'company' ? 'company' : 'trader');
     const resolvedGender = normalizeGender(gender);
 
-    if (req.file) {
-      const photoMeta = { name: name || company_name, card_no, commercial_name, member_type: resolvedType };
-      setImmediate(() => {
-        saveUploadedPhotoToCloud(req.file, photoMeta).catch(() => {});
-      });
-    }
-
     const effectiveName = name || ceo_name || company_name || '';
 
     await db.prepare(`
@@ -825,15 +765,6 @@ async function handleUpdateOrDeleteTrader(req, res) {
 
     if (req.file) {
       photoPath = '/uploads/' + req.file.filename;
-      const photoMeta = {
-        name: name || traderBefore.name,
-        card_no: card_no || traderBefore.card_no,
-        commercial_name: commercial_name || traderBefore.commercial_name,
-        member_type: traderBefore.member_type || 'trader',
-      };
-      setImmediate(() => {
-        saveUploadedPhotoToCloud(req.file, photoMeta).catch(() => {});
-      });
     }
 
     await db.prepare(`

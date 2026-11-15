@@ -4,7 +4,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { db } from '../db.js';
-import { ensureIsolatedFolder, getAccessToken, uploadPhotoToIsolatedDrive } from '../gdrivePhotos.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -377,21 +376,6 @@ async function downloadAndSavePhoto({
   await fsp.mkdir(UPLOADS_DIR, { recursive: true });
   await fsp.writeFile(localPath, buf);
 
-  if (driveEnabled) {
-    try {
-      const driveRes = await uploadPhotoToIsolatedDrive(buf, filename, mimeType, db, matchedRow);
-      if (driveRes?.id) {
-        await db.prepare(`
-          INSERT OR REPLACE INTO uploaded_photos (filename, mime_type, data_base64, drive_file_id, created_at)
-          VALUES (?, ?, NULL, ?, ?)
-        `).run(filename, mimeType, driveRes.id, new Date().toISOString());
-        uploadedSet.add(filename);
-      }
-    } catch (err) {
-      console.warn(`    ⚠️ حُفظت الصورة محلياً لكن تعذر رفعها لـ Google Drive (${filename}): ${err.message}`);
-    }
-  }
-
   const prevUuid = matchedRow.uuid;
   const canAdoptUuid = remote.uuid && remote.uuid !== prevUuid && !usedUuids.has(remote.uuid);
   if (canAdoptUuid) {
@@ -459,7 +443,7 @@ function getArgValue(args, flag, defaultVal = null) {
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
-  const driveEnabled = !args.includes('--no-drive');
+  const driveEnabled = false;
   const forceAllMissingSince = getArgValue(args, '--since', '2026-10-01');
   const maxPages = Number(getArgValue(args, '--max-pages', '12'));
   const stopPages = Number(getArgValue(args, '--stop-pages', '2'));
@@ -494,17 +478,7 @@ async function main() {
     };
   }
 
-  let effectiveDriveEnabled = driveEnabled && !dryRun;
-  if (effectiveDriveEnabled) {
-    try {
-      await ensureIsolatedFolder(db);
-      await getAccessToken(db);
-      console.log('✓ الاتصال بمجلد Google Drive المعزول جاهز.');
-    } catch (err) {
-      console.warn(`⚠️ تعذر تجهيز Google Drive (${err.message}). سيتم الحفظ محلياً فقط.`);
-      effectiveDriveEnabled = false;
-    }
-  }
+  const effectiveDriveEnabled = false;
 
   const session = new HttpSession();
   console.log('🔐 جاري تسجيل الدخول إلى الموقع الأصلي...');
