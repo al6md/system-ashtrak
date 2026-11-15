@@ -1,6 +1,6 @@
 // ربط نظام الاشتراكات بنظام Share COC (Access Hub).
 // - يدعم المزامنة الفورية للإضافة، التعديل، والحذف في الخلفية بدون تأخير استجابة المستخدم.
-// - يعمل فقط عند ضبط متغير البيئة ACCESS_SYNC_URL، وللإيقاف الفوري: ACCESS_SYNC_ENABLED=false
+// - يتزامن افتراضياً مع خادم Share COC (ويمكن تغييره عبر ACCESS_SYNC_URL)، وللإيقاف الفوري: ACCESS_SYNC_ENABLED=false
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA = path.join(__dirname, 'data');
-const API_URL = (process.env.ACCESS_SYNC_URL || '').trim();
+const API_URL = (process.env.ACCESS_SYNC_URL || 'https://share.162.35.16.252.sslip.io/api/access-hub').trim();
 const GUID = process.env.ACCESS_SYNC_GUID || 'SUBS-SYNC-64564f5f-9443-4446-ab98-45e728ff48f3';
 const FILE_NAME = 'اسماء التجار والدلالين من جهاز الاشتراكات';
 const ENABLED = Boolean(API_URL) && String(process.env.ACCESS_SYNC_ENABLED ?? 'true').toLowerCase() !== 'false';
