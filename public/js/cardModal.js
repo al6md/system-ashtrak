@@ -590,13 +590,13 @@ function drawCardBackSync(canvas, trader, bg, qrImg) {
 function getFrontTemplatePath(trader) {
     if (trader && trader.member_type === 'company') return '/templates/company_front_clean.png?v=5';
     if (trader && trader.member_type === 'broker') return '/templates/broker_front_clean.png?v=5';
-    return '/templates/card_front_template.png?v=5';
+    return '/templates/card_front_template.png?v=6';
 }
 
 function getBackTemplatePath(trader) {
     if (trader && trader.member_type === 'company') return '/templates/company_back_clean.png?v=5';
     if (trader && trader.member_type === 'broker') return '/templates/broker_back_clean.png?v=5';
-    return '/templates/card_back_clean.png?v=5';
+    return '/templates/card_back_clean.png?v=6';
 }
 
 async function renderCardFront(canvas, trader) {
@@ -1410,8 +1410,8 @@ window.addEventListener('load', () => {
             loadImage('/templates/broker_front_clean.png?v=5');
             loadImage('/templates/broker_back_clean.png?v=5');
         } else {
-            loadImage('/templates/card_front_template.png?v=5');
-            loadImage('/templates/card_back_clean.png?v=5');
+            loadImage('/templates/card_front_template.png?v=6');
+            loadImage('/templates/card_back_clean.png?v=6');
         }
     });
 });

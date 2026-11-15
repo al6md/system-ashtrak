@@ -83,7 +83,7 @@ export async function renderFrontCard(canvas, trader) {
     ? '/templates/company_front_clean.png?v=5'
     : ((trader && trader.member_type === 'broker')
       ? '/templates/broker_front_clean.png?v=5'
-      : '/templates/card_front_template.png?v=5');
+      : '/templates/card_front_template.png?v=6');
   const bg = await loadImage(tplPath);
   const ctx = initHiResCardCanvas(canvas, bg);
 
@@ -174,7 +174,7 @@ export async function renderBackCard(canvas, trader, qrDataUrl) {
     ? '/templates/company_back_clean.png?v=5'
     : ((trader && trader.member_type === 'broker')
       ? '/templates/broker_back_clean.png?v=5'
-      : '/templates/card_back_clean.png?v=5');
+      : '/templates/card_back_clean.png?v=6');
   const bg = await loadImage(backTplPath);
   const ctx = initHiResCardCanvas(canvas, bg);
 
