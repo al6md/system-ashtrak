@@ -6,22 +6,25 @@
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="/dashboard">
-                        <img src="/images/chamber-logo.png" onerror="this.onerror=null;this.src='/favicon-32x32.png'" alt="Cardval" style="object-fit: contain;" class="block h-9 w-auto fill-current text-gray-800">
+                        <picture>
+                            <source srcset="/images/chamber-logo.webp?v=1" type="image/webp">
+                            <img src="/images/chamber-logo.png?v=1" width="36" height="36" decoding="async" onerror="this.onerror=null;this.src='/favicon-32x32.png'" alt="Cardval" style="object-fit: contain;" class="block h-9 w-auto fill-current text-gray-800">
+                        </picture>
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                    <a class="inline-flex items-center px-1 pt-1 border-b-2 <%= (typeof currentPath !== 'undefined' && currentPath === '/dashboard') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out" href="/dashboard">
+                    <a data-nav-link="/dashboard" data-nav-variant="desktop" class="inline-flex items-center px-1 pt-1 border-b-2 <%= (typeof currentPath !== 'undefined' && currentPath === '/dashboard') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out" href="/dashboard">
                         Dashboard
                     </a>
-                    <a class="inline-flex items-center px-1 pt-1 border-b-2 <%= (typeof currentPath !== 'undefined' && currentPath === '/traders') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out" href="/traders">
+                    <a data-nav-link="/traders" data-nav-variant="desktop" class="inline-flex items-center px-1 pt-1 border-b-2 <%= (typeof currentPath !== 'undefined' && currentPath === '/traders') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out" href="/traders">
                         Traders
                     </a>
-                    <a class="inline-flex items-center px-1 pt-1 border-b-2 <%= (typeof currentPath !== 'undefined' && currentPath === '/brokers') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out" href="/brokers">
+                    <a data-nav-link="/brokers" data-nav-variant="desktop" class="inline-flex items-center px-1 pt-1 border-b-2 <%= (typeof currentPath !== 'undefined' && currentPath === '/brokers') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out" href="/brokers">
                         Brokers
                     </a>
-                    <a class="inline-flex items-center px-1 pt-1 border-b-2 <%= (typeof currentPath !== 'undefined' && currentPath === '/companies') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out" href="/companies">
+                    <a data-nav-link="/companies" data-nav-variant="desktop" class="inline-flex items-center px-1 pt-1 border-b-2 <%= (typeof currentPath !== 'undefined' && currentPath === '/companies') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out" href="/companies">
                         Companies
                     </a>
                 </div>
@@ -72,46 +75,20 @@
     </div>
 
     <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden" @click="open = false">
         <div class="pt-2 pb-3 space-y-1">
-            <a class="block w-full pl-3 pr-4 py-2 border-l-4 <%= (typeof currentPath !== 'undefined' && currentPath === '/dashboard') ? 'border-indigo-400 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300' %> text-left text-base font-medium transition duration-150 ease-in-out" href="/dashboard">
+            <a data-nav-link="/dashboard" data-nav-variant="mobile" class="block w-full pl-3 pr-4 py-2 border-l-4 <%= (typeof currentPath !== 'undefined' && currentPath === '/dashboard') ? 'border-indigo-400 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300' %> text-left text-base font-medium transition duration-150 ease-in-out" href="/dashboard">
                 Dashboard
             </a>
-            <a class="block w-full pl-3 pr-4 py-2 border-l-4 <%= (typeof currentPath !== 'undefined' && currentPath === '/traders') ? 'border-indigo-400 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300' %> text-left text-base font-medium transition duration-150 ease-in-out" href="/traders">
+            <a data-nav-link="/traders" data-nav-variant="mobile" class="block w-full pl-3 pr-4 py-2 border-l-4 <%= (typeof currentPath !== 'undefined' && currentPath === '/traders') ? 'border-indigo-400 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300' %> text-left text-base font-medium transition duration-150 ease-in-out" href="/traders">
                 Traders
             </a>
-            <a class="block w-full pl-3 pr-4 py-2 border-l-4 <%= (typeof currentPath !== 'undefined' && currentPath === '/brokers') ? 'border-indigo-400 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300' %> text-left text-base font-medium transition duration-150 ease-in-out" href="/brokers">
+            <a data-nav-link="/brokers" data-nav-variant="mobile" class="block w-full pl-3 pr-4 py-2 border-l-4 <%= (typeof currentPath !== 'undefined' && currentPath === '/brokers') ? 'border-indigo-400 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300' %> text-left text-base font-medium transition duration-150 ease-in-out" href="/brokers">
                 Brokers
             </a>
-            <a class="block w-full pl-3 pr-4 py-2 border-l-4 <%= (typeof currentPath !== 'undefined' && currentPath === '/companies') ? 'border-indigo-400 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300' %> text-left text-base font-medium transition duration-150 ease-in-out" href="/companies">
+            <a data-nav-link="/companies" data-nav-variant="mobile" class="block w-full pl-3 pr-4 py-2 border-l-4 <%= (typeof currentPath !== 'undefined' && currentPath === '/companies') ? 'border-indigo-400 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300' %> text-left text-base font-medium transition duration-150 ease-in-out" href="/companies">
                 Companies
             </a>
         </div>
     </div>
 </nav>
-<script>
-if (!window.__cardvalNavPrefetch) {
-    window.__cardvalNavPrefetch = true;
-    const seen = new Set();
-    const prefetch = (href) => {
-        if (!href || seen.has(href) || href.includes('export/csv') || href.startsWith('#')) return;
-        seen.add(href);
-        const l = document.createElement('link');
-        l.rel = 'prefetch';
-        l.href = href;
-        document.head.appendChild(l);
-    };
-    let t = null;
-    document.addEventListener('mouseover', (e) => {
-        const a = e.target.closest && e.target.closest('a[href]');
-        if (!a || a.target === '_blank' || a.origin !== location.origin) return;
-        clearTimeout(t);
-        t = setTimeout(() => prefetch(a.href), 60);
-    }, { passive: true });
-    document.addEventListener('mousedown', (e) => {
-        const a = e.target.closest && e.target.closest('a[href]');
-        if (!a || a.target === '_blank' || a.origin !== location.origin) return;
-        prefetch(a.href);
-    }, { passive: true });
-}
-</script>

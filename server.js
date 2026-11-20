@@ -7,13 +7,14 @@ import os from 'node:os';
 import zlib from 'node:zlib';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { db } from './db.js';
+import { db, dbReady, isFtsReady } from './db.js';
 import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 import multer from 'multer';
 import { notifyAdded as accessSyncAdd, notifySaved as accessSyncNotify, notifyDeleted as accessSyncDelete } from './accessHubSync.js';
 
 const gzipAsync = promisify(zlib.gzip);
+const brotliCompressAsync = promisify(zlib.brotliCompress);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,14 +62,16 @@ app.use(
   })
 );
 
-// Fast Built-in Gzip Compression for HTML & JSON responses (>= 1KB)
+// Fast Built-in Brotli + Gzip Compression for HTML & JSON responses (>= 1KB)
 app.use((req, res, next) => {
   const acceptEncoding = String(req.headers['accept-encoding'] || '');
-  if (!acceptEncoding.includes('gzip')) return next();
+  const supportsBr = acceptEncoding.includes('br');
+  const supportsGzip = acceptEncoding.includes('gzip');
+  if (!supportsBr && !supportsGzip) return next();
 
   const origSend = res.send.bind(res);
   res.send = function (body) {
-    if (res.headersSent || res.getHeader('Content-Encoding')) {
+    if (res.headersSent || res.getHeader('Content-Encoding') || body === undefined || body === null) {
       return origSend(body);
     }
     const contentType = String(res.getHeader('Content-Type') || '');
@@ -88,15 +91,27 @@ app.use((req, res, next) => {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
     }
 
-    gzipAsync(buf, { level: zlib.constants.Z_BEST_SPEED })
+    const useBr = supportsBr;
+    const compressPromise = useBr
+      ? brotliCompressAsync(buf, {
+          params: {
+            [zlib.constants.BROTLI_PARAM_QUALITY]: 4,
+            [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
+          },
+        })
+      : gzipAsync(buf, { level: zlib.constants.Z_BEST_SPEED });
+
+    compressPromise
       .then((compressed) => {
         if (res.headersSent) return;
-        res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Content-Encoding', useBr ? 'br' : 'gzip');
         res.setHeader('Vary', 'Accept-Encoding');
         res.setHeader('Content-Length', compressed.byteLength);
         origSend(compressed);
       })
-      .catch(() => origSend(body));
+      .catch(() => {
+        if (!res.headersSent) origSend(body);
+      });
 
     return res;
   };
@@ -106,6 +121,105 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
+// Pre-Compressed Static Asset Middleware (Brotli + Gzip with mtime-checked bounded LRU cache)
+const publicRoot = path.resolve(__dirname, 'public');
+const staticCompressedCache = new Map();
+const STATIC_MIME_TYPES = {
+  '.js': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.json': 'application/json; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
+};
+
+app.use(async (req, res, next) => {
+  try {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+
+    const pathname = req.path || '/';
+    if (pathname.startsWith('/api/')) return next();
+
+    const ext = path.extname(pathname).toLowerCase();
+    const contentType = STATIC_MIME_TYPES[ext];
+    if (!contentType) return next();
+
+    const acceptEncoding = String(req.headers['accept-encoding'] || '');
+    const encoding = acceptEncoding.includes('br')
+      ? 'br'
+      : acceptEncoding.includes('gzip')
+      ? 'gzip'
+      : null;
+    if (!encoding) return next();
+
+    let decodedPath;
+    try {
+      decodedPath = decodeURIComponent(pathname);
+    } catch {
+      return next();
+    }
+    if (decodedPath.includes('\0')) return next();
+
+    const relativePath = decodedPath.replace(/^[/\\]+/, '');
+    const resolved = path.resolve(publicRoot, relativePath);
+    if (!resolved.startsWith(publicRoot + path.sep)) {
+      return next();
+    }
+
+    let stat;
+    try {
+      stat = await fsp.stat(resolved);
+    } catch {
+      return next();
+    }
+    if (!stat.isFile()) return next();
+
+    const cacheKey = `${resolved}::${stat.mtimeMs}::${encoding}`;
+    let entry = staticCompressedCache.get(cacheKey);
+    if (entry) {
+      staticCompressedCache.delete(cacheKey);
+      staticCompressedCache.set(cacheKey, entry);
+    } else {
+      const raw = await fsp.readFile(resolved);
+      const buf =
+        encoding === 'br'
+          ? zlib.brotliCompressSync(raw, {
+              params: {
+                [zlib.constants.BROTLI_PARAM_QUALITY]: 4,
+                [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
+              },
+            })
+          : zlib.gzipSync(raw, { level: 6 });
+      const etag = `W/"${stat.size.toString(16)}-${Math.trunc(stat.mtimeMs).toString(16)}-${encoding}"`;
+      entry = { buf, etag };
+      setBoundedMap(staticCompressedCache, cacheKey, entry, 120);
+    }
+
+    const isImmutable =
+      pathname.includes('/build/assets/') ||
+      pathname.includes('/templates/previews/') ||
+      'v' in req.query;
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Vary', 'Accept-Encoding');
+    res.setHeader('ETag', entry.etag);
+    res.setHeader(
+      'Cache-Control',
+      isImmutable ? 'public, max-age=31536000, immutable' : 'public, max-age=86400'
+    );
+
+    if (req.headers['if-none-match'] === entry.etag) {
+      return res.status(304).end();
+    }
+
+    res.setHeader('Content-Encoding', encoding);
+    res.setHeader('Content-Length', entry.buf.byteLength);
+    return res.status(200).end(req.method === 'HEAD' ? undefined : entry.buf);
+  } catch {
+    return next();
+  }
+});
+
 // Static files with aggressive browser caching
 app.use(
   express.static(path.join(__dirname, 'public'), {
@@ -113,7 +227,12 @@ app.use(
     lastModified: true,
     setHeaders(res, filePath) {
       const normalized = filePath.replace(/\\/g, '/');
-      if (normalized.includes('/public/build/assets/') || normalized.includes('/public/uploads/')) {
+      if (
+        normalized.includes('/public/build/assets/') ||
+        normalized.includes('/public/uploads/') ||
+        normalized.includes('/public/templates/previews/') ||
+        (res.req && res.req.query && 'v' in res.req.query)
+      ) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else if (
         normalized.includes('/public/templates/') ||
@@ -128,6 +247,11 @@ app.use(
   })
 );
 
+// Ensure SQLite PRAGMAs, indexes, and FTS availability check complete before dynamic routes run
+app.use((req, res, next) => {
+  dbReady.then(() => next(), () => next());
+});
+
 // Local persistent uploads directory
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 try {
@@ -139,8 +263,8 @@ try {
 // ==========================================
 // In-Memory Smart Cache (Instant Invalidation on Writes)
 // ==========================================
-const LIST_TTL_MS = 20_000;      // 20s for paginated feeds (instant invalidation on local writes)
-const COUNT_TTL_MS = 60_000;     // 60s for total counts
+const LIST_TTL_MS = 60_000;      // 60s for paginated feeds (instant invalidation on local writes)
+const COUNT_TTL_MS = 120_000;    // 120s for total counts
 const DASH_TTL_MS = 60_000;      // 60s for dashboard stats
 const SETTINGS_TTL_MS = 300_000; // 5m for global card typography settings
 
@@ -151,7 +275,9 @@ const settingsCache = new Map();
 const qrCache = new Map();
 
 function setBoundedMap(map, key, val, maxEntries = 250) {
-  if (map.size >= maxEntries) {
+  if (map.has(key)) {
+    map.delete(key);
+  } else if (map.size >= maxEntries) {
     const oldestKey = map.keys().next().value;
     map.delete(oldestKey);
   }
@@ -373,6 +499,24 @@ async function runCachedPaginatedQuery(selectCols, whereSql, params, limit, offs
   return data;
 }
 
+function appendFastTextSearch(where, params, rawTerm, ftsColumns, fallbackLikeSql, fallbackParamCount) {
+  const trimmed = String(rawTerm || '').trim();
+  if (!trimmed) return;
+
+  if (isFtsReady() && Array.from(trimmed).length >= 3) {
+    const escaped = trimmed.replace(/"/g, '""');
+    where.push('id IN (SELECT rowid FROM traders_fts WHERE traders_fts MATCH ?)');
+    params.push(`{${ftsColumns.join(' ')}} : "${escaped}"`);
+    return;
+  }
+
+  where.push(fallbackLikeSql);
+  const likeTerm = `%${trimmed}%`;
+  for (let i = 0; i < fallbackParamCount; i++) {
+    params.push(likeTerm);
+  }
+}
+
 function buildTradersFilter(q) {
   const {
     search, name, english_name, commercial_name, activity,
@@ -392,11 +536,14 @@ function buildTradersFilter(q) {
   const where = ["member_type = 'trader'"];
   const params = [];
 
-  if (search && search.trim()) {
-    const term = `%${search.trim()}%`;
-    where.push('(name LIKE ? OR commercial_name LIKE ? OR activity LIKE ? OR card_no LIKE ?)');
-    params.push(term, term, term, term);
-  }
+  appendFastTextSearch(
+    where,
+    params,
+    search,
+    ['name', 'commercial_name', 'activity', 'card_no'],
+    '(name LIKE ? OR commercial_name LIKE ? OR activity LIKE ? OR card_no LIKE ?)',
+    4
+  );
   if (name && name.trim()) { where.push('name LIKE ?'); params.push(`%${name.trim()}%`); }
   if (english_name && english_name.trim()) { where.push('english_name LIKE ?'); params.push(`%${english_name.trim()}%`); }
   if (commercial_name && commercial_name.trim()) { where.push('commercial_name LIKE ?'); params.push(`%${commercial_name.trim()}%`); }
@@ -440,11 +587,14 @@ function buildBrokersFilter(q) {
   const where = ["member_type = 'broker'"];
   const params = [];
 
-  if (search && search.trim()) {
-    const term = `%${search.trim()}%`;
-    where.push('(name LIKE ? OR english_name LIKE ? OR commercial_name LIKE ? OR activity LIKE ? OR card_no LIKE ? OR stamp_no LIKE ? OR phone_number LIKE ?)');
-    params.push(term, term, term, term, term, term, term);
-  }
+  appendFastTextSearch(
+    where,
+    params,
+    search,
+    ['name', 'english_name', 'commercial_name', 'activity', 'card_no', 'stamp_no', 'phone_number'],
+    '(name LIKE ? OR english_name LIKE ? OR commercial_name LIKE ? OR activity LIKE ? OR card_no LIKE ? OR stamp_no LIKE ? OR phone_number LIKE ?)',
+    7
+  );
   if (name && name.trim()) { where.push('name LIKE ?'); params.push(`%${name.trim()}%`); }
   if (english_name && english_name.trim()) { where.push('english_name LIKE ?'); params.push(`%${english_name.trim()}%`); }
   if (commercial_name && commercial_name.trim()) { where.push('commercial_name LIKE ?'); params.push(`%${commercial_name.trim()}%`); }
@@ -491,11 +641,14 @@ function buildCompaniesFilter(q) {
   const where = ["member_type = 'company'"];
   const params = [];
 
-  if (search && search.trim()) {
-    const term = `%${search.trim()}%`;
-    where.push('(company_name LIKE ? OR english_company_name LIKE ? OR ceo_name LIKE ? OR name LIKE ? OR commercial_name LIKE ? OR activity LIKE ? OR card_no LIKE ? OR incorporation_certificate_no LIKE ? OR phone_number LIKE ?)');
-    params.push(term, term, term, term, term, term, term, term, term);
-  }
+  appendFastTextSearch(
+    where,
+    params,
+    search,
+    ['company_name', 'english_company_name', 'ceo_name', 'name', 'commercial_name', 'activity', 'card_no', 'incorporation_certificate_no', 'phone_number'],
+    '(company_name LIKE ? OR english_company_name LIKE ? OR ceo_name LIKE ? OR name LIKE ? OR commercial_name LIKE ? OR activity LIKE ? OR card_no LIKE ? OR incorporation_certificate_no LIKE ? OR phone_number LIKE ?)',
+    9
+  );
 
   const cName = company_name || name;
   if (cName && cName.trim()) {
@@ -538,6 +691,35 @@ function buildCompaniesFilter(q) {
   return { whereSql: where.join(' AND '), params, isAdvancedSearch };
 }
 
+async function getDashboardStats() {
+  const now = Date.now();
+  if (dashboardCache && dashboardCache.expiresAt > now) {
+    return dashboardCache.data;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const row = await db.prepare(`
+    SELECT
+      SUM(CASE WHEN member_type = 'trader' THEN 1 ELSE 0 END) AS totalTraders,
+      SUM(CASE WHEN member_type = 'broker' THEN 1 ELSE 0 END) AS totalBrokers,
+      SUM(CASE WHEN member_type = 'company' THEN 1 ELSE 0 END) AS totalCompanies,
+      SUM(CASE WHEN expire_date >= ? THEN 1 ELSE 0 END) AS activeMembers,
+      SUM(CASE WHEN photo_path IS NOT NULL AND photo_path != '' THEN 1 ELSE 0 END) AS withPhotos
+    FROM traders
+    WHERE deleted_at IS NULL OR deleted_at = ''
+  `).get(today);
+
+  const stats = {
+    totalTraders: row?.totalTraders || 0,
+    totalBrokers: row?.totalBrokers || 0,
+    totalCompanies: row?.totalCompanies || 0,
+    activeMembers: row?.activeMembers || 0,
+    withPhotos: row?.withPhotos || 0,
+  };
+  dashboardCache = { data: stats, expiresAt: now + DASH_TTL_MS };
+  return stats;
+}
+
 // ==========================================
 // Cardval Original Web Routes
 // ==========================================
@@ -550,33 +732,9 @@ app.get('/', (req, res) => {
 // Dashboard (Single SQL Covering Query + In-Memory Cache, properly excluding deleted rows)
 app.get('/dashboard', async (req, res) => {
   try {
-    const now = Date.now();
-    let stats;
-    if (dashboardCache && dashboardCache.expiresAt > now) {
-      stats = dashboardCache.data;
-    } else {
-      const today = new Date().toISOString().split('T')[0];
-      const row = await db.prepare(`
-        SELECT
-          SUM(CASE WHEN member_type = 'trader' THEN 1 ELSE 0 END) AS totalTraders,
-          SUM(CASE WHEN member_type = 'broker' THEN 1 ELSE 0 END) AS totalBrokers,
-          SUM(CASE WHEN member_type = 'company' THEN 1 ELSE 0 END) AS totalCompanies,
-          SUM(CASE WHEN expire_date >= ? THEN 1 ELSE 0 END) AS activeMembers,
-          SUM(CASE WHEN photo_path IS NOT NULL AND photo_path != '' THEN 1 ELSE 0 END) AS withPhotos
-        FROM traders
-        WHERE deleted_at IS NULL OR deleted_at = ''
-      `).get(today);
+    const stats = await getDashboardStats();
 
-      stats = {
-        totalTraders: row?.totalTraders || 0,
-        totalBrokers: row?.totalBrokers || 0,
-        totalCompanies: row?.totalCompanies || 0,
-        activeMembers: row?.activeMembers || 0,
-        withPhotos: row?.withPhotos || 0,
-      };
-      dashboardCache = { data: stats, expiresAt: now + DASH_TTL_MS };
-    }
-
+    res.setHeader('Cache-Control', 'private, no-cache');
     res.render('dashboard', {
       currentPath: '/dashboard',
       stats,
@@ -601,6 +759,7 @@ app.get('/traders', async (req, res) => {
     delete queryCopy.page;
     const qs = Object.keys(queryCopy).length ? '&' + new URLSearchParams(queryCopy).toString() : '';
 
+    res.setHeader('Cache-Control', 'private, no-cache');
     res.render('traders/index', {
       currentPath: '/traders',
       traders,
@@ -621,6 +780,7 @@ app.get('/traders', async (req, res) => {
 app.get('/traders/create', (req, res) => {
   const memberType = req.query.type || 'trader';
   const currentPath = memberType === 'broker' ? '/brokers' : (memberType === 'company' ? '/companies' : '/traders');
+  res.setHeader('Cache-Control', 'private, no-cache');
   res.render('traders/create', { currentPath, member_type: memberType });
 });
 
@@ -707,6 +867,7 @@ app.get('/traders/:uuid/edit', async (req, res) => {
       return res.status(404).send('Trader not found');
     }
     const currentPath = trader.member_type === 'broker' ? '/brokers' : (trader.member_type === 'company' ? '/companies' : '/traders');
+    res.setHeader('Cache-Control', 'private, no-cache');
     res.render('traders/edit', { currentPath, trader });
   } catch (err) {
     res.status(500).send('Error loading edit page: ' + escapeHtml(err.message));
@@ -879,6 +1040,7 @@ app.get('/brokers', async (req, res) => {
     delete queryCopy.page;
     const qs = Object.keys(queryCopy).length ? '&' + new URLSearchParams(queryCopy).toString() : '';
 
+    res.setHeader('Cache-Control', 'private, no-cache');
     res.render('brokers/index', {
       currentPath: '/brokers',
       brokers,
@@ -952,6 +1114,7 @@ app.get('/companies', async (req, res) => {
     delete queryCopy.page;
     const qs = Object.keys(queryCopy).length ? '&' + new URLSearchParams(queryCopy).toString() : '';
 
+    res.setHeader('Cache-Control', 'private, no-cache');
     res.render('companies/index', {
       currentPath: '/companies',
       companies,
@@ -1240,6 +1403,7 @@ app.get('/profile', async (req, res) => {
       profileSamplesCache = { sampleTrader, sampleCompany, sampleBroker, expiresAt: now + SETTINGS_TTL_MS };
     }
 
+    res.setHeader('Cache-Control', 'private, no-cache');
     res.render('profile/index', {
       currentPath: '/profile',
       user: { name: 'Site Admin', email: 'admin@k-coc.org' },
@@ -1579,6 +1743,21 @@ function getNetworkIps() {
   return ips;
 }
 
+async function warmStartupCaches() {
+  try {
+    await dbReady;
+    const traderFilter = buildTradersFilter({});
+    const brokerFilter = buildBrokersFilter({});
+    const companyFilter = buildCompaniesFilter({});
+    await Promise.all([
+      getDashboardStats(),
+      runCachedPaginatedQuery(LIST_SELECT_COLS, traderFilter.whereSql, traderFilter.params, 15, 0),
+      runCachedPaginatedQuery(LIST_SELECT_COLS, brokerFilter.whereSql, brokerFilter.params, 15, 0),
+      runCachedPaginatedQuery(LIST_SELECT_COLS, companyFilter.whereSql, companyFilter.params, 15, 0),
+    ]);
+  } catch (_) {}
+}
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n======================================================`);
   console.log(`🚀 خادم نظام Cardval السريع والمحسّن يعمل الآن بنجاح!`);
@@ -1588,6 +1767,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`📱 من الأجهزة الأخرى (${ip.name}): http://${ip.address}:${PORT}/traders`);
   });
   console.log(`======================================================\n`);
+  warmStartupCaches();
 });
 
 export default app;

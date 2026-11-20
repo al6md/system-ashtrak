@@ -41,14 +41,156 @@ if (localFilePath && localFilePath !== ':memory:') {
 
 export const sqliteClient = createClient({ url: SQLITE_URL });
 
-(async () => {
-  try {
-    await sqliteClient.execute('PRAGMA busy_timeout = 5000');
-    await sqliteClient.execute('PRAGMA journal_mode = WAL');
-    await sqliteClient.execute('PRAGMA synchronous = NORMAL');
-    await sqliteClient.execute('PRAGMA temp_store = MEMORY');
-  } catch (_) {}
-})();
+let ftsReady = false;
+let initPromise = null;
+let resolveFtsInit;
+export let ftsReadyPromise = new Promise((resolve) => {
+  resolveFtsInit = resolve;
+});
+
+export function isFtsReady() {
+  return ftsReady;
+}
+
+const FTS_COLUMNS = [
+  'name',
+  'english_name',
+  'commercial_name',
+  'company_name',
+  'english_company_name',
+  'ceo_name',
+  'activity',
+  'card_no',
+  'stamp_no',
+  'incorporation_certificate_no',
+  'phone_number',
+].join(', ');
+
+const FTS_NEW_VALUES = [
+  'new.name',
+  'new.english_name',
+  'new.commercial_name',
+  'new.company_name',
+  'new.english_company_name',
+  'new.ceo_name',
+  'new.activity',
+  'new.card_no',
+  'new.stamp_no',
+  'new.incorporation_certificate_no',
+  'new.phone_number',
+].join(', ');
+
+const FTS_OLD_VALUES = [
+  'old.name',
+  'old.english_name',
+  'old.commercial_name',
+  'old.company_name',
+  'old.english_company_name',
+  'old.ceo_name',
+  'old.activity',
+  'old.card_no',
+  'old.stamp_no',
+  'old.incorporation_certificate_no',
+  'old.phone_number',
+].join(', ');
+
+async function ensureFtsTriggers() {
+  await sqliteClient.execute(`
+    CREATE TRIGGER IF NOT EXISTS traders_fts_ai AFTER INSERT ON traders BEGIN
+      INSERT INTO traders_fts(rowid, ${FTS_COLUMNS})
+      VALUES (new.id, ${FTS_NEW_VALUES});
+    END
+  `);
+  await sqliteClient.execute(`
+    CREATE TRIGGER IF NOT EXISTS traders_fts_ad AFTER DELETE ON traders BEGIN
+      INSERT INTO traders_fts(traders_fts, rowid, ${FTS_COLUMNS})
+      VALUES ('delete', old.id, ${FTS_OLD_VALUES});
+    END
+  `);
+  await sqliteClient.execute(`
+    CREATE TRIGGER IF NOT EXISTS traders_fts_au AFTER UPDATE ON traders BEGIN
+      INSERT INTO traders_fts(traders_fts, rowid, ${FTS_COLUMNS})
+      VALUES ('delete', old.id, ${FTS_OLD_VALUES});
+      INSERT INTO traders_fts(rowid, ${FTS_COLUMNS})
+      VALUES (new.id, ${FTS_NEW_VALUES});
+    END
+  `);
+}
+
+export function initDb() {
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    try {
+      await sqliteClient.execute('PRAGMA busy_timeout = 5000');
+      await sqliteClient.execute('PRAGMA journal_mode = WAL');
+      await sqliteClient.execute('PRAGMA synchronous = NORMAL');
+      await sqliteClient.execute('PRAGMA temp_store = MEMORY');
+      await sqliteClient.execute('PRAGMA cache_size = -32000');
+      await sqliteClient.execute('PRAGMA mmap_size = 134217728');
+    } catch (_) {}
+
+    try {
+      await sqliteClient.execute(
+        'CREATE INDEX IF NOT EXISTS idx_traders_type_del_sort ON traders(member_type, deleted_at, created_at DESC, id DESC)'
+      );
+      await sqliteClient.execute(
+        'CREATE INDEX IF NOT EXISTS idx_traders_type_card ON traders(member_type, card_no)'
+      );
+    } catch (_) {}
+
+    try {
+      const existing = await sqliteClient.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='traders_fts'"
+      );
+      const alreadyExists = existing.rows.length > 0;
+
+      if (alreadyExists) {
+        const triggerCheck = await sqliteClient.execute(
+          "SELECT name FROM sqlite_master WHERE type='trigger' AND name IN ('traders_fts_ai','traders_fts_ad','traders_fts_au')"
+        );
+        if (triggerCheck.rows.length < 3) {
+          await ensureFtsTriggers();
+        }
+        ftsReady = true;
+        resolveFtsInit(true);
+        ftsReadyPromise = Promise.resolve(true);
+      } else {
+        await sqliteClient.execute(`
+          CREATE VIRTUAL TABLE IF NOT EXISTS traders_fts USING fts5(
+            ${FTS_COLUMNS},
+            content='traders',
+            content_rowid='id',
+            tokenize='trigram'
+          )
+        `);
+        await ensureFtsTriggers();
+
+        ftsReady = false;
+        const rebuildPromise = (async () => {
+          try {
+            await sqliteClient.execute("INSERT INTO traders_fts(traders_fts) VALUES('rebuild')");
+            ftsReady = true;
+            return true;
+          } catch (_) {
+            ftsReady = false;
+            return false;
+          }
+        })();
+        rebuildPromise.then(resolveFtsInit, () => resolveFtsInit(false));
+        ftsReadyPromise = rebuildPromise;
+      }
+    } catch (_) {
+      ftsReady = false;
+      resolveFtsInit(false);
+      ftsReadyPromise = Promise.resolve(false);
+    }
+  })();
+
+  return initPromise;
+}
+
+export const dbReady = initDb();
 
 function normalizeArgs(args) {
   if (args.length === 1 && Array.isArray(args[0])) return args[0];

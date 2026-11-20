@@ -1,5 +1,4 @@
 <!-- ID Card Preview & Print Modal (Integrated with Cardval - Fast Cached Assets) -->
-<link rel="stylesheet" href="/css/cardModal.css?v=6">
 <div id="printModal" class="fixed inset-0 z-50 bg-gray-900 bg-opacity-75" style="display: none; overflow-y: auto; padding: 1rem 0.5rem; box-sizing: border-box;">
     <div style="min-height: 100%; display: flex; align-items: center; justify-content: center; width: 100%;">
         <div class="bg-white rounded-lg shadow-xl w-full" style="max-width: 1040px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; margin: auto; border: 1px solid #e5e7eb;">
@@ -34,8 +33,8 @@
 
                         <!-- Canvas Display (Crisp CR80 Aspect Ratio) -->
                         <div style="width: 100%; aspect-ratio: 1024/644; border: 1px solid #d1d5db; border-radius: 0.5rem; overflow: hidden; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-                            <canvas id="frontCanvas" width="3434" height="2160" style="width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
-                            <canvas id="backCanvas" width="3434" height="2160" style="width: 100%; height: 100%; object-fit: contain; display: none;"></canvas>
+                            <canvas id="frontCanvas" width="1" height="1" style="width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
+                            <canvas id="backCanvas" width="1" height="1" style="width: 100%; height: 100%; object-fit: contain; display: none;"></canvas>
                         </div>
 
                         <!-- Action Buttons (Matching Cardval Dark Button UI) -->
@@ -140,4 +139,3 @@
         </div>
     </div>
 </div>
-<script src="/js/cardModal.js?v=16" defer></script>

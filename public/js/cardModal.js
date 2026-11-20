@@ -1,6 +1,9 @@
 // ============================================================================
-// Fast Card Modal, 60-FPS Canvas Renderer, Instant AJAX Delete & Link Prefetch
+// Fast Card Modal, Dual-Resolution 60-FPS Canvas Renderer
 // ============================================================================
+(() => {
+    if (window.__cardModalLoaded) return;
+    window.__cardModalLoaded = true;
 
 let currentTrader = null;
 let globalTypography = null;
@@ -167,6 +170,8 @@ const CARD_LOGICAL_W = 1024;
 const CARD_LOGICAL_H = 644;
 const CARD_RENDER_W = 3434;
 const CARD_RENDER_H = 2160;
+const CARD_PREVIEW_W = 1024;
+const CARD_PREVIEW_H = 644;
 
 function getFrontPhotoBox(trader) {
     if (trader && trader.member_type === 'company') {
@@ -226,7 +231,7 @@ function formatClassName(cardClass, lang = 'ar') {
     }
 }
 
-function loadImage(src) {
+function loadImage(src, fallbackToAvatar = true) {
     if (!src) return Promise.resolve(null);
     if (RESOLVED_IMAGE_CACHE.has(src)) {
         return Promise.resolve(RESOLVED_IMAGE_CACHE.get(src));
@@ -254,9 +259,11 @@ function loadImage(src) {
         };
         img.onerror = () => {
             IMAGE_PROMISE_CACHE.delete(src);
-            if (src !== '/templates/avatar_placeholder.png') {
-                loadImage('/templates/avatar_placeholder.png').then(fallbackImg => {
-                    RESOLVED_IMAGE_CACHE.set(src, fallbackImg);
+            if (fallbackToAvatar && src !== '/templates/avatar_placeholder.png') {
+                loadImage('/templates/avatar_placeholder.png', false).then(fallbackImg => {
+                    if (fallbackImg) {
+                        RESOLVED_IMAGE_CACHE.set(src, fallbackImg);
+                    }
                     resolve(fallbackImg);
                 });
             } else {
@@ -270,11 +277,31 @@ function loadImage(src) {
     return p;
 }
 
+async function loadImageWithFallback(primarySrc, fallbackSrc) {
+    if (!primarySrc) {
+        return fallbackSrc ? loadImage(fallbackSrc, false) : null;
+    }
+    if (RESOLVED_IMAGE_CACHE.has(primarySrc)) {
+        return RESOLVED_IMAGE_CACHE.get(primarySrc);
+    }
+    const primaryImg = await loadImage(primarySrc, false);
+    if (primaryImg) return primaryImg;
+    if (!fallbackSrc) return null;
+    const fallbackImg = await loadImage(fallbackSrc, false);
+    if (fallbackImg) {
+        RESOLVED_IMAGE_CACHE.set(primarySrc, fallbackImg);
+    }
+    return fallbackImg;
+}
+
 async function ensureFonts() {
     if (fontsLoadedOnce) return;
     if (fontsLoadPromise) return fontsLoadPromise;
     fontsLoadPromise = (async () => {
         try {
+            if (document.fonts && document.fonts.ready) {
+                await document.fonts.ready;
+            }
             await Promise.all([
                 document.fonts.load('bold 28px "PT Bold Heading"'),
                 document.fonts.load('bold 24px "Myriad Pro"')
@@ -313,20 +340,20 @@ function drawAutoFitText(ctx, text, x, y, maxBoundary, isRtl = false) {
     return scaleX;
 }
 
-function prepareHiResCardCanvas(canvas, bg) {
+function prepareCardCanvas(canvas, bg, renderW = CARD_PREVIEW_W, renderH = CARD_PREVIEW_H) {
     const ctx = canvas.getContext('2d');
-    if (canvas.width !== CARD_RENDER_W) canvas.width = CARD_RENDER_W;
-    if (canvas.height !== CARD_RENDER_H) canvas.height = CARD_RENDER_H;
+    if (canvas.width !== renderW) canvas.width = renderW;
+    if (canvas.height !== renderH) canvas.height = renderH;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, CARD_RENDER_W, CARD_RENDER_H);
+    ctx.clearRect(0, 0, renderW, renderH);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    if (bg) ctx.drawImage(bg, 0, 0, CARD_RENDER_W, CARD_RENDER_H);
-    ctx.setTransform(CARD_RENDER_W / CARD_LOGICAL_W, 0, 0, CARD_RENDER_H / CARD_LOGICAL_H, 0, 0);
+    if (bg) ctx.drawImage(bg, 0, 0, renderW, renderH);
+    ctx.setTransform(renderW / CARD_LOGICAL_W, 0, 0, renderH / CARD_LOGICAL_H, 0, 0);
     return ctx;
 }
 
-function drawCardFrontSync(canvas, trader, bg, photo) {
+function drawCardFrontSync(canvas, trader, bg, photo, renderW = CARD_PREVIEW_W, renderH = CARD_PREVIEW_H) {
     if (!canvas || !trader) return;
     const isComp = trader.member_type === 'company';
     const isBroker = trader.member_type === 'broker';
@@ -337,7 +364,7 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
         ? activeCardTypography.front
         : ((globalTypography && globalTypography.front) ? globalTypography.front : fallbackDefaults.front);
 
-    const ctx = prepareHiResCardCanvas(canvas, bg);
+    const ctx = prepareCardCanvas(canvas, bg, renderW, renderH);
 
     const { x: boxX, y: boxY, w: boxW, h: boxH, radius } = getFrontPhotoBox(trader);
     const dFront = fallbackDefaults.front;
@@ -460,7 +487,7 @@ function drawCardFrontSync(canvas, trader, bg, photo) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
-function drawCardBackSync(canvas, trader, bg, qrImg) {
+function drawCardBackSync(canvas, trader, bg, qrImg, renderW = CARD_PREVIEW_W, renderH = CARD_PREVIEW_H) {
     if (!canvas || !trader) return;
     const isComp = trader.member_type === 'company';
     const isBroker = trader.member_type === 'broker';
@@ -471,7 +498,7 @@ function drawCardBackSync(canvas, trader, bg, qrImg) {
         ? activeCardTypography.back
         : ((globalTypography && globalTypography.back) ? globalTypography.back : fallbackDefaults.back);
 
-    const ctx = prepareHiResCardCanvas(canvas, bg);
+    const ctx = prepareCardCanvas(canvas, bg, renderW, renderH);
 
     const dBack = fallbackDefaults.back;
     if (qrImg) {
@@ -599,25 +626,39 @@ function getBackTemplatePath(trader) {
     return '/templates/card_back_clean.png?v=6';
 }
 
+function getFrontPreviewTemplatePath(trader) {
+    if (trader && trader.member_type === 'company') return '/templates/previews/company_front_clean.webp?v=1';
+    if (trader && trader.member_type === 'broker') return '/templates/previews/broker_front_clean.webp?v=1';
+    return '/templates/previews/card_front_template.webp?v=1';
+}
+
+function getBackPreviewTemplatePath(trader) {
+    if (trader && trader.member_type === 'company') return '/templates/previews/company_back_clean.webp?v=1';
+    if (trader && trader.member_type === 'broker') return '/templates/previews/broker_back_clean.webp?v=1';
+    return '/templates/previews/card_back_clean.webp?v=1';
+}
+
 async function renderCardFront(canvas, trader) {
-    const tplPath = getFrontTemplatePath(trader);
+    const previewTplPath = getFrontPreviewTemplatePath(trader);
+    const fallbackTplPath = getFrontTemplatePath(trader);
     const photoSrc = trader.photo_path || '/templates/avatar_placeholder.png';
     const [, bg, photo] = await Promise.all([
         ensureFonts(),
-        loadImage(tplPath),
+        loadImageWithFallback(previewTplPath, fallbackTplPath),
         loadImage(photoSrc)
     ]);
-    drawCardFrontSync(canvas, trader, bg, photo);
+    drawCardFrontSync(canvas, trader, bg, photo, CARD_PREVIEW_W, CARD_PREVIEW_H);
 }
 
 async function renderCardBack(canvas, trader, qrDataUrl) {
-    const tplPath = getBackTemplatePath(trader);
+    const previewTplPath = getBackPreviewTemplatePath(trader);
+    const fallbackTplPath = getBackTemplatePath(trader);
     const [, bg, qrImg] = await Promise.all([
         ensureFonts(),
-        loadImage(tplPath),
-        qrDataUrl ? loadImage(qrDataUrl) : Promise.resolve(null)
+        loadImageWithFallback(previewTplPath, fallbackTplPath),
+        qrDataUrl ? loadImage(qrDataUrl, false) : Promise.resolve(null)
     ]);
-    drawCardBackSync(canvas, trader, bg, qrImg);
+    drawCardBackSync(canvas, trader, bg, qrImg, CARD_PREVIEW_W, CARD_PREVIEW_H);
 }
 
 function getActiveFieldDef() {
@@ -685,40 +726,50 @@ function syncActiveFieldInputs() {
     document.getElementById('mDirectInputY').value = yVal;
 }
 
+function drawCachedModalSide(side, fallbackToAsync = false) {
+    if (!currentTrader) return;
+    if (side === 'front') {
+        const canvas = document.getElementById('frontCanvas');
+        const tplPath = getFrontPreviewTemplatePath(currentTrader);
+        const photoSrc = currentTrader.photo_path || '/templates/avatar_placeholder.png';
+        if (RESOLVED_IMAGE_CACHE.has(tplPath) && RESOLVED_IMAGE_CACHE.has(photoSrc)) {
+            drawCardFrontSync(
+                canvas,
+                currentTrader,
+                RESOLVED_IMAGE_CACHE.get(tplPath),
+                RESOLVED_IMAGE_CACHE.get(photoSrc),
+                CARD_PREVIEW_W,
+                CARD_PREVIEW_H
+            );
+        } else if (fallbackToAsync) {
+            renderCardFront(canvas, currentTrader);
+        }
+    } else {
+        const canvas = document.getElementById('backCanvas');
+        const tplPath = getBackPreviewTemplatePath(currentTrader);
+        const hasQr = !currentModalQrUrl || RESOLVED_IMAGE_CACHE.has(currentModalQrUrl);
+        if (RESOLVED_IMAGE_CACHE.has(tplPath) && hasQr) {
+            drawCardBackSync(
+                canvas,
+                currentTrader,
+                RESOLVED_IMAGE_CACHE.get(tplPath),
+                currentModalQrUrl ? RESOLVED_IMAGE_CACHE.get(currentModalQrUrl) : null,
+                CARD_PREVIEW_W,
+                CARD_PREVIEW_H
+            );
+        } else if (fallbackToAsync) {
+            renderCardBack(canvas, currentTrader, currentModalQrUrl);
+        }
+    }
+}
+
 // 60 FPS Zero-Lag Synchronous Redraw when dragging sliders or pressing arrows
 function redrawModalCanvas() {
     if (!currentTrader) return;
     if (redrawRafId) cancelAnimationFrame(redrawRafId);
     redrawRafId = requestAnimationFrame(() => {
         redrawRafId = null;
-        if (!currentTrader) return;
-        if (currentModalSide === 'front') {
-            const tplPath = getFrontTemplatePath(currentTrader);
-            const photoSrc = currentTrader.photo_path || '/templates/avatar_placeholder.png';
-            if (RESOLVED_IMAGE_CACHE.has(tplPath) && RESOLVED_IMAGE_CACHE.has(photoSrc)) {
-                drawCardFrontSync(
-                    document.getElementById('frontCanvas'),
-                    currentTrader,
-                    RESOLVED_IMAGE_CACHE.get(tplPath),
-                    RESOLVED_IMAGE_CACHE.get(photoSrc)
-                );
-            } else {
-                renderCardFront(document.getElementById('frontCanvas'), currentTrader);
-            }
-        } else {
-            const tplPath = getBackTemplatePath(currentTrader);
-            const hasQr = !currentModalQrUrl || RESOLVED_IMAGE_CACHE.has(currentModalQrUrl);
-            if (RESOLVED_IMAGE_CACHE.has(tplPath) && hasQr) {
-                drawCardBackSync(
-                    document.getElementById('backCanvas'),
-                    currentTrader,
-                    RESOLVED_IMAGE_CACHE.get(tplPath),
-                    currentModalQrUrl ? RESOLVED_IMAGE_CACHE.get(currentModalQrUrl) : null
-                );
-            } else {
-                renderCardBack(document.getElementById('backCanvas'), currentTrader, currentModalQrUrl);
-            }
-        }
+        drawCachedModalSide(currentModalSide, true);
     });
 }
 
@@ -828,12 +879,16 @@ async function resetTraderCustomTypography() {
 async function openPrintModal(traderId, uuid) {
     const token = ++modalRequestToken;
     const modalEl = document.getElementById('printModal');
+    const titleEl = document.getElementById('modalTitle');
     const fCanvas = document.getElementById('frontCanvas');
     const bCanvas = document.getElementById('backCanvas');
 
     // Open modal shell immediately (< 5ms) so UI feels instant!
     modalReadyForPrint = false;
-    document.getElementById('modalTitle').innerText = 'جاري تجهيز الهوية...';
+    if (titleEl) {
+        delete titleEl.dataset.origTitle;
+        titleEl.innerText = 'جاري تجهيز الهوية...';
+    }
     modalEl.style.display = 'block';
     modalEl.classList.remove('hidden');
 
@@ -858,7 +913,10 @@ async function openPrintModal(traderId, uuid) {
 
         const titlePrefix = isComp ? 'Print Company ID: ' : (isBroker ? 'Print Broker ID: ' : 'Print Trader ID: ');
         const displayName = isComp ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name) : currentTrader.name;
-        document.getElementById('modalTitle').innerText = titlePrefix + displayName + ' (' + currentTrader.card_no + ')';
+        if (titleEl) {
+            delete titleEl.dataset.origTitle;
+            titleEl.innerText = titlePrefix + displayName + ' (' + currentTrader.card_no + ')';
+        }
         document.getElementById('verifyLink').href = '/traders/validate/' + encodeURIComponent(currentTrader.uuid);
         const btnSave = document.getElementById('btnTraderSaveTypo');
         if (btnSave) btnSave.innerText = isComp ? '💾 حفظ خاص للشركة' : (isBroker ? '💾 حفظ خاص للدلال' : '💾 حفظ خاص للتاجر');
@@ -893,6 +951,8 @@ async function openPrintModal(traderId, uuid) {
 function closePrintModal() {
     modalRequestToken++;
     modalReadyForPrint = false;
+    const titleEl = document.getElementById('modalTitle');
+    if (titleEl) delete titleEl.dataset.origTitle;
     const modalEl = document.getElementById('printModal');
     if (modalEl) {
         modalEl.style.display = 'none';
@@ -928,29 +988,7 @@ function flushPendingRedraw() {
     if (redrawRafId) {
         cancelAnimationFrame(redrawRafId);
         redrawRafId = null;
-        if (currentModalSide === 'front') {
-            const tplPath = getFrontTemplatePath(currentTrader);
-            const photoSrc = currentTrader.photo_path || '/templates/avatar_placeholder.png';
-            if (RESOLVED_IMAGE_CACHE.has(tplPath) && RESOLVED_IMAGE_CACHE.has(photoSrc)) {
-                drawCardFrontSync(
-                    document.getElementById('frontCanvas'),
-                    currentTrader,
-                    RESOLVED_IMAGE_CACHE.get(tplPath),
-                    RESOLVED_IMAGE_CACHE.get(photoSrc)
-                );
-            }
-        } else {
-            const tplPath = getBackTemplatePath(currentTrader);
-            const hasQr = !currentModalQrUrl || RESOLVED_IMAGE_CACHE.has(currentModalQrUrl);
-            if (RESOLVED_IMAGE_CACHE.has(tplPath) && hasQr) {
-                drawCardBackSync(
-                    document.getElementById('backCanvas'),
-                    currentTrader,
-                    RESOLVED_IMAGE_CACHE.get(tplPath),
-                    currentModalQrUrl ? RESOLVED_IMAGE_CACHE.get(currentModalQrUrl) : null
-                );
-            }
-        }
+        drawCachedModalSide(currentModalSide, false);
     }
 }
 
@@ -1043,41 +1081,105 @@ function printHtmlContent(htmlContent) {
     }
 }
 
-async function getReadyCanvases() {
-    const fCanvas = document.getElementById('frontCanvas');
-    const bCanvas = document.getElementById('backCanvas');
-    if (!currentTrader) {
-        alert('جاري تجهيز بيانات الهوية، يرجى الانتظار لحظة ثم المحاولة مرة أخرى.');
-        return null;
-    }
-    if (modalReadyForPrint && fCanvas && bCanvas) {
-        flushPendingRedraw();
-        return { fCanvas, bCanvas };
-    }
-    flushPendingRedraw();
-    if (!modalReadyForPrint) {
-        await Promise.all([
-            renderCardFront(fCanvas, currentTrader),
-            renderCardBack(bCanvas, currentTrader, currentModalQrUrl)
+async function renderHiResSideOffscreen(side) {
+    const trader = currentTrader;
+    if (!trader) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = CARD_RENDER_W;
+    canvas.height = CARD_RENDER_H;
+
+    if (side === 'front') {
+        const tplPath = getFrontTemplatePath(trader);
+        const previewFallback = getFrontPreviewTemplatePath(trader);
+        const photoSrc = trader.photo_path || '/templates/avatar_placeholder.png';
+        const [, bg, photo] = await Promise.all([
+            ensureFonts(),
+            loadImageWithFallback(tplPath, previewFallback),
+            loadImage(photoSrc)
         ]);
-        modalReadyForPrint = true;
+        if (!currentTrader || currentTrader !== trader) return null;
+        drawCardFrontSync(canvas, trader, bg, photo, CARD_RENDER_W, CARD_RENDER_H);
+    } else {
+        const tplPath = getBackTemplatePath(trader);
+        const previewFallback = getBackPreviewTemplatePath(trader);
+        const qrUrl = currentModalQrUrl;
+        const [, bg, qrImg] = await Promise.all([
+            ensureFonts(),
+            loadImageWithFallback(tplPath, previewFallback),
+            qrUrl ? loadImage(qrUrl, false) : Promise.resolve(null)
+        ]);
+        if (!currentTrader || currentTrader !== trader) return null;
+        drawCardBackSync(canvas, trader, bg, qrImg, CARD_RENDER_W, CARD_RENDER_H);
     }
-    return (fCanvas && bCanvas) ? { fCanvas, bCanvas } : null;
+    return canvas;
+}
+
+function canvasToPngAndRelease(canvas, quality) {
+    const dataUrl = quality !== undefined ? canvas.toDataURL('image/png', quality) : canvas.toDataURL('image/png');
+    canvas.width = 0;
+    canvas.height = 0;
+    return dataUrl;
+}
+
+async function withModalStatus(statusText, work) {
+    const token = modalRequestToken;
+    const titleEl = document.getElementById('modalTitle');
+    if (titleEl) {
+        if (titleEl.dataset.origTitle === undefined) {
+            titleEl.dataset.origTitle = titleEl.innerText;
+        }
+        titleEl.innerText = statusText;
+    }
+    try {
+        return await work();
+    } finally {
+        if (titleEl && titleEl.dataset.origTitle !== undefined) {
+            if (token === modalRequestToken) {
+                titleEl.innerText = titleEl.dataset.origTitle;
+            }
+            delete titleEl.dataset.origTitle;
+        }
+    }
 }
 
 async function printCR80(side = 'both') {
-    const ready = await getReadyCanvases();
-    if (!ready) return;
-    const { fCanvas, bCanvas } = ready;
+    if (!currentTrader) {
+        alert('جاري تجهيز بيانات الهوية، يرجى الانتظار لحظة ثم المحاولة مرة أخرى.');
+        return;
+    }
+    flushPendingRedraw();
 
     let targetSide = side;
     if (targetSide === 'current') {
         targetSide = currentModalSide || 'front';
     }
 
-    const fData = fCanvas.toDataURL('image/png');
-    const bData = bCanvas.toDataURL('image/png');
-    const rawName = currentTrader ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name || '') : '';
+    const trader = currentTrader;
+    const rendered = await withModalStatus('جاري تجهيز نسخة الطباعة عالية الدقة...', async () => {
+        if (targetSide === 'front') {
+            const fCanvas = await renderHiResSideOffscreen('front');
+            if (!fCanvas) return null;
+            return { fData: canvasToPngAndRelease(fCanvas), bData: '' };
+        }
+        if (targetSide === 'back') {
+            const bCanvas = await renderHiResSideOffscreen('back');
+            if (!bCanvas) return null;
+            return { fData: '', bData: canvasToPngAndRelease(bCanvas) };
+        }
+        const [fCanvas, bCanvas] = await Promise.all([
+            renderHiResSideOffscreen('front'),
+            renderHiResSideOffscreen('back')
+        ]);
+        if (!fCanvas || !bCanvas) return null;
+        return {
+            fData: canvasToPngAndRelease(fCanvas),
+            bData: canvasToPngAndRelease(bCanvas)
+        };
+    });
+    if (!rendered) return;
+
+    const { fData, bData } = rendered;
+    const rawName = trader ? (trader.company_name || trader.commercial_name || trader.name || '') : '';
     const safeName = escapeHtmlClient(rawName);
 
     let pagesHtml = '';
@@ -1181,14 +1283,30 @@ async function printCR80(side = 'both') {
 }
 
 async function printA4() {
-    const ready = await getReadyCanvases();
-    if (!ready) return;
-    const { fCanvas, bCanvas } = ready;
-    const fData = fCanvas.toDataURL('image/png');
-    const bData = bCanvas.toDataURL('image/png');
-    const rawName = currentTrader ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name || '') : '';
+    if (!currentTrader) {
+        alert('جاري تجهيز بيانات الهوية، يرجى الانتظار لحظة ثم المحاولة مرة أخرى.');
+        return;
+    }
+    flushPendingRedraw();
+
+    const trader = currentTrader;
+    const rendered = await withModalStatus('جاري تجهيز نسخة الطباعة عالية الدقة...', async () => {
+        const [fCanvas, bCanvas] = await Promise.all([
+            renderHiResSideOffscreen('front'),
+            renderHiResSideOffscreen('back')
+        ]);
+        if (!fCanvas || !bCanvas) return null;
+        return {
+            fData: canvasToPngAndRelease(fCanvas),
+            bData: canvasToPngAndRelease(bCanvas)
+        };
+    });
+    if (!rendered) return;
+
+    const { fData, bData } = rendered;
+    const rawName = trader ? (trader.company_name || trader.commercial_name || trader.name || '') : '';
     const safeName = escapeHtmlClient(rawName);
-    const safeCardNo = escapeHtmlClient(currentTrader ? (currentTrader.card_no || '') : '');
+    const safeCardNo = escapeHtmlClient(trader ? (trader.card_no || '') : '');
 
     const html = `<!DOCTYPE html>
 <html dir="rtl">
@@ -1267,17 +1385,31 @@ async function printA4() {
     printHtmlContent(html);
 }
 
-function downloadImage(side) {
-    if (!currentTrader) return;
-    const canvas = side === 'front' ? document.getElementById('frontCanvas') : document.getElementById('backCanvas');
+async function downloadImage(side) {
+    if (!currentTrader) {
+        alert('جاري تجهيز بيانات الهوية، يرجى الانتظار لحظة ثم المحاولة مرة أخرى.');
+        return;
+    }
+    flushPendingRedraw();
+
+    const targetSide = side === 'back' ? 'back' : 'front';
+    const trader = currentTrader;
+    const dataUrl = await withModalStatus('جاري تجهيز الصورة عالية الدقة...', async () => {
+        const canvas = await renderHiResSideOffscreen(targetSide);
+        if (!canvas) return null;
+        return canvasToPngAndRelease(canvas, 1.0);
+    });
+    if (!dataUrl) return;
+
     const link = document.createElement('a');
-    const prefix = currentTrader.member_type === 'company' ? 'Company' : (currentTrader.member_type === 'broker' ? 'Broker' : 'Card');
-    link.download = `${prefix}_${currentTrader.card_no}_${side}.png`;
-    link.href = canvas.toDataURL('image/png', 1.0);
+    const prefix = trader.member_type === 'company' ? 'Company' : (trader.member_type === 'broker' ? 'Broker' : 'Card');
+    link.download = `${prefix}_${trader.card_no}_${targetSide}.png`;
+    link.href = dataUrl;
     link.click();
 }
 
-// Expose functions globally for inline onclick handlers
+// Expose functions globally for inline onclick handlers & lazy-loader handoff
+window.__realOpenPrintModal = openPrintModal;
 window.openPrintModal = openPrintModal;
 window.closePrintModal = closePrintModal;
 window.switchCardSide = switchCardSide;
@@ -1295,7 +1427,7 @@ window.downloadImage = downloadImage;
 // Keyboard arrow key listener for super fast positioning!
 window.addEventListener('keydown', (e) => {
     const modal = document.getElementById('printModal');
-    if (!modal || modal.style.display === 'none') return;
+    if (!modal || modal.style.display === 'none' || modal.classList.contains('hidden')) return;
     if (e.key === 'Escape') {
         closePrintModal();
         return;
@@ -1322,96 +1454,4 @@ window.addEventListener('keydown', (e) => {
         modalNudgeSize(-1);
     }
 });
-
-// ============================================================================
-// Instant AJAX Delete (Zero Full-Page Reload on Delete!)
-// ============================================================================
-document.addEventListener('submit', async (e) => {
-    const form = e.target;
-    if (!form || form.tagName !== 'FORM' || e.defaultPrevented) return;
-    const methodInput = form.querySelector('input[name="_method"]');
-    if (!methodInput || String(methodInput.value).toLowerCase() !== 'delete') return;
-
-    e.preventDefault();
-    const rowEl = form.closest('.p-6.flex.space-x-2');
-    if (rowEl) {
-        rowEl.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
-        rowEl.style.opacity = '0.35';
-        rowEl.style.pointerEvents = 'none';
-    }
-
-    try {
-        const res = await fetch(form.action, {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'fetch'
-            }
-        });
-        const data = await res.json().catch(() => null);
-        if (res.ok && data && data.success) {
-            if (rowEl) {
-                rowEl.style.opacity = '0';
-                rowEl.style.transform = 'translateX(12px)';
-                setTimeout(() => rowEl.remove(), 160);
-            } else {
-                window.location.reload();
-            }
-            return;
-        }
-    } catch (_) {}
-
-    // Fallback to classic form submit if network/JSON failed
-    if (rowEl) {
-        rowEl.style.opacity = '1';
-        rowEl.style.pointerEvents = '';
-    }
-    form.submit();
-});
-
-// ============================================================================
-// Idle Background Preloader + Instant Hover Prefetching
-// ============================================================================
-const prefetchedUrls = new Set();
-function prefetchPageUrl(href) {
-    if (!href || prefetchedUrls.has(href)) return;
-    if (href.includes('export/csv') || href.includes('logout') || href.startsWith('#') || href.startsWith('javascript:')) return;
-    prefetchedUrls.add(href);
-    const link = document.createElement('link');
-    link.rel = 'prefetch';
-    link.href = href;
-    document.head.appendChild(link);
-}
-
-let hoverTimer = null;
-document.addEventListener('mouseover', (e) => {
-    const a = e.target.closest && e.target.closest('a[href]');
-    if (!a || a.target === '_blank' || a.origin !== window.location.origin) return;
-    clearTimeout(hoverTimer);
-    hoverTimer = setTimeout(() => prefetchPageUrl(a.href), 60);
-}, { passive: true });
-
-document.addEventListener('mousedown', (e) => {
-    const a = e.target.closest && e.target.closest('a[href]');
-    if (!a || a.target === '_blank' || a.origin !== window.location.origin) return;
-    prefetchPageUrl(a.href);
-}, { passive: true });
-
-const scheduleIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 250));
-window.addEventListener('load', () => {
-    scheduleIdle(() => {
-        ensureFonts();
-        loadImage('/templates/avatar_placeholder.png');
-        const p = window.location.pathname;
-        if (p.startsWith('/companies')) {
-            loadImage('/templates/company_front_clean.png?v=5');
-            loadImage('/templates/company_back_clean.png?v=5');
-        } else if (p.startsWith('/brokers')) {
-            loadImage('/templates/broker_front_clean.png?v=5');
-            loadImage('/templates/broker_back_clean.png?v=5');
-        } else {
-            loadImage('/templates/card_front_template.png?v=6');
-            loadImage('/templates/card_back_clean.png?v=6');
-        }
-    });
-});
+})();
