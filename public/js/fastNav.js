@@ -593,7 +593,7 @@
         cardModalCssPromise = new Promise((resolve) => {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
-            link.href = '/css/cardModal.css?v=8';
+            link.href = '/css/cardModal.css?v=9';
             link.onload = () => resolve();
             link.onerror = () => {
                 cardModalCssPromise = null;
@@ -612,12 +612,12 @@
         if (cardModalJsPromise) return cardModalJsPromise;
         cardModalJsPromise = new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = '/js/cardModal.js?v=18';
+            script.src = '/js/cardModal.js?v=19';
             script.async = true;
             script.onload = () => resolve();
             script.onerror = () => {
                 cardModalJsPromise = null;
-                reject(new Error('Failed to load /js/cardModal.js?v=18'));
+                reject(new Error('Failed to load /js/cardModal.js?v=19'));
             };
             document.head.appendChild(script);
         });
@@ -638,7 +638,7 @@
             };
         }
 
-        const lazyOpenPrintModal = async function (traderId, uuid) {
+        const lazyOpenPrintModal = async function (traderId, uuid, options) {
             const token = ++lazyModalToken;
             const modalEl = document.getElementById('printModal');
             const titleEl = document.getElementById('modalTitle');
@@ -654,10 +654,10 @@
                 await Promise.all([ensureCardModalCss(), ensureCardModalJs()]);
                 if (token !== lazyModalToken) return;
                 if (typeof window.__realOpenPrintModal === 'function') {
-                    return window.__realOpenPrintModal(traderId, uuid);
+                    return window.__realOpenPrintModal(traderId, uuid, options);
                 }
                 if (typeof window.openPrintModal === 'function' && window.openPrintModal !== lazyOpenPrintModal) {
-                    return window.openPrintModal(traderId, uuid);
+                    return window.openPrintModal(traderId, uuid, options);
                 }
             } catch (err) {
                 if (token === lazyModalToken && titleEl) {

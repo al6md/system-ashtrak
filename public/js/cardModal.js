@@ -1095,7 +1095,7 @@ async function switchCompanyRole(role) {
     }
 }
 
-async function openPrintModal(traderId, uuid) {
+async function openPrintModal(traderId, uuid, options = {}) {
     const token = ++modalRequestToken;
     roleSwitchToken++;
     const modalEl = document.getElementById('printModal');
@@ -1127,8 +1127,14 @@ async function openPrintModal(traderId, uuid) {
         currentTrader = json.trader;
         const isComp = currentTrader.member_type === 'company';
         const isBroker = currentTrader.member_type === 'broker';
+        let hasUnsavedRoleOverride = false;
         if (isComp) {
-            currentTrader.company_role = currentTrader.company_role === 'bm' ? 'bm' : 'ceo';
+            const dbRole = currentTrader.company_role === 'bm' ? 'bm' : 'ceo';
+            const reqRole = options && (options.companyRole === 'bm' || options.companyRole === 'ceo')
+                ? options.companyRole
+                : dbRole;
+            hasUnsavedRoleOverride = reqRole !== dbRole;
+            currentTrader.company_role = reqRole;
             if (json.companyTypographyByRole) {
                 companyTypographyByRole = {
                     ceo: json.companyTypographyByRole.ceo || DEFAULT_COMPANY_TYPOGRAPHY,
@@ -1142,11 +1148,17 @@ async function openPrintModal(traderId, uuid) {
         const cacheKey = getTypoCacheKey(currentTrader);
         const fallback = getFallbackTypography(currentTrader);
 
-        globalTypography = json.globalTypography || GLOBAL_TYPO_CACHE.get(cacheKey) || fallback;
+        globalTypography = (isComp && companyTypographyByRole && companyTypographyByRole[currentTrader.company_role])
+            || (!hasUnsavedRoleOverride ? json.globalTypography : null)
+            || GLOBAL_TYPO_CACHE.get(cacheKey)
+            || fallback;
         GLOBAL_TYPO_CACHE.set(cacheKey, globalTypography);
         currentModalQrUrl = json.qr_url || null;
 
         syncCompanyRoleSwitcherUI(currentTrader);
+        if (hasUnsavedRoleOverride) {
+            setCompanyRoleStatus('معاينة مؤقتة · اضغط Save للحفظ');
+        }
 
         const titlePrefix = isComp ? 'Print Company ID: ' : (isBroker ? 'Print Broker ID: ' : 'Print Trader ID: ');
         const displayName = isComp ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name) : currentTrader.name;
