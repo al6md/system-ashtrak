@@ -438,6 +438,12 @@ function normalizeGender(val) {
   return 'ذكر';
 }
 
+function normalizeCompanyRole(val) {
+  const v = String(val || '').trim().toLowerCase();
+  if (v === 'bm' || v === 'branch_manager') return 'bm';
+  return 'ceo';
+}
+
 function appendGenderFilter(where, params, gender) {
   const g = String(gender || '').trim();
   if (!g) return;
@@ -456,7 +462,7 @@ function appendGenderFilter(where, params, gender) {
 // ==========================================
 const LIST_SELECT_COLS = `
   id, uuid, name, commercial_name, company_name, ceo_name,
-  activity, card_no, created_by, created_at, member_type
+  activity, card_no, created_by, created_at, member_type, company_role
 `;
 
 async function runCachedPaginatedQuery(selectCols, whereSql, params, limit, offset) {
@@ -621,7 +627,7 @@ function buildCompaniesFilter(q) {
   const {
     search, name, company_name, english_name, english_company_name,
     commercial_name, ceo_name, activity, card_no, renewal_no,
-    commercial_name_no, incorporation_certificate_no, card_class, gender,
+    commercial_name_no, incorporation_certificate_no, card_class, gender, company_role,
     affiliation_date_from, affiliation_date_to,
     expire_date_from, expire_date_to, status
   } = q;
@@ -634,6 +640,7 @@ function buildCompaniesFilter(q) {
     (renewal_no && renewal_no.trim()) || (commercial_name_no && commercial_name_no.trim()) ||
     (incorporation_certificate_no && incorporation_certificate_no.trim()) ||
     (card_class && card_class !== '') || (gender && gender.trim() !== '') ||
+    (company_role && company_role.trim() !== '') ||
     affiliation_date_from || affiliation_date_to || expire_date_from || expire_date_to ||
     (status && status !== 'active')
   );
@@ -677,6 +684,12 @@ function buildCompaniesFilter(q) {
   }
   if (card_class && card_class !== '') { where.push('card_class = ?'); params.push(card_class); }
   appendGenderFilter(where, params, gender);
+  const roleFilter = String(company_role || '').trim().toLowerCase();
+  if (roleFilter === 'bm') {
+    where.push("company_role = 'bm'");
+  } else if (roleFilter === 'ceo') {
+    where.push("(company_role IS NULL OR company_role = '' OR company_role = 'ceo')");
+  }
   if (affiliation_date_from) { where.push('affiliation_date >= ?'); params.push(affiliation_date_from); }
   if (affiliation_date_to) { where.push('affiliation_date <= ?'); params.push(affiliation_date_to); }
   if (expire_date_from) { where.push('expire_date >= ?'); params.push(expire_date_from); }
@@ -790,7 +803,7 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
     const {
       name, english_name, commercial_name, activity, english_activity,
       card_no, stamp_no, renewal_no, card_class, gender, commercial_name_no, speciality,
-      phone_number, address, affiliation_date, expire_date, member_type,
+      phone_number, address, affiliation_date, expire_date, member_type, company_role,
       company_name, english_company_name, ceo_name, english_ceo_name,
       incorporation_certificate_no, incorporation_certificate_symbol
     } = req.body;
@@ -800,6 +813,7 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
     const photoPath = req.file ? '/uploads/' + req.file.filename : null;
     const resolvedType = member_type === 'broker' ? 'broker' : (member_type === 'company' ? 'company' : 'trader');
     const resolvedGender = normalizeGender(gender);
+    const resolvedCompanyRole = resolvedType === 'company' ? normalizeCompanyRole(company_role) : 'ceo';
 
     const effectiveName = name || ceo_name || company_name || '';
 
@@ -810,15 +824,15 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
         phone_number, address, affiliation_date, expire_date, photo_path,
         company_name, english_company_name, ceo_name, english_ceo_name,
         incorporation_certificate_no, incorporation_certificate_symbol,
-        member_type, created_by, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Site Admin', ?, ?)
+        member_type, company_role, created_by, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Site Admin', ?, ?)
     `).run(
       uuid, effectiveName, english_name || '', commercial_name || '', activity || '', english_activity || '',
       card_no || '', stamp_no || '', renewal_no || '', card_class || '4', resolvedGender, commercial_name_no || '', speciality || '',
       phone_number || '', address || '', affiliation_date || '', expire_date || '', photoPath,
       company_name || '', english_company_name || '', ceo_name || '', english_ceo_name || '',
       incorporation_certificate_no || '', incorporation_certificate_symbol || '',
-      resolvedType, now, now
+      resolvedType, resolvedCompanyRole, now, now
     );
 
     invalidateTradersCache();
@@ -848,6 +862,7 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
       incorporation_certificate_no: incorporation_certificate_no || '',
       incorporation_certificate_symbol: incorporation_certificate_symbol || '',
       member_type: resolvedType,
+      company_role: resolvedCompanyRole,
     };
 
     await accessSyncAdd(db, uuid, createdRow);
@@ -916,12 +931,13 @@ async function handleUpdateOrDeleteTrader(req, res) {
 
     const {
       name, english_name, commercial_name, activity, english_activity,
-      card_no, stamp_no, renewal_no, card_class, gender, commercial_name_no, speciality,
+      card_no, stamp_no, renewal_no, card_class, gender, company_role, commercial_name_no, speciality,
       phone_number, address, affiliation_date, expire_date
     } = req.body;
 
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const resolvedGender = normalizeGender(gender !== undefined ? gender : traderBefore.gender);
+    const resolvedCompanyRole = company_role !== undefined ? normalizeCompanyRole(company_role) : normalizeCompanyRole(traderBefore.company_role);
     let photoPath = traderBefore.photo_path;
 
     if (req.file) {
@@ -931,13 +947,13 @@ async function handleUpdateOrDeleteTrader(req, res) {
     await db.prepare(`
       UPDATE traders SET
         name = ?, english_name = ?, commercial_name = ?, activity = ?, english_activity = ?,
-        card_no = ?, stamp_no = ?, renewal_no = ?, card_class = ?, gender = ?, commercial_name_no = ?, speciality = ?,
+        card_no = ?, stamp_no = ?, renewal_no = ?, card_class = ?, gender = ?, company_role = ?, commercial_name_no = ?, speciality = ?,
         phone_number = ?, address = ?, affiliation_date = ?, expire_date = ?, photo_path = ?,
         updated_at = ?
       WHERE id = ?
     `).run(
       name, english_name || '', commercial_name || '', activity || '', english_activity || '',
-      card_no, stamp_no || '', renewal_no || '', card_class || '4', resolvedGender, commercial_name_no || '', speciality || '',
+      card_no, stamp_no || '', renewal_no || '', card_class || '4', resolvedGender, resolvedCompanyRole, commercial_name_no || '', speciality || '',
       phone_number || '', address || '', affiliation_date || '', expire_date || '', photoPath,
       now, traderBefore.id
     );
@@ -956,6 +972,7 @@ async function handleUpdateOrDeleteTrader(req, res) {
       renewal_no: renewal_no || '',
       card_class: card_class || '4',
       gender: resolvedGender,
+      company_role: resolvedCompanyRole,
       commercial_name_no: commercial_name_no || '',
       speciality: speciality || '',
       phone_number: phone_number || '',
@@ -1177,59 +1194,83 @@ app.get('/companies/:uuid/edit', (req, res) => {
 
 const DEFAULT_CARD_TYPOGRAPHY = {
   front: {
-    name_size: 38, name_x: 905, name_y: 309,
-    class_size: 38, class_x: 897, class_y: 369,
-    comm_size: 33, comm_x: 800, comm_y: 429,
-    activity_size: 33, activity_x: 895, activity_y: 487,
-    card_no_size: 36, card_no_x: 849, card_no_y: 551,
-    aff_date_size: 28, aff_date_x: 908, aff_date_y: 616,
-    exp_date_size: 28, exp_date_x: 472, exp_date_y: 616
+    name_size: 38, name_x: 907, name_y: 309,
+    class_size: 38, class_x: 898, class_y: 367,
+    comm_size: 33, comm_x: 801, comm_y: 429,
+    activity_size: 33, activity_x: 896, activity_y: 487,
+    card_no_size: 36, card_no_x: 849, card_no_y: 552,
+    aff_date_size: 28, aff_date_x: 910, aff_date_y: 614,
+    exp_date_size: 28, exp_date_x: 473, exp_date_y: 614
   },
   back: {
     name_size: 36, name_x: 14, name_y: 305,
-    class_size: 36, class_x: 118, class_y: 376,
-    comm_no_size: 36, comm_no_x: 396, comm_no_y: 433,
-    activity_size: 36, activity_x: 163, activity_y: 484,
+    class_size: 36, class_x: 118, class_y: 375,
+    comm_no_size: 36, comm_no_x: 396, comm_no_y: 432,
+    activity_size: 34, activity_x: 163, activity_y: 484,
     card_no_size: 34, card_no_x: 124, card_no_y: 570,
-    aff_date_size: 27, aff_date_x: 169, aff_date_y: 630,
-    exp_date_size: 27, exp_date_x: 733, exp_date_y: 630,
+    aff_date_size: 27, aff_date_x: 168, aff_date_y: 630,
+    exp_date_size: 27, exp_date_x: 732, exp_date_y: 630,
     qr_x: 758, qr_y: 210, qr_size: 238
   }
 };
 
 const DEFAULT_COMPANY_CARD_TYPOGRAPHY = {
   front: {
-    comp_size: 38, comp_x: 900, comp_y: 281,
-    ceo_size: 36, ceo_x: 817, ceo_y: 334,
-    class_act_size: 33, class_act_x: 778, class_act_y: 381,
-    cert_size: 31, cert_x: 728, cert_y: 429,
-    comm_date_size: 33, comm_date_x: 805, comm_date_y: 477,
-    card_no_size: 35, card_no_x: 853, card_no_y: 567,
-    aff_date_size: 27, aff_date_x: 897, aff_date_y: 624,
-    exp_date_size: 28, exp_date_x: 475, exp_date_y: 624
+    comp_size: 38, comp_x: 898, comp_y: 282,
+    ceo_size: 36, ceo_x: 850, ceo_y: 332,
+    class_act_size: 33, class_act_x: 777, class_act_y: 378,
+    cert_size: 31, cert_x: 727, cert_y: 425,
+    comm_date_size: 33, comm_date_x: 803, comm_date_y: 474,
+    card_no_size: 35, card_no_x: 851, card_no_y: 564,
+    aff_date_size: 27, aff_date_x: 896, aff_date_y: 620,
+    exp_date_size: 28, exp_date_x: 473, exp_date_y: 620
   },
   back: {
-    comp_en_size: 36, comp_en_x: 190, comp_en_y: 322,
-    ceo_en_size: 33, ceo_en_x: 105, ceo_en_y: 364,
-    class_act_en_size: 33, class_act_en_x: 274, class_act_en_y: 410,
-    license_en_size: 33, license_en_x: 214, license_en_y: 460,
-    comm_no_size: 33, comm_no_x: 396, comm_no_y: 504,
+    comp_en_size: 36, comp_en_x: 192, comp_en_y: 322,
+    ceo_en_size: 33, ceo_en_x: 105, ceo_en_y: 363,
+    class_act_en_size: 33, class_act_en_x: 275, class_act_en_y: 410,
+    license_en_size: 33, license_en_x: 214, license_en_y: 459,
+    comm_no_size: 33, comm_no_x: 396, comm_no_y: 503,
     card_no_size: 32, card_no_x: 127, card_no_y: 573,
-    aff_date_size: 27, aff_date_x: 174, aff_date_y: 628,
-    exp_date_size: 27, exp_date_x: 638, exp_date_y: 628,
-    qr_x: 753, qr_y: 217, qr_size: 237
+    aff_date_size: 27, aff_date_x: 174, aff_date_y: 627,
+    exp_date_size: 27, exp_date_x: 636, exp_date_y: 627,
+    qr_x: 753, qr_y: 216, qr_size: 237
+  }
+};
+
+const DEFAULT_COMPANY_BM_CARD_TYPOGRAPHY = {
+  front: {
+    comp_size: 38, comp_x: 898, comp_y: 282,
+    ceo_size: 36, ceo_x: 842, ceo_y: 332,
+    class_act_size: 33, class_act_x: 778, class_act_y: 378,
+    cert_size: 31, cert_x: 728, cert_y: 425,
+    comm_date_size: 33, comm_date_x: 804, comm_date_y: 474,
+    card_no_size: 35, card_no_x: 850, card_no_y: 563,
+    aff_date_size: 27, aff_date_x: 896, aff_date_y: 619,
+    exp_date_size: 28, exp_date_x: 474, exp_date_y: 619
+  },
+  back: {
+    comp_en_size: 36, comp_en_x: 192, comp_en_y: 322,
+    ceo_en_size: 33, ceo_en_x: 88, ceo_en_y: 363,
+    class_act_en_size: 33, class_act_en_x: 275, class_act_en_y: 410,
+    license_en_size: 33, license_en_x: 214, license_en_y: 459,
+    comm_no_size: 33, comm_no_x: 396, comm_no_y: 503,
+    card_no_size: 32, card_no_x: 127, card_no_y: 573,
+    aff_date_size: 27, aff_date_x: 174, aff_date_y: 627,
+    exp_date_size: 27, exp_date_x: 636, exp_date_y: 627,
+    qr_x: 753, qr_y: 216, qr_size: 237
   }
 };
 
 const DEFAULT_BROKER_CARD_TYPOGRAPHY = {
   front: {
-    name_size: 36, name_x: 904, name_y: 309,
-    class_size: 36, class_x: 892, class_y: 371,
+    name_size: 36, name_x: 905, name_y: 309,
+    class_size: 36, class_x: 892, class_y: 370,
     comm_size: 32, comm_x: 796, comm_y: 432,
     activity_size: 32, activity_x: 891, activity_y: 493,
-    card_no_size: 35, card_no_x: 844, card_no_y: 557,
-    aff_date_size: 27, aff_date_x: 890, aff_date_y: 626,
-    exp_date_size: 27, exp_date_x: 470, exp_date_y: 626
+    card_no_size: 35, card_no_x: 844, card_no_y: 558,
+    aff_date_size: 27, aff_date_x: 890, aff_date_y: 624,
+    exp_date_size: 27, exp_date_x: 470, exp_date_y: 624
   },
   back: {
     name_size: 36, name_x: 13, name_y: 301,
@@ -1239,12 +1280,13 @@ const DEFAULT_BROKER_CARD_TYPOGRAPHY = {
     card_no_size: 34, card_no_x: 122, card_no_y: 565,
     aff_date_size: 27, aff_date_x: 168, aff_date_y: 624,
     exp_date_size: 27, exp_date_x: 733, exp_date_y: 624,
-    qr_x: 759, qr_y: 207, qr_size: 238
+    qr_x: 758, qr_y: 207, qr_size: 238
   }
 };
 
 function getSettingDefaultsForKey(key) {
   if (key === 'company_card_typography') return DEFAULT_COMPANY_CARD_TYPOGRAPHY;
+  if (key === 'company_bm_card_typography') return DEFAULT_COMPANY_BM_CARD_TYPOGRAPHY;
   if (key === 'broker_card_typography') return DEFAULT_BROKER_CARD_TYPOGRAPHY;
   return DEFAULT_CARD_TYPOGRAPHY;
 }
@@ -1299,23 +1341,25 @@ let profileSamplesCache = null; // { sampleTrader, sampleCompany, sampleBroker, 
 app.get('/profile', async (req, res) => {
   try {
     const now = Date.now();
-    let settings, companySettings, brokerSettings, sampleTrader, sampleCompany, sampleBroker;
+    let settings, companySettings, companyBmSettings, brokerSettings, sampleTrader, sampleCompany, sampleBroker;
 
     const hasCachedSettings =
       settingsCache.get('card_typography')?.expiresAt > now &&
       settingsCache.get('company_card_typography')?.expiresAt > now &&
+      settingsCache.get('company_bm_card_typography')?.expiresAt > now &&
       settingsCache.get('broker_card_typography')?.expiresAt > now;
 
     if (hasCachedSettings && profileSamplesCache && profileSamplesCache.expiresAt > now) {
       settings = settingsCache.get('card_typography').value;
       companySettings = settingsCache.get('company_card_typography').value;
+      companyBmSettings = settingsCache.get('company_bm_card_typography').value;
       brokerSettings = settingsCache.get('broker_card_typography').value;
       ({ sampleTrader, sampleCompany, sampleBroker } = profileSamplesCache);
     } else {
       const [sRes, tSampleRes, cSampleRes, bSampleRes] = await db.batch(
         [
           {
-            sql: `SELECT key, value FROM settings WHERE key IN ('card_typography', 'company_card_typography', 'broker_card_typography')`,
+            sql: `SELECT key, value FROM settings WHERE key IN ('card_typography', 'company_card_typography', 'company_bm_card_typography', 'broker_card_typography')`,
             args: [],
           },
           { sql: `SELECT * FROM traders WHERE member_type = 'trader' AND photo_path IS NOT NULL AND commercial_name_no IS NOT NULL AND commercial_name_no != '' LIMIT 1`, args: [] },
@@ -1336,10 +1380,12 @@ app.get('/profile', async (req, res) => {
 
       settings = normalizeTraderTypography(parseOr('card_typography', DEFAULT_CARD_TYPOGRAPHY));
       companySettings = parseOr('company_card_typography', DEFAULT_COMPANY_CARD_TYPOGRAPHY);
+      companyBmSettings = parseOr('company_bm_card_typography', DEFAULT_COMPANY_BM_CARD_TYPOGRAPHY);
       brokerSettings = parseOr('broker_card_typography', DEFAULT_BROKER_CARD_TYPOGRAPHY);
 
       settingsCache.set('card_typography', { value: settings, expiresAt: now + SETTINGS_TTL_MS });
       settingsCache.set('company_card_typography', { value: companySettings, expiresAt: now + SETTINGS_TTL_MS });
+      settingsCache.set('company_bm_card_typography', { value: companyBmSettings, expiresAt: now + SETTINGS_TTL_MS });
       settingsCache.set('broker_card_typography', { value: brokerSettings, expiresAt: now + SETTINGS_TTL_MS });
 
       sampleTrader = tSampleRes.first || {
@@ -1409,6 +1455,7 @@ app.get('/profile', async (req, res) => {
       user: { name: 'Site Admin', email: 'admin@k-coc.org' },
       settings,
       companySettings,
+      companyBmSettings,
       brokerSettings,
       sampleTrader,
       sampleCompany,
@@ -1483,6 +1530,35 @@ app.post('/api/settings/company-card-typography/reset', async (req, res) => {
   }
 });
 
+// Get Company BM Card Typography Settings API (Cached)
+app.get('/api/settings/company-bm-card-typography', async (req, res) => {
+  const settings = await getTypographySettingCached('company_bm_card_typography');
+  res.json({ success: true, settings });
+});
+
+// Save Company BM Card Typography Settings API
+app.post('/api/settings/company-bm-card-typography', async (req, res) => {
+  try {
+    const newSettings = req.body.settings || req.body;
+    await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_bm_card_typography', ?)").run(JSON.stringify(newSettings));
+    settingsCache.set('company_bm_card_typography', { value: newSettings, expiresAt: Date.now() + SETTINGS_TTL_MS });
+    res.json({ success: true, message: 'Company BM settings saved successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Reset Company BM Card Typography Settings API
+app.post('/api/settings/company-bm-card-typography/reset', async (req, res) => {
+  try {
+    await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_bm_card_typography', ?)").run(JSON.stringify(DEFAULT_COMPANY_BM_CARD_TYPOGRAPHY));
+    invalidateSettingsCache('company_bm_card_typography');
+    res.json({ success: true, settings: DEFAULT_COMPANY_BM_CARD_TYPOGRAPHY, message: 'Company BM settings reset to defaults' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Get Broker Card Typography Settings API (Cached)
 app.get('/api/settings/broker-card-typography', async (req, res) => {
   const settings = await getTypographySettingCached('broker_card_typography');
@@ -1518,11 +1594,31 @@ app.get('/api/traders/:id', async (req, res) => {
     const trader = await findTraderByIdentifier(req.params.id, true);
     if (!trader) return res.status(404).json({ success: false, error: 'Not found' });
 
+    if (trader.member_type === 'company') {
+      trader.company_role = normalizeCompanyRole(trader.company_role);
+    }
+
     if (req.query.bundle === '1') {
+      if (trader.member_type === 'company') {
+        const [ceoTypo, bmTypo, qrData] = await Promise.all([
+          getTypographySettingCached('company_card_typography'),
+          getTypographySettingCached('company_bm_card_typography'),
+          getQrBundleForUuid(req, trader.uuid),
+        ]);
+        const globalTypography = trader.company_role === 'bm' ? bmTypo : ceoTypo;
+
+        return res.json({
+          success: true,
+          trader,
+          globalTypography,
+          companyTypographyByRole: { ceo: ceoTypo, bm: bmTypo },
+          qr_url: qrData.qr_url,
+          validate_url: qrData.validate_url,
+        });
+      }
+
       const settingKey =
-        trader.member_type === 'company'
-          ? 'company_card_typography'
-          : trader.member_type === 'broker'
+        trader.member_type === 'broker'
           ? 'broker_card_typography'
           : 'card_typography';
 
@@ -1541,6 +1637,31 @@ app.get('/api/traders/:id', async (req, res) => {
     }
 
     res.json({ success: true, trader });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update Company Role (CEO vs BM) for Single Company Record
+app.post('/api/traders/:id/company-role', async (req, res) => {
+  try {
+    const trader = await findTraderByIdentifier(req.params.id, true);
+    if (!trader) return res.status(404).json({ success: false, error: 'Not found' });
+
+    const resolvedRole = normalizeCompanyRole(req.body?.company_role);
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    await db.prepare('UPDATE traders SET company_role = ?, updated_at = ? WHERE id = ?').run(
+      resolvedRole,
+      now,
+      trader.id
+    );
+    invalidateTradersCache();
+
+    const settingKey = resolvedRole === 'bm' ? 'company_bm_card_typography' : 'company_card_typography';
+    const globalTypography = await getTypographySettingCached(settingKey);
+
+    res.json({ success: true, company_role: resolvedRole, globalTypography });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1616,6 +1737,7 @@ app.get('/traders/validate/:uuid', async (req, res) => {
       : '/templates/avatar_placeholder.png';
 
     const isComp = trader.member_type === 'company';
+    const isBm = isComp && normalizeCompanyRole(trader.company_role) === 'bm';
     const isBroker = trader.member_type === 'broker';
     const arTitleLabel = isComp ? 'الشركة' : (isBroker ? 'الدلال' : 'التاجر');
     const arDisplayName = isComp ? (trader.company_name || trader.commercial_name || trader.name) : trader.name;
@@ -1674,7 +1796,7 @@ app.get('/traders/validate/:uuid', async (req, res) => {
             <div id="foreground">
                 <img id="ArPersonPic" src="${safePhotoUrl}" onerror="this.onerror=null;this.src='/templates/avatar_placeholder.png'" alt="Photo"/>
                 <p id="ArName" class="ArText">${escapeHtml(arTitleLabel)}: ${escapeHtml(arDisplayName || '-')}</p>
-                ${isComp && trader.ceo_name ? `<p class="ArText">المدير المفوض: ${escapeHtml(trader.ceo_name)}</p>` : ''}
+                ${isComp && (trader.ceo_name || trader.name) ? `<p class="ArText">${isBm ? 'مدير الفرع' : 'المدير المفوض'}: ${escapeHtml(trader.ceo_name || trader.name)}</p>` : ''}
                 <p id="ArClass" class="ArText">الصنف: ${escapeHtml(isBroker ? 'دلالية' : formatClassName(trader.card_class, 'ar'))}</p>
                 <p id="ArCommercialName" class="ArText">الاسم التجاري: ${escapeHtml(trader.commercial_name || '-')} / <span id="ArCommercialNameNo">${escapeHtml(trader.commercial_name_no || '')}</span></p>
                 <p id="ArActivity" class="ArText">النشاط: ${escapeHtml(trader.activity || '-')}</p>
@@ -1684,6 +1806,7 @@ app.get('/traders/validate/:uuid', async (req, res) => {
             </div>
             <div id="background">
                 <p id="EnName" class="EnText font-bold">${escapeHtml(enDisplayName || '-')}</p>
+                ${isComp ? `<p id="EnManager" class="EnText">${isBm ? 'BM' : 'CEO'}: ${escapeHtml(trader.english_ceo_name || trader.english_name || trader.ceo_name || trader.name || '-')}</p>` : ''}
                 <p id="EnClass" class="EnText">Class: ${escapeHtml(formatClassName(trader.card_class, 'en'))}</p>
                 <p id="EnCommercialNameNo" class="EnText">Commercial Name No: ${escapeHtml(trader.commercial_name_no || '-')}</p>
                 <p id="EnActivity" class="EnText">Activity: ${escapeHtml(trader.english_activity || trader.activity || '-')}</p>

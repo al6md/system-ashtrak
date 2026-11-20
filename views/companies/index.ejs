@@ -93,6 +93,14 @@
                                     </select>
                                 </div>
                                 <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="company_role">Manager Role (صفة المدير)</label>
+                                    <select id="company_role" name="company_role" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                        <option value="">Any</option>
+                                        <option value="ceo" <%= query.company_role === 'ceo' ? 'selected' : '' %>>المدير المفوض (CEO)</option>
+                                        <option value="bm" <%= query.company_role === 'bm' ? 'selected' : '' %>>مدير الفرع (BM)</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label class="block text-sm font-medium text-gray-700" for="affiliation_date_from">Affiliation from</label>
                                     <input id="affiliation_date_from" type="date" name="affiliation_date_from" value="<%= query.affiliation_date_from || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
                                 </div>
@@ -199,6 +207,7 @@
                                         <a href="/traders/<%= c.uuid %>/edit" class="hover:underline">
                                             <%= c.company_name || c.commercial_name || c.name %> - <%= c.activity || '' %> - <%= c.card_no %> - <%= c.ceo_name || c.name || '' %>
                                         </a>
+                                        <% if (c.company_role === 'bm') { %><span data-company-role-badge="<%= c.uuid %>" style="display:inline-flex;align-items:center;margin-left:0.5rem;padding:0.15rem 0.5rem;font-size:0.72rem;font-weight:700;border-radius:9999px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;vertical-align:middle;">مدير فرع · BM</span><% } %>
                                     </p>
                                 </div>
                             </div>

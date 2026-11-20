@@ -7,12 +7,15 @@
 
 let currentTrader = null;
 let globalTypography = null;
+let companyTypographyByRole = null;
 let activeCardTypography = null;
 let currentModalSide = 'front';
 let currentModalQrUrl = null;
 let activeModalFieldKey = 'name';
 let redrawRafId = null;
 let modalRequestToken = 0;
+let roleSwitchToken = 0;
+let roleStatusTimer = null;
 let modalReadyForPrint = false;
 let pendingPrintTimer = null;
 
@@ -77,6 +80,29 @@ const COMPANY_BACK_FIELDS = [
     { key: 'qr', label: 'QR Code', sizeKey: 'qr_size', xKey: 'qr_x', yKey: 'qr_y' }
 ];
 
+const COMPANY_BM_FRONT_FIELDS = [
+    { key: 'comp', label: 'الشركة', sizeKey: 'comp_size', xKey: 'comp_x', yKey: 'comp_y' },
+    { key: 'ceo', label: 'مدير الفرع (BM)', sizeKey: 'ceo_size', xKey: 'ceo_x', yKey: 'ceo_y' },
+    { key: 'class_act', label: 'الصنف والنشاط', sizeKey: 'class_act_size', xKey: 'class_act_x', yKey: 'class_act_y' },
+    { key: 'cert', label: 'إجازة التأسيس', sizeKey: 'cert_size', xKey: 'cert_x', yKey: 'cert_y' },
+    { key: 'comm_date', label: 'الاسم التجاري (الرقم)', sizeKey: 'comm_date_size', xKey: 'comm_date_x', yKey: 'comm_date_y' },
+    { key: 'card_no', label: 'رقم الهوية', sizeKey: 'card_no_size', xKey: 'card_no_x', yKey: 'card_no_y' },
+    { key: 'aff_date', label: 'الانتساب', sizeKey: 'aff_date_size', xKey: 'aff_date_x', yKey: 'aff_date_y' },
+    { key: 'exp_date', label: 'النفاذ', sizeKey: 'exp_date_size', xKey: 'exp_date_x', yKey: 'exp_date_y' }
+];
+
+const COMPANY_BM_BACK_FIELDS = [
+    { key: 'comp_en', label: 'Company', sizeKey: 'comp_en_size', xKey: 'comp_en_x', yKey: 'comp_en_y' },
+    { key: 'ceo_en', label: 'BM (مدير الفرع)', sizeKey: 'ceo_en_size', xKey: 'ceo_en_x', yKey: 'ceo_en_y' },
+    { key: 'class_act_en', label: 'Class / Activity', sizeKey: 'class_act_en_size', xKey: 'class_act_en_x', yKey: 'class_act_en_y' },
+    { key: 'license_en', label: 'License No', sizeKey: 'license_en_size', xKey: 'license_en_x', yKey: 'license_en_y' },
+    { key: 'comm_no', label: 'Commercial Name No', sizeKey: 'comm_no_size', xKey: 'comm_no_x', yKey: 'comm_no_y' },
+    { key: 'card_no', label: 'ID No', sizeKey: 'card_no_size', xKey: 'card_no_x', yKey: 'card_no_y' },
+    { key: 'aff_date', label: 'Affiliation', sizeKey: 'aff_date_size', xKey: 'aff_date_x', yKey: 'aff_date_y' },
+    { key: 'exp_date', label: 'Expiration', sizeKey: 'exp_date_size', xKey: 'exp_date_x', yKey: 'exp_date_y' },
+    { key: 'qr', label: 'QR Code', sizeKey: 'qr_size', xKey: 'qr_x', yKey: 'qr_y' }
+];
+
 const BROKER_FRONT_FIELDS = [
     { key: 'name', label: 'اسم الدلال', sizeKey: 'name_size', xKey: 'name_x', yKey: 'name_y' },
     { key: 'class', label: 'الصنف', sizeKey: 'class_size', xKey: 'class_x', yKey: 'class_y' },
@@ -100,37 +126,61 @@ const BROKER_BACK_FIELDS = [
 
 const DEFAULT_COMPANY_TYPOGRAPHY = {
     front: {
-        comp_size: 38, comp_x: 900, comp_y: 281,
-        ceo_size: 36, ceo_x: 817, ceo_y: 334,
-        class_act_size: 33, class_act_x: 778, class_act_y: 381,
-        cert_size: 31, cert_x: 728, cert_y: 429,
-        comm_date_size: 33, comm_date_x: 805, comm_date_y: 477,
-        card_no_size: 35, card_no_x: 853, card_no_y: 567,
-        aff_date_size: 27, aff_date_x: 897, aff_date_y: 624,
-        exp_date_size: 28, exp_date_x: 475, exp_date_y: 624
+        comp_size: 38, comp_x: 898, comp_y: 282,
+        ceo_size: 36, ceo_x: 850, ceo_y: 332,
+        class_act_size: 33, class_act_x: 777, class_act_y: 378,
+        cert_size: 31, cert_x: 727, cert_y: 425,
+        comm_date_size: 33, comm_date_x: 803, comm_date_y: 474,
+        card_no_size: 35, card_no_x: 851, card_no_y: 564,
+        aff_date_size: 27, aff_date_x: 896, aff_date_y: 620,
+        exp_date_size: 28, exp_date_x: 473, exp_date_y: 620
     },
     back: {
-        comp_en_size: 36, comp_en_x: 190, comp_en_y: 322,
-        ceo_en_size: 33, ceo_en_x: 105, ceo_en_y: 364,
-        class_act_en_size: 33, class_act_en_x: 274, class_act_en_y: 410,
-        license_en_size: 33, license_en_x: 214, license_en_y: 460,
-        comm_no_size: 33, comm_no_x: 396, comm_no_y: 504,
+        comp_en_size: 36, comp_en_x: 192, comp_en_y: 322,
+        ceo_en_size: 33, ceo_en_x: 105, ceo_en_y: 363,
+        class_act_en_size: 33, class_act_en_x: 275, class_act_en_y: 410,
+        license_en_size: 33, license_en_x: 214, license_en_y: 459,
+        comm_no_size: 33, comm_no_x: 396, comm_no_y: 503,
         card_no_size: 32, card_no_x: 127, card_no_y: 573,
-        aff_date_size: 27, aff_date_x: 174, aff_date_y: 628,
-        exp_date_size: 27, exp_date_x: 638, exp_date_y: 628,
-        qr_x: 753, qr_y: 217, qr_size: 237
+        aff_date_size: 27, aff_date_x: 174, aff_date_y: 627,
+        exp_date_size: 27, exp_date_x: 636, exp_date_y: 627,
+        qr_x: 753, qr_y: 216, qr_size: 237
+    }
+};
+
+const DEFAULT_COMPANY_BM_TYPOGRAPHY = {
+    front: {
+        comp_size: 38, comp_x: 898, comp_y: 282,
+        ceo_size: 36, ceo_x: 842, ceo_y: 332,
+        class_act_size: 33, class_act_x: 778, class_act_y: 378,
+        cert_size: 31, cert_x: 728, cert_y: 425,
+        comm_date_size: 33, comm_date_x: 804, comm_date_y: 474,
+        card_no_size: 35, card_no_x: 850, card_no_y: 563,
+        aff_date_size: 27, aff_date_x: 896, aff_date_y: 619,
+        exp_date_size: 28, exp_date_x: 474, exp_date_y: 619
+    },
+    back: {
+        comp_en_size: 36, comp_en_x: 192, comp_en_y: 322,
+        ceo_en_size: 33, ceo_en_x: 88, ceo_en_y: 363,
+        class_act_en_size: 33, class_act_en_x: 275, class_act_en_y: 410,
+        license_en_size: 33, license_en_x: 214, license_en_y: 459,
+        comm_no_size: 33, comm_no_x: 396, comm_no_y: 503,
+        card_no_size: 32, card_no_x: 127, card_no_y: 573,
+        aff_date_size: 27, aff_date_x: 174, aff_date_y: 627,
+        exp_date_size: 27, exp_date_x: 636, exp_date_y: 627,
+        qr_x: 753, qr_y: 216, qr_size: 237
     }
 };
 
 const DEFAULT_BROKER_TYPOGRAPHY = {
     front: {
-        name_size: 36, name_x: 904, name_y: 309,
-        class_size: 36, class_x: 892, class_y: 371,
+        name_size: 36, name_x: 905, name_y: 309,
+        class_size: 36, class_x: 892, class_y: 370,
         comm_size: 32, comm_x: 796, comm_y: 432,
         activity_size: 32, activity_x: 891, activity_y: 493,
-        card_no_size: 35, card_no_x: 844, card_no_y: 557,
-        aff_date_size: 27, aff_date_x: 890, aff_date_y: 626,
-        exp_date_size: 27, exp_date_x: 470, exp_date_y: 626
+        card_no_size: 35, card_no_x: 844, card_no_y: 558,
+        aff_date_size: 27, aff_date_x: 890, aff_date_y: 624,
+        exp_date_size: 27, exp_date_x: 470, exp_date_y: 624
     },
     back: {
         name_size: 36, name_x: 13, name_y: 301,
@@ -140,28 +190,28 @@ const DEFAULT_BROKER_TYPOGRAPHY = {
         card_no_size: 34, card_no_x: 122, card_no_y: 565,
         aff_date_size: 27, aff_date_x: 168, aff_date_y: 624,
         exp_date_size: 27, exp_date_x: 733, exp_date_y: 624,
-        qr_x: 759, qr_y: 207, qr_size: 238
+        qr_x: 758, qr_y: 207, qr_size: 238
     }
 };
 
 const DEFAULT_TYPOGRAPHY = {
     front: {
-        name_size: 38, name_x: 905, name_y: 309,
-        class_size: 38, class_x: 897, class_y: 369,
-        comm_size: 33, comm_x: 800, comm_y: 429,
-        activity_size: 33, activity_x: 895, activity_y: 487,
-        card_no_size: 36, card_no_x: 849, card_no_y: 551,
-        aff_date_size: 28, aff_date_x: 908, aff_date_y: 616,
-        exp_date_size: 28, exp_date_x: 472, exp_date_y: 616
+        name_size: 38, name_x: 907, name_y: 309,
+        class_size: 38, class_x: 898, class_y: 367,
+        comm_size: 33, comm_x: 801, comm_y: 429,
+        activity_size: 33, activity_x: 896, activity_y: 487,
+        card_no_size: 36, card_no_x: 849, card_no_y: 552,
+        aff_date_size: 28, aff_date_x: 910, aff_date_y: 614,
+        exp_date_size: 28, exp_date_x: 473, exp_date_y: 614
     },
     back: {
         name_size: 36, name_x: 14, name_y: 305,
-        class_size: 36, class_x: 118, class_y: 376,
-        comm_no_size: 36, comm_no_x: 396, comm_no_y: 433,
-        activity_size: 36, activity_x: 163, activity_y: 484,
+        class_size: 36, class_x: 118, class_y: 375,
+        comm_no_size: 36, comm_no_x: 396, comm_no_y: 432,
+        activity_size: 34, activity_x: 163, activity_y: 484,
         card_no_size: 34, card_no_x: 124, card_no_y: 570,
-        aff_date_size: 27, aff_date_x: 169, aff_date_y: 630,
-        exp_date_size: 27, exp_date_x: 733, exp_date_y: 630,
+        aff_date_size: 27, aff_date_x: 168, aff_date_y: 630,
+        exp_date_size: 27, exp_date_x: 732, exp_date_y: 630,
         qr_x: 758, qr_y: 210, qr_size: 238
     }
 };
@@ -173,12 +223,33 @@ const CARD_RENDER_H = 2160;
 const CARD_PREVIEW_W = 1024;
 const CARD_PREVIEW_H = 644;
 
+function isCompanyBm(trader) {
+    return !!(trader && trader.member_type === 'company' && trader.company_role === 'bm');
+}
+
+function getTypoCacheKey(trader) {
+    if (isCompanyBm(trader)) return 'company_bm';
+    if (trader && trader.member_type === 'company') return 'company';
+    if (trader && trader.member_type === 'broker') return 'broker';
+    return 'trader';
+}
+
+function getFallbackTypography(trader) {
+    if (isCompanyBm(trader)) return DEFAULT_COMPANY_BM_TYPOGRAPHY;
+    if (trader && trader.member_type === 'company') return DEFAULT_COMPANY_TYPOGRAPHY;
+    if (trader && trader.member_type === 'broker') return DEFAULT_BROKER_TYPOGRAPHY;
+    return DEFAULT_TYPOGRAPHY;
+}
+
 function getFrontPhotoBox(trader) {
+    if (isCompanyBm(trader)) {
+        return { x: 20, y: 265, w: 276, h: 352, radius: 22 };
+    }
     if (trader && trader.member_type === 'company') {
-        return { x: 18, y: 265, w: 275, h: 355, radius: 22 };
+        return { x: 17, y: 264, w: 278, h: 355, radius: 22 };
     }
     if (trader && trader.member_type === 'broker') {
-        return { x: 23, y: 267, w: 272, h: 353, radius: 22 };
+        return { x: 23, y: 266, w: 273, h: 354, radius: 22 };
     }
     return { x: 20, y: 268, w: 275, h: 342, radius: 22 };
 }
@@ -357,9 +428,7 @@ function drawCardFrontSync(canvas, trader, bg, photo, renderW = CARD_PREVIEW_W, 
     if (!canvas || !trader) return;
     const isComp = trader.member_type === 'company';
     const isBroker = trader.member_type === 'broker';
-    const fallbackDefaults = isComp
-        ? DEFAULT_COMPANY_TYPOGRAPHY
-        : (isBroker ? DEFAULT_BROKER_TYPOGRAPHY : DEFAULT_TYPOGRAPHY);
+    const fallbackDefaults = getFallbackTypography(trader);
     const s = (activeCardTypography && activeCardTypography.front)
         ? activeCardTypography.front
         : ((globalTypography && globalTypography.front) ? globalTypography.front : fallbackDefaults.front);
@@ -491,9 +560,7 @@ function drawCardBackSync(canvas, trader, bg, qrImg, renderW = CARD_PREVIEW_W, r
     if (!canvas || !trader) return;
     const isComp = trader.member_type === 'company';
     const isBroker = trader.member_type === 'broker';
-    const fallbackDefaults = isComp
-        ? DEFAULT_COMPANY_TYPOGRAPHY
-        : (isBroker ? DEFAULT_BROKER_TYPOGRAPHY : DEFAULT_TYPOGRAPHY);
+    const fallbackDefaults = getFallbackTypography(trader);
     const s = (activeCardTypography && activeCardTypography.back)
         ? activeCardTypography.back
         : ((globalTypography && globalTypography.back) ? globalTypography.back : fallbackDefaults.back);
@@ -615,27 +682,31 @@ function drawCardBackSync(canvas, trader, bg, qrImg, renderW = CARD_PREVIEW_W, r
 }
 
 function getFrontTemplatePath(trader) {
-    if (trader && trader.member_type === 'company') return '/templates/company_front_clean.png?v=5';
-    if (trader && trader.member_type === 'broker') return '/templates/broker_front_clean.png?v=5';
-    return '/templates/card_front_template.png?v=6';
+    if (isCompanyBm(trader)) return '/templates/company_bm_front_clean.png?v=7';
+    if (trader && trader.member_type === 'company') return '/templates/company_front_clean.png?v=7';
+    if (trader && trader.member_type === 'broker') return '/templates/broker_front_clean.png?v=7';
+    return '/templates/card_front_template.png?v=7';
 }
 
 function getBackTemplatePath(trader) {
-    if (trader && trader.member_type === 'company') return '/templates/company_back_clean.png?v=5';
-    if (trader && trader.member_type === 'broker') return '/templates/broker_back_clean.png?v=5';
-    return '/templates/card_back_clean.png?v=6';
+    if (isCompanyBm(trader)) return '/templates/company_bm_back_clean.png?v=7';
+    if (trader && trader.member_type === 'company') return '/templates/company_back_clean.png?v=7';
+    if (trader && trader.member_type === 'broker') return '/templates/broker_back_clean.png?v=7';
+    return '/templates/card_back_clean.png?v=7';
 }
 
 function getFrontPreviewTemplatePath(trader) {
-    if (trader && trader.member_type === 'company') return '/templates/previews/company_front_clean.webp?v=1';
-    if (trader && trader.member_type === 'broker') return '/templates/previews/broker_front_clean.webp?v=1';
-    return '/templates/previews/card_front_template.webp?v=1';
+    if (isCompanyBm(trader)) return '/templates/previews/company_bm_front_clean.webp?v=2';
+    if (trader && trader.member_type === 'company') return '/templates/previews/company_front_clean.webp?v=2';
+    if (trader && trader.member_type === 'broker') return '/templates/previews/broker_front_clean.webp?v=2';
+    return '/templates/previews/card_front_template.webp?v=2';
 }
 
 function getBackPreviewTemplatePath(trader) {
-    if (trader && trader.member_type === 'company') return '/templates/previews/company_back_clean.webp?v=1';
-    if (trader && trader.member_type === 'broker') return '/templates/previews/broker_back_clean.webp?v=1';
-    return '/templates/previews/card_back_clean.webp?v=1';
+    if (isCompanyBm(trader)) return '/templates/previews/company_bm_back_clean.webp?v=2';
+    if (trader && trader.member_type === 'company') return '/templates/previews/company_back_clean.webp?v=2';
+    if (trader && trader.member_type === 'broker') return '/templates/previews/broker_back_clean.webp?v=2';
+    return '/templates/previews/card_back_clean.webp?v=2';
 }
 
 async function renderCardFront(canvas, trader) {
@@ -661,17 +732,21 @@ async function renderCardBack(canvas, trader, qrDataUrl) {
     drawCardBackSync(canvas, trader, bg, qrImg, CARD_PREVIEW_W, CARD_PREVIEW_H);
 }
 
-function getActiveFieldDef() {
-    const isComp = currentTrader && currentTrader.member_type === 'company';
-    const isBroker = currentTrader && currentTrader.member_type === 'broker';
-    let list;
-    if (isComp) {
-        list = currentModalSide === 'front' ? COMPANY_FRONT_FIELDS : COMPANY_BACK_FIELDS;
-    } else if (isBroker) {
-        list = currentModalSide === 'front' ? BROKER_FRONT_FIELDS : BROKER_BACK_FIELDS;
-    } else {
-        list = currentModalSide === 'front' ? MODAL_FRONT_FIELDS : MODAL_BACK_FIELDS;
+function getModalFieldsForTrader(trader, side) {
+    if (isCompanyBm(trader)) {
+        return side === 'front' ? COMPANY_BM_FRONT_FIELDS : COMPANY_BM_BACK_FIELDS;
     }
+    if (trader && trader.member_type === 'company') {
+        return side === 'front' ? COMPANY_FRONT_FIELDS : COMPANY_BACK_FIELDS;
+    }
+    if (trader && trader.member_type === 'broker') {
+        return side === 'front' ? BROKER_FRONT_FIELDS : BROKER_BACK_FIELDS;
+    }
+    return side === 'front' ? MODAL_FRONT_FIELDS : MODAL_BACK_FIELDS;
+}
+
+function getActiveFieldDef() {
+    const list = getModalFieldsForTrader(currentTrader, currentModalSide);
     return list.find(f => f.key === activeModalFieldKey) || list[0];
 }
 
@@ -679,13 +754,7 @@ function populateModalFieldPills() {
     const container = document.getElementById('modalFieldPills');
     if (!container) return;
     container.innerHTML = '';
-    const isComp = currentTrader && currentTrader.member_type === 'company';
-    const isBroker = currentTrader && currentTrader.member_type === 'broker';
-    const fields = isComp
-        ? (currentModalSide === 'front' ? COMPANY_FRONT_FIELDS : COMPANY_BACK_FIELDS)
-        : (isBroker
-            ? (currentModalSide === 'front' ? BROKER_FRONT_FIELDS : BROKER_BACK_FIELDS)
-            : (currentModalSide === 'front' ? MODAL_FRONT_FIELDS : MODAL_BACK_FIELDS));
+    const fields = getModalFieldsForTrader(currentTrader, currentModalSide);
 
     if (!fields.find(f => f.key === activeModalFieldKey)) {
         activeModalFieldKey = fields[0].key;
@@ -863,9 +932,7 @@ async function resetTraderCustomTypography() {
     if (!confirm('هل تريد استعادة إعدادات الخط العامة لهذا السجل؟')) return;
     try {
         await fetch(`/api/traders/${encodeURIComponent(currentTrader.uuid || currentTrader.id)}/typography/reset`, { method: 'POST' });
-        const isComp = currentTrader.member_type === 'company';
-        const isBroker = currentTrader.member_type === 'broker';
-        const fallback = isComp ? DEFAULT_COMPANY_TYPOGRAPHY : (isBroker ? DEFAULT_BROKER_TYPOGRAPHY : DEFAULT_TYPOGRAPHY);
+        const fallback = getFallbackTypography(currentTrader);
         currentTrader.custom_typography = null;
         activeCardTypography = JSON.parse(JSON.stringify(globalTypography || fallback));
         populateModalFieldPills();
@@ -876,8 +943,161 @@ async function resetTraderCustomTypography() {
     }
 }
 
+function setCompanyRoleStatus(text, { isError = false, autoHideMs = 0 } = {}) {
+    const statusEl = document.getElementById('companyRoleStatus');
+    if (!statusEl) return;
+    if (roleStatusTimer) {
+        clearTimeout(roleStatusTimer);
+        roleStatusTimer = null;
+    }
+    statusEl.innerText = text || '';
+    statusEl.classList.toggle('error', Boolean(isError));
+    statusEl.classList.toggle('visible', Boolean(text));
+    if (text && autoHideMs > 0) {
+        roleStatusTimer = setTimeout(() => {
+            roleStatusTimer = null;
+            statusEl.classList.remove('visible');
+        }, autoHideMs);
+    }
+}
+
+function syncCompanyRoleSwitcherUI(trader) {
+    const switcher = document.getElementById('companyRoleSwitcher');
+    const btnCeo = document.getElementById('btnRoleCeo');
+    const btnBm = document.getElementById('btnRoleBm');
+    const isComp = Boolean(trader && trader.member_type === 'company');
+    if (switcher) {
+        switcher.style.display = isComp ? 'block' : 'none';
+    }
+    if (!isComp) {
+        setCompanyRoleStatus('');
+        return;
+    }
+    const isBm = isCompanyBm(trader);
+    if (btnCeo) btnCeo.className = `company-role-btn ${isBm ? '' : 'active-role'}`.trim();
+    if (btnBm) btnBm.className = `company-role-btn ${isBm ? 'active-role' : ''}`.trim();
+}
+
+function updateCompanyRoleDomBadge(uuid, role) {
+    if (!uuid) return;
+    const escapedUuid = (window.CSS && typeof window.CSS.escape === 'function')
+        ? window.CSS.escape(String(uuid))
+        : String(uuid).replace(/["\\]/g, '\\$&');
+    const existingBadge = document.querySelector(`[data-company-role-badge="${escapedUuid}"]`);
+
+    if (role === 'bm') {
+        if (existingBadge) {
+            existingBadge.style.display = 'inline-flex';
+        } else {
+            const editLink = document.querySelector(`p.mt-4 a[href="/traders/${escapedUuid}/edit"]`);
+            if (editLink && editLink.parentElement) {
+                const badge = document.createElement('span');
+                badge.setAttribute('data-company-role-badge', String(uuid));
+                badge.style.cssText = 'display:inline-flex;align-items:center;margin-left:0.5rem;padding:0.15rem 0.5rem;font-size:0.72rem;font-weight:700;border-radius:9999px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;vertical-align:middle;';
+                badge.textContent = 'مدير فرع · BM';
+                editLink.parentElement.appendChild(badge);
+            }
+        }
+    } else if (existingBadge) {
+        existingBadge.remove();
+    }
+
+    // If currently on the edit page for this company, keep the form dropdown in sync
+    const roleSelect = document.getElementById('company_role');
+    const editForm = roleSelect ? roleSelect.closest('form') : null;
+    if (roleSelect && editForm && editForm.getAttribute('action') === `/traders/${uuid}`) {
+        roleSelect.value = role;
+    }
+}
+
+async function switchCompanyRole(role) {
+    if (!currentTrader || currentTrader.member_type !== 'company') return;
+    if (role !== 'ceo' && role !== 'bm') return;
+    const normalizedCurrent = currentTrader.company_role === 'bm' ? 'bm' : 'ceo';
+    if (normalizedCurrent === role) {
+        syncCompanyRoleSwitcherUI(currentTrader);
+        return;
+    }
+
+    const traderRef = currentTrader;
+    const reqToken = modalRequestToken;
+    const myRoleToken = ++roleSwitchToken;
+    const fCanvas = document.getElementById('frontCanvas');
+    const bCanvas = document.getElementById('backCanvas');
+
+    // Optimistic state & immediate visual switch
+    traderRef.company_role = role;
+    syncCompanyRoleSwitcherUI(traderRef);
+    setCompanyRoleStatus('جاري الحفظ...');
+
+    const cacheKey = getTypoCacheKey(traderRef);
+    const fallback = getFallbackTypography(traderRef);
+    globalTypography = (companyTypographyByRole && companyTypographyByRole[role])
+        || GLOBAL_TYPO_CACHE.get(cacheKey)
+        || fallback;
+    GLOBAL_TYPO_CACHE.set(cacheKey, globalTypography);
+
+    if (!traderRef.custom_typography) {
+        activeCardTypography = JSON.parse(JSON.stringify(globalTypography));
+    }
+    populateModalFieldPills();
+
+    const renderPromise = Promise.all([
+        renderCardFront(fCanvas, traderRef),
+        renderCardBack(bCanvas, traderRef, currentModalQrUrl)
+    ]);
+
+    try {
+        const res = await fetch(`/api/traders/${encodeURIComponent(traderRef.uuid || traderRef.id)}/company-role`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company_role: role })
+        });
+        const data = await res.json().catch(() => null);
+        await renderPromise;
+
+        if (reqToken !== modalRequestToken || currentTrader !== traderRef || myRoleToken !== roleSwitchToken) {
+            return;
+        }
+
+        if (!res.ok || !data || !data.success) {
+            setCompanyRoleStatus('تعذر الحفظ', { isError: true, autoHideMs: 3000 });
+            return;
+        }
+
+        if (data.globalTypography) {
+            const roleKey = role === 'bm' ? 'company_bm' : 'company';
+            GLOBAL_TYPO_CACHE.set(roleKey, data.globalTypography);
+            if (!companyTypographyByRole) companyTypographyByRole = {};
+            companyTypographyByRole[role] = data.globalTypography;
+
+            const prevSerialized = JSON.stringify(globalTypography);
+            const nextSerialized = JSON.stringify(data.globalTypography);
+            globalTypography = data.globalTypography;
+
+            if (!traderRef.custom_typography && prevSerialized !== nextSerialized) {
+                activeCardTypography = JSON.parse(JSON.stringify(globalTypography));
+                populateModalFieldPills();
+                await Promise.all([
+                    renderCardFront(fCanvas, traderRef),
+                    renderCardBack(bCanvas, traderRef, currentModalQrUrl)
+                ]);
+            }
+        }
+
+        setCompanyRoleStatus('✓ تم الحفظ', { autoHideMs: 2200 });
+        window.cardvalClearNavCache?.();
+        updateCompanyRoleDomBadge(traderRef.uuid, role);
+    } catch (e) {
+        if (reqToken === modalRequestToken && currentTrader === traderRef && myRoleToken === roleSwitchToken) {
+            setCompanyRoleStatus('تعذر الحفظ', { isError: true, autoHideMs: 3000 });
+        }
+    }
+}
+
 async function openPrintModal(traderId, uuid) {
     const token = ++modalRequestToken;
+    roleSwitchToken++;
     const modalEl = document.getElementById('printModal');
     const titleEl = document.getElementById('modalTitle');
     const fCanvas = document.getElementById('frontCanvas');
@@ -885,6 +1105,8 @@ async function openPrintModal(traderId, uuid) {
 
     // Open modal shell immediately (< 5ms) so UI feels instant!
     modalReadyForPrint = false;
+    companyTypographyByRole = null;
+    syncCompanyRoleSwitcherUI(null);
     if (titleEl) {
         delete titleEl.dataset.origTitle;
         titleEl.innerText = 'جاري تجهيز الهوية...';
@@ -905,11 +1127,26 @@ async function openPrintModal(traderId, uuid) {
         currentTrader = json.trader;
         const isComp = currentTrader.member_type === 'company';
         const isBroker = currentTrader.member_type === 'broker';
-        const fallback = isComp ? DEFAULT_COMPANY_TYPOGRAPHY : (isBroker ? DEFAULT_BROKER_TYPOGRAPHY : DEFAULT_TYPOGRAPHY);
+        if (isComp) {
+            currentTrader.company_role = currentTrader.company_role === 'bm' ? 'bm' : 'ceo';
+            if (json.companyTypographyByRole) {
+                companyTypographyByRole = {
+                    ceo: json.companyTypographyByRole.ceo || DEFAULT_COMPANY_TYPOGRAPHY,
+                    bm: json.companyTypographyByRole.bm || DEFAULT_COMPANY_BM_TYPOGRAPHY
+                };
+                GLOBAL_TYPO_CACHE.set('company', companyTypographyByRole.ceo);
+                GLOBAL_TYPO_CACHE.set('company_bm', companyTypographyByRole.bm);
+            }
+        }
 
-        globalTypography = json.globalTypography || GLOBAL_TYPO_CACHE.get(currentTrader.member_type || 'trader') || fallback;
-        GLOBAL_TYPO_CACHE.set(currentTrader.member_type || 'trader', globalTypography);
+        const cacheKey = getTypoCacheKey(currentTrader);
+        const fallback = getFallbackTypography(currentTrader);
+
+        globalTypography = json.globalTypography || GLOBAL_TYPO_CACHE.get(cacheKey) || fallback;
+        GLOBAL_TYPO_CACHE.set(cacheKey, globalTypography);
         currentModalQrUrl = json.qr_url || null;
+
+        syncCompanyRoleSwitcherUI(currentTrader);
 
         const titlePrefix = isComp ? 'Print Company ID: ' : (isBroker ? 'Print Broker ID: ' : 'Print Trader ID: ');
         const displayName = isComp ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name) : currentTrader.name;
@@ -950,7 +1187,9 @@ async function openPrintModal(traderId, uuid) {
 
 function closePrintModal() {
     modalRequestToken++;
+    roleSwitchToken++;
     modalReadyForPrint = false;
+    syncCompanyRoleSwitcherUI(null);
     const titleEl = document.getElementById('modalTitle');
     if (titleEl) delete titleEl.dataset.origTitle;
     const modalEl = document.getElementById('printModal');
@@ -959,6 +1198,7 @@ function closePrintModal() {
         modalEl.classList.add('hidden');
     }
     currentTrader = null;
+    companyTypographyByRole = null;
     activeCardTypography = null;
 }
 
@@ -1402,7 +1642,7 @@ async function downloadImage(side) {
     if (!dataUrl) return;
 
     const link = document.createElement('a');
-    const prefix = trader.member_type === 'company' ? 'Company' : (trader.member_type === 'broker' ? 'Broker' : 'Card');
+    const prefix = isCompanyBm(trader) ? 'Company_BM' : (trader.member_type === 'company' ? 'Company' : (trader.member_type === 'broker' ? 'Broker' : 'Card'));
     link.download = `${prefix}_${trader.card_no}_${targetSide}.png`;
     link.href = dataUrl;
     link.click();
@@ -1413,6 +1653,7 @@ window.__realOpenPrintModal = openPrintModal;
 window.openPrintModal = openPrintModal;
 window.closePrintModal = closePrintModal;
 window.switchCardSide = switchCardSide;
+window.switchCompanyRole = switchCompanyRole;
 window.selectModalField = selectModalField;
 window.onModalSliderChange = onModalSliderChange;
 window.modalNudgeSize = modalNudgeSize;

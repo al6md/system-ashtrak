@@ -92,6 +92,12 @@
         .btn-save-studio.save-company:hover {
             background-color: #111827;
         }
+        .btn-save-studio.save-company-bm {
+            background-color: #1f2937;
+        }
+        .btn-save-studio.save-company-bm:hover {
+            background-color: #111827;
+        }
         .btn-save-studio.save-broker {
             background-color: #1f2937;
         }
@@ -162,6 +168,12 @@
             box-shadow: 0 1px 3px rgba(79, 70, 229, 0.3);
         }
         .active-template-company {
+            background-color: #1f2937 !important;
+            color: #ffffff !important;
+            border-color: #111827 !important;
+            box-shadow: 0 1px 3px rgba(31, 41, 55, 0.3);
+        }
+        .active-template-company-bm {
             background-color: #1f2937 !important;
             color: #ffffff !important;
             border-color: #111827 !important;
@@ -459,7 +471,7 @@
                         </div>
                     </div>
 
-                    <!-- Template Type Switcher (التجار / الشركات / الدلالين) -->
+                    <!-- Template Type Switcher (التجار / الشركات CEO / الشركات BM / الدلالين) -->
                     <div class="studio-tpl-bar">
                         <div class="studio-tpl-info">
                             <span style="font-size: 1.25rem;">🪪</span>
@@ -475,7 +487,11 @@
                             </button>
                             <button type="button" id="tplBtnCompany" onclick="switchCardTemplate('company')" class="tpl-switch-btn inactive-template-btn">
                                 <span>🏢</span>
-                                <span>هوية الشركات (Companies ID)</span>
+                                <span>هوية الشركات - المدير المفوض (CEO)</span>
+                            </button>
+                            <button type="button" id="tplBtnCompanyBm" onclick="switchCardTemplate('company_bm')" class="tpl-switch-btn inactive-template-btn">
+                                <span>🏢</span>
+                                <span>هوية الشركات - مدير الفرع (BM)</span>
                             </button>
                             <button type="button" id="tplBtnBroker" onclick="switchCardTemplate('broker')" class="tpl-switch-btn inactive-template-btn">
                                 <span>🤝</span>
@@ -1330,6 +1346,417 @@
                                 </div>
                             </div>
 
+                            <!-- ================= COMPANY BM CONTROLS CONTAINER ================= -->
+                            <% const _companyBmSettings = (typeof companyBmSettings !== 'undefined' && companyBmSettings) ? companyBmSettings : companySettings; %>
+                            <div id="companyBmControlsContainer" style="display: none;">
+                                <!-- COMPANY BM FRONT CONTROLS -->
+                                <div id="compBmFrontControlsPanel" class="space-y-3">
+                                    <div class="font-bold text-sm text-indigo-700 mb-2 border-b pb-1 flex justify-between items-center">
+                                        <span>عناصر الوجه الأمامي للشركات - مدير الفرع (BM Front Side):</span>
+                                        <span class="text-xs text-gray-500 font-normal">اضغط على أي حقل لتمييزه</span>
+                                    </div>
+
+                                    <!-- Company Name -->
+                                    <div class="control-group" id="grp_comp_bm_front_comp" onclick="selectQuickField('comp_size')">
+                                        <div class="control-title">
+                                            <span>الشركة (Company Name)</span>
+                                            <span id="val_comp_bm_front_comp_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.front.comp_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_bm_front_comp_size" min="18" max="42" value="<%= _companyBmSettings.front.comp_size %>" oninput="updateSetting('front', 'comp_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_comp_x" value="<%= _companyBmSettings.front.comp_x %>" oninput="updateSetting('front', 'comp_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_comp_y" value="<%= _companyBmSettings.front.comp_y %>" oninput="updateSetting('front', 'comp_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- BM Name -->
+                                    <div class="control-group" id="grp_comp_bm_front_ceo" onclick="selectQuickField('ceo_size')">
+                                        <div class="control-title">
+                                            <span>مدير الفرع (BM Name)</span>
+                                            <span id="val_comp_bm_front_ceo_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.front.ceo_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_bm_front_ceo_size" min="16" max="38" value="<%= _companyBmSettings.front.ceo_size %>" oninput="updateSetting('front', 'ceo_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_ceo_x" value="<%= _companyBmSettings.front.ceo_x %>" oninput="updateSetting('front', 'ceo_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_ceo_y" value="<%= _companyBmSettings.front.ceo_y %>" oninput="updateSetting('front', 'ceo_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Class & Activity -->
+                                    <div class="control-group" id="grp_comp_bm_front_class_act" onclick="selectQuickField('class_act_size')">
+                                        <div class="control-title">
+                                            <span>الصنف والنشاط (Class &amp; Activity)</span>
+                                            <span id="val_comp_bm_front_class_act_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.front.class_act_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_bm_front_class_act_size" min="16" max="36" value="<%= _companyBmSettings.front.class_act_size %>" oninput="updateSetting('front', 'class_act_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_class_act_x" value="<%= _companyBmSettings.front.class_act_x %>" oninput="updateSetting('front', 'class_act_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_class_act_y" value="<%= _companyBmSettings.front.class_act_y %>" oninput="updateSetting('front', 'class_act_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Incorporation License No -->
+                                    <div class="control-group" id="grp_comp_bm_front_cert" onclick="selectQuickField('cert_size')">
+                                        <div class="control-title">
+                                            <span>رقم إجازة التأسيس (License No)</span>
+                                            <span id="val_comp_bm_front_cert_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.front.cert_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_bm_front_cert_size" min="16" max="36" value="<%= _companyBmSettings.front.cert_size %>" oninput="updateSetting('front', 'cert_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_cert_x" value="<%= _companyBmSettings.front.cert_x %>" oninput="updateSetting('front', 'cert_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_cert_y" value="<%= _companyBmSettings.front.cert_y %>" oninput="updateSetting('front', 'cert_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Commercial Name & Date -->
+                                    <div class="control-group" id="grp_comp_bm_front_comm_date" onclick="selectQuickField('comm_date_size')">
+                                        <div class="control-title">
+                                            <span>الاسم التجاري وتاريخه (Commercial Name)</span>
+                                            <span id="val_comp_bm_front_comm_date_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.front.comm_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_bm_front_comm_date_size" min="16" max="36" value="<%= _companyBmSettings.front.comm_date_size %>" oninput="updateSetting('front', 'comm_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_comm_date_x" value="<%= _companyBmSettings.front.comm_date_x %>" oninput="updateSetting('front', 'comm_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_comm_date_y" value="<%= _companyBmSettings.front.comm_date_y %>" oninput="updateSetting('front', 'comm_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card No (Black Ribbon) -->
+                                    <div class="control-group" id="grp_comp_bm_front_card_no" onclick="selectQuickField('card_no_size')" style="background-color: #f3f4f6; border-color: #9ca3af;">
+                                        <div class="control-title">
+                                            <span class="text-gray-900 font-bold">رقم الهوية والشريط الأسود (Card No)</span>
+                                            <span id="val_comp_bm_front_card_no_size" class="text-xs font-bold text-gray-900"><%= _companyBmSettings.front.card_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_bm_front_card_no_size" min="20" max="44" value="<%= _companyBmSettings.front.card_no_size %>" oninput="updateSetting('front', 'card_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_card_no_x" value="<%= _companyBmSettings.front.card_no_x %>" oninput="updateSetting('front', 'card_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الرأسي Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_card_no_y" value="<%= _companyBmSettings.front.card_no_y %>" oninput="updateSetting('front', 'card_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Affiliation Date -->
+                                    <div class="control-group" id="grp_comp_bm_front_aff_date" onclick="selectQuickField('aff_date_size')">
+                                        <div class="control-title">
+                                            <span>تاريخ الانتساب (Affiliation Date)</span>
+                                            <span id="val_comp_bm_front_aff_date_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.front.aff_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_bm_front_aff_date_size" min="16" max="34" value="<%= _companyBmSettings.front.aff_date_size %>" oninput="updateSetting('front', 'aff_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_aff_date_x" value="<%= _companyBmSettings.front.aff_date_x %>" oninput="updateSetting('front', 'aff_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">الموقع الرأسي Y (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="comp_bm_front_aff_date_y" value="<%= _companyBmSettings.front.aff_date_y %>" oninput="updateSetting('front', 'aff_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expiration Date -->
+                                    <div class="control-group" id="grp_comp_bm_front_exp_date" onclick="selectQuickField('exp_date_size')">
+                                        <div class="control-title">
+                                            <span>تاريخ النفاذ والانتهاء (Expiration Date)</span>
+                                            <span id="val_comp_bm_front_exp_date_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.front.exp_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">حجم الخط (Size)</label>
+                                                <input type="range" class="card-slider" id="comp_bm_front_exp_date_size" min="16" max="34" value="<%= _companyBmSettings.front.exp_date_size %>" oninput="updateSetting('front', 'exp_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">الموقع الأفقي X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_front_exp_date_x" value="<%= _companyBmSettings.front.exp_date_x %>" oninput="updateSetting('front', 'exp_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">الموقع الرأسي Y (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="comp_bm_front_exp_date_y" value="<%= _companyBmSettings.front.exp_date_y %>" oninput="updateSetting('front', 'exp_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Synchronized Dates Helper -->
+                                    <div class="p-2.5 bg-indigo-50/70 rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
+                                        <span class="font-semibold text-indigo-900">⚡ تحريك تاريخي مدير الفرع معاً:</span>
+                                        <div class="flex gap-1.5">
+                                            <button type="button" onclick="nudgeBothDates('front', -2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▲ للأعلى معاً</button>
+                                            <button type="button" onclick="nudgeBothDates('front', 2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▼ للأسفل معاً</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- COMPANY BM BACK CONTROLS -->
+                                <div id="compBmBackControlsPanel" class="space-y-3" style="display: none;">
+                                    <div class="font-bold text-sm text-indigo-700 mb-2 border-b pb-1">
+                                        عناصر الوجه الخلفي للشركات - مدير الفرع (BM English Back Side):
+                                    </div>
+
+                                    <!-- Company Name En -->
+                                    <div class="control-group" id="grp_comp_bm_back_comp_en" onclick="selectQuickField('comp_en_size')">
+                                        <div class="control-title">
+                                            <span>Company (اسم الشركة)</span>
+                                            <span id="val_comp_bm_back_comp_en_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.back.comp_en_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_bm_back_comp_en_size" min="16" max="38" value="<%= _companyBmSettings.back.comp_en_size %>" oninput="updateSetting('back', 'comp_en_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_comp_en_x" value="<%= _companyBmSettings.back.comp_en_x %>" oninput="updateSetting('back', 'comp_en_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_comp_en_y" value="<%= _companyBmSettings.back.comp_en_y %>" oninput="updateSetting('back', 'comp_en_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- BM Name En -->
+                                    <div class="control-group" id="grp_comp_bm_back_ceo_en" onclick="selectQuickField('ceo_en_size')">
+                                        <div class="control-title">
+                                            <span>BM (مدير الفرع)</span>
+                                            <span id="val_comp_bm_back_ceo_en_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.back.ceo_en_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_bm_back_ceo_en_size" min="16" max="36" value="<%= _companyBmSettings.back.ceo_en_size %>" oninput="updateSetting('back', 'ceo_en_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_ceo_en_x" value="<%= _companyBmSettings.back.ceo_en_x %>" oninput="updateSetting('back', 'ceo_en_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_ceo_en_y" value="<%= _companyBmSettings.back.ceo_en_y %>" oninput="updateSetting('back', 'ceo_en_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Class / Activity En -->
+                                    <div class="control-group" id="grp_comp_bm_back_class_act_en" onclick="selectQuickField('class_act_en_size')">
+                                        <div class="control-title">
+                                            <span>Class / Activity (الصنف والنشاط)</span>
+                                            <span id="val_comp_bm_back_class_act_en_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.back.class_act_en_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_bm_back_class_act_en_size" min="16" max="50" value="<%= _companyBmSettings.back.class_act_en_size %>" oninput="updateSetting('back', 'class_act_en_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_class_act_en_x" value="<%= _companyBmSettings.back.class_act_en_x %>" oninput="updateSetting('back', 'class_act_en_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_class_act_en_y" value="<%= _companyBmSettings.back.class_act_en_y %>" oninput="updateSetting('back', 'class_act_en_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- License No En -->
+                                    <div class="control-group" id="grp_comp_bm_back_license_en" onclick="selectQuickField('license_en_size')">
+                                        <div class="control-title">
+                                            <span>License No (رقم إجازة التأسيس)</span>
+                                            <span id="val_comp_bm_back_license_en_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.back.license_en_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_bm_back_license_en_size" min="16" max="36" value="<%= _companyBmSettings.back.license_en_size %>" oninput="updateSetting('back', 'license_en_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_license_en_x" value="<%= _companyBmSettings.back.license_en_x %>" oninput="updateSetting('back', 'license_en_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_license_en_y" value="<%= _companyBmSettings.back.license_en_y %>" oninput="updateSetting('back', 'license_en_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Commercial Name No En -->
+                                    <div class="control-group" id="grp_comp_bm_back_comm_no" onclick="selectQuickField('comm_no_size')">
+                                        <div class="control-title">
+                                            <span>Commercial Name No (الاسم التجاري)</span>
+                                            <span id="val_comp_bm_back_comm_no_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.back.comm_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_bm_back_comm_no_size" min="16" max="36" value="<%= _companyBmSettings.back.comm_no_size %>" oninput="updateSetting('back', 'comm_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_comm_no_x" value="<%= _companyBmSettings.back.comm_no_x %>" oninput="updateSetting('back', 'comm_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_comm_no_y" value="<%= _companyBmSettings.back.comm_no_y %>" oninput="updateSetting('back', 'comm_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ID No (Black Ribbon) -->
+                                    <div class="control-group" id="grp_comp_bm_back_card_no" onclick="selectQuickField('card_no_size')" style="background-color: #f3f4f6; border-color: #9ca3af;">
+                                        <div class="control-title">
+                                            <span class="text-gray-900 font-bold">ID No (Black Ribbon)</span>
+                                            <span id="val_comp_bm_back_card_no_size" class="text-xs font-bold text-gray-900"><%= _companyBmSettings.back.card_no_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_bm_back_card_no_size" min="20" max="44" value="<%= _companyBmSettings.back.card_no_size %>" oninput="updateSetting('back', 'card_no_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_card_no_x" value="<%= _companyBmSettings.back.card_no_x %>" oninput="updateSetting('back', 'card_no_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">Y Position</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_card_no_y" value="<%= _companyBmSettings.back.card_no_y %>" oninput="updateSetting('back', 'card_no_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Affiliation Date En -->
+                                    <div class="control-group" id="grp_comp_bm_back_aff_date" onclick="selectQuickField('aff_date_size')">
+                                        <div class="control-title">
+                                            <span>Affiliation Date (الانتماء)</span>
+                                            <span id="val_comp_bm_back_aff_date_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.back.aff_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_bm_back_aff_date_size" min="16" max="34" value="<%= _companyBmSettings.back.aff_date_size %>" oninput="updateSetting('back', 'aff_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position (يمين / يسار)</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_aff_date_x" value="<%= _companyBmSettings.back.aff_date_x %>" oninput="updateSetting('back', 'aff_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">Y Position (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="comp_bm_back_aff_date_y" value="<%= _companyBmSettings.back.aff_date_y %>" oninput="updateSetting('back', 'aff_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expiration Date En -->
+                                    <div class="control-group" id="grp_comp_bm_back_exp_date" onclick="selectQuickField('exp_date_size')">
+                                        <div class="control-title">
+                                            <span>Expiration Date (الانتهاء)</span>
+                                            <span id="val_comp_bm_back_exp_date_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.back.exp_date_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">Font Size</label>
+                                                <input type="range" class="card-slider" id="comp_bm_back_exp_date_size" min="16" max="34" value="<%= _companyBmSettings.back.exp_date_size %>" oninput="updateSetting('back', 'exp_date_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">X Position (يمين / يسار)</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_exp_date_x" value="<%= _companyBmSettings.back.exp_date_x %>" oninput="updateSetting('back', 'exp_date_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label font-bold text-indigo-700">Y Position (أعلى / أسفل)</label>
+                                                <input type="number" class="w-full text-xs border-indigo-300 rounded-md font-bold text-indigo-700 bg-indigo-50" id="comp_bm_back_exp_date_y" value="<%= _companyBmSettings.back.exp_date_y %>" oninput="updateSetting('back', 'exp_date_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Synchronized Back Dates Helper -->
+                                    <div class="p-2.5 bg-indigo-50/70 rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
+                                        <span class="font-semibold text-indigo-900">⚡ تحريك تاريخي الخلفي معاً:</span>
+                                        <div class="flex gap-1.5">
+                                            <button type="button" onclick="nudgeBothDates('back', -2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▲ للأعلى معاً</button>
+                                            <button type="button" onclick="nudgeBothDates('back', 2)" class="px-2.5 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 rounded font-bold text-indigo-700 shadow-xs">▼ للأسفل معاً</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- QR Code Position -->
+                                    <div class="control-group" id="grp_comp_bm_back_qr" onclick="selectQuickField('qr_size')">
+                                        <div class="control-title">
+                                            <span>QR Code Position &amp; Size</span>
+                                            <span id="val_comp_bm_back_qr_size" class="text-xs font-bold text-indigo-600"><%= _companyBmSettings.back.qr_size %>px</span>
+                                        </div>
+                                        <div class="control-inputs">
+                                            <div>
+                                                <label class="input-label">QR Size</label>
+                                                <input type="range" class="card-slider" id="comp_bm_back_qr_size" min="180" max="280" value="<%= _companyBmSettings.back.qr_size %>" oninput="updateSetting('back', 'qr_size', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">QR X</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_qr_x" value="<%= _companyBmSettings.back.qr_x %>" oninput="updateSetting('back', 'qr_x', this.value)">
+                                            </div>
+                                            <div>
+                                                <label class="input-label">QR Y</label>
+                                                <input type="number" class="w-full text-xs border-gray-300 rounded-md" id="comp_bm_back_qr_y" value="<%= _companyBmSettings.back.qr_y %>" oninput="updateSetting('back', 'qr_y', this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- ================= BROKER CONTROLS CONTAINER ================= -->
                             <div id="brokerControlsContainer" style="display: none;">
                                 <!-- BROKER FRONT CONTROLS -->
@@ -1767,9 +2194,10 @@
         const sampleBroker = <%- JSON.stringify(sampleBroker) %>;
         let traderSettings = <%- JSON.stringify(settings) %>;
         let companySettings = <%- JSON.stringify(companySettings) %>;
+        let companyBmSettings = <%- JSON.stringify((typeof companyBmSettings !== 'undefined' && companyBmSettings) ? companyBmSettings : companySettings) %>;
         let brokerSettings = <%- JSON.stringify(brokerSettings) %>;
 
-        let activeTemplateType = 'trader'; // 'trader' | 'company' | 'broker'
+        let activeTemplateType = 'trader'; // 'trader' | 'company' | 'company_bm' | 'broker'
         let currentActiveSide = 'front';    // 'front' | 'back'
         let currentQuickKey = 'name_size';
         let sampleTraderQrUrl = null;
@@ -1811,6 +2239,29 @@
         const COMPANY_BACK_FIELDS = [
             { key: 'comp_en_size', label: 'Company (اسم الشركة)', prop: 'comp_en' },
             { key: 'ceo_en_size', label: 'CEO (المدير المفوض)', prop: 'ceo_en' },
+            { key: 'class_act_en_size', label: 'Class / Activity (الصنف والنشاط)', prop: 'class_act_en' },
+            { key: 'license_en_size', label: 'License No (إجازة التأسيس)', prop: 'license_en' },
+            { key: 'comm_no_size', label: 'Commercial Name No (الاسم التجاري)', prop: 'comm_no' },
+            { key: 'card_no_size', label: 'ID No (رقم الهوية - الشريط الأسود)', prop: 'card_no' },
+            { key: 'aff_date_size', label: 'Affiliation Date (تاريخ الانتساب)', prop: 'aff_date' },
+            { key: 'exp_date_size', label: 'Expiration Date (تاريخ النفاذ)', prop: 'exp_date' },
+            { key: 'qr_size', label: 'QR Code (رمز الاستجابة)', prop: 'qr' }
+        ];
+
+        const COMPANY_BM_FRONT_FIELDS = [
+            { key: 'comp_size', label: 'الشركة (Company Name)', prop: 'comp' },
+            { key: 'ceo_size', label: 'مدير الفرع (BM Name)', prop: 'ceo' },
+            { key: 'class_act_size', label: 'الصنف والنشاط (Class & Activity)', prop: 'class_act' },
+            { key: 'cert_size', label: 'رقم إجازة التأسيس (License No)', prop: 'cert' },
+            { key: 'comm_date_size', label: 'الاسم التجاري (الرقم فقط)', prop: 'comm_date' },
+            { key: 'card_no_size', label: 'رقم الهوية والشريط الأسود (ID No)', prop: 'card_no' },
+            { key: 'aff_date_size', label: 'تاريخ الانتساب (Affiliation Date)', prop: 'aff_date' },
+            { key: 'exp_date_size', label: 'تاريخ النفاذ (Expiration Date)', prop: 'exp_date' }
+        ];
+
+        const COMPANY_BM_BACK_FIELDS = [
+            { key: 'comp_en_size', label: 'Company (اسم الشركة)', prop: 'comp_en' },
+            { key: 'ceo_en_size', label: 'BM (مدير الفرع)', prop: 'ceo_en' },
             { key: 'class_act_en_size', label: 'Class / Activity (الصنف والنشاط)', prop: 'class_act_en' },
             { key: 'license_en_size', label: 'License No (إجازة التأسيس)', prop: 'license_en' },
             { key: 'comm_no_size', label: 'Commercial Name No (الاسم التجاري)', prop: 'comm_no' },
@@ -2025,7 +2476,7 @@
         async function renderPreviewTraderFront() {
             await ensureFonts();
             const canvas = document.getElementById('previewFrontCanvas');
-            const bg = await loadImage('/templates/previews/card_front_template.webp?v=1', '/templates/card_front_template.png?v=6');
+            const bg = await loadImage('/templates/previews/card_front_template.webp?v=2', '/templates/card_front_template.png?v=7');
             const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const photoSrc = sampleTrader.photo_path || '/templates/avatar_placeholder.png';
@@ -2078,7 +2529,7 @@
         async function renderPreviewTraderBack() {
             await ensureFonts();
             const canvas = document.getElementById('previewBackCanvas');
-            const bg = await loadImage('/templates/previews/card_back_clean.webp?v=1', '/templates/card_back_clean.png?v=6');
+            const bg = await loadImage('/templates/previews/card_back_clean.webp?v=2', '/templates/card_back_clean.png?v=7');
             const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const s = traderSettings.back;
@@ -2145,12 +2596,12 @@
         async function renderPreviewCompanyFront() {
             await ensureFonts();
             const canvas = document.getElementById('previewFrontCanvas');
-            const bg = await loadImage('/templates/previews/company_front_clean.webp?v=1', '/templates/company_front_clean.png?v=5');
+            const bg = await loadImage('/templates/previews/company_front_clean.webp?v=2', '/templates/company_front_clean.png?v=7');
             const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const photoSrc = sampleCompany.photo_path || '/templates/avatar_placeholder.png';
             const photo = await loadImage(photoSrc);
-            drawRoundedPhotoBox(ctx, photo, { x: 18, y: 265, w: 275, h: 355, radius: 22 });
+            drawRoundedPhotoBox(ctx, photo, { x: 17, y: 264, w: 278, h: 355, radius: 22 });
 
             const s = companySettings.front;
             ctx.save();
@@ -2165,7 +2616,7 @@
 
             // 2. المدير المفوض
             ctx.font = `bold ${s.ceo_size || 36}px "PT Bold Heading", sans-serif`;
-            drawAutoFitText(ctx, sampleCompany.ceo_name || sampleCompany.name || '', s.ceo_x || 817, s.ceo_y || 334, photoLeftMargin, true);
+            drawAutoFitText(ctx, sampleCompany.ceo_name || sampleCompany.name || '', s.ceo_x || 850, s.ceo_y || 334, photoLeftMargin, true);
 
             // 3. الصنف والنشاط
             ctx.font = `bold ${s.class_act_size || 33}px "PT Bold Heading", sans-serif`;
@@ -2204,7 +2655,7 @@
         async function renderPreviewCompanyBack() {
             await ensureFonts();
             const canvas = document.getElementById('previewBackCanvas');
-            const bg = await loadImage('/templates/previews/company_back_clean.webp?v=1', '/templates/company_back_clean.png?v=5');
+            const bg = await loadImage('/templates/previews/company_back_clean.webp?v=2', '/templates/company_back_clean.png?v=7');
             const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const s = companySettings.back;
@@ -2272,16 +2723,147 @@
             ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
+        // ================= RENDER COMPANY BM FRONT & BACK =================
+        async function renderPreviewCompanyBmFront() {
+            await ensureFonts();
+            const canvas = document.getElementById('previewFrontCanvas');
+            const bg = await loadImage('/templates/previews/company_bm_front_clean.webp?v=2', '/templates/company_bm_front_clean.png?v=7');
+            const ctx = initHiResPreviewCanvas(canvas, bg);
+
+            const photoSrc = sampleCompany.photo_path || '/templates/avatar_placeholder.png';
+            const photo = await loadImage(photoSrc);
+            drawRoundedPhotoBox(ctx, photo, { x: 20, y: 265, w: 276, h: 352, radius: 22 });
+
+            const s = companyBmSettings.front;
+            ctx.save();
+            ctx.direction = 'rtl';
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#000000';
+
+            const photoLeftMargin = 298;
+            // 1. الشركة
+            ctx.font = `bold ${s.comp_size || 38}px "PT Bold Heading", sans-serif`;
+            drawAutoFitText(ctx, sampleCompany.company_name || sampleCompany.commercial_name || sampleCompany.name || '', s.comp_x || 898, s.comp_y || 282, photoLeftMargin, true);
+
+            // 2. مدير الفرع (BM)
+            ctx.font = `bold ${s.ceo_size || 36}px "PT Bold Heading", sans-serif`;
+            drawAutoFitText(ctx, sampleCompany.ceo_name || sampleCompany.name || '', s.ceo_x || 842, s.ceo_y || 332, photoLeftMargin, true);
+
+            // 3. الصنف والنشاط
+            ctx.font = `bold ${s.class_act_size || 33}px "PT Bold Heading", sans-serif`;
+            const classAct = formatClassName(sampleCompany.card_class, 'ar') + ' / ' + (sampleCompany.activity || '-');
+            drawAutoFitText(ctx, classAct, s.class_act_x || 778, s.class_act_y || 378, photoLeftMargin, true);
+
+            // 4. رقم اجازة التأسيس
+            ctx.font = `bold ${s.cert_size || 31}px "PT Bold Heading", sans-serif`;
+            const cert = formatIncorporationLicense(sampleCompany.incorporation_certificate_no, sampleCompany.incorporation_certificate_symbol);
+            drawAutoFitText(ctx, cert, s.cert_x || 728, s.cert_y || 425, photoLeftMargin, true);
+
+            // 5. الاسم التجاري (الرقم فقط)
+            ctx.font = `bold ${s.comm_date_size || 33}px "PT Bold Heading", sans-serif`;
+            const commNo = sampleCompany.commercial_name_no ? entoar(sampleCompany.commercial_name_no) : (sampleCompany.commercial_name || '-');
+            const compCommX = (s.comm_date_x && s.comm_date_x !== 695) ? s.comm_date_x : 804;
+            drawAutoFitText(ctx, commNo, compCommX, s.comm_date_y || 474, photoLeftMargin, true);
+
+            // 6. رقم الهوية والشريط الأسود (white text)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${s.card_no_size || 35}px "PT Bold Heading", sans-serif`;
+            let cardText = entoar(sampleCompany.card_no);
+            if (sampleCompany.renewal_no) cardText += ' / ' + entoar(sampleCompany.renewal_no);
+            ctx.fillText(cardText, s.card_no_x || 850, s.card_no_y || 563);
+
+            // 7. التواريخ
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${s.aff_date_size || 27}px "PT Bold Heading", sans-serif`;
+            drawArabicDate(ctx, sampleCompany.affiliation_date || '', s.aff_date_x || 896, s.aff_date_y || 619);
+            ctx.font = `bold ${s.exp_date_size || 28}px "PT Bold Heading", sans-serif`;
+            drawArabicDate(ctx, sampleCompany.expire_date || '', s.exp_date_x || 474, s.exp_date_y || 619);
+
+            ctx.restore();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+
+        async function renderPreviewCompanyBmBack() {
+            await ensureFonts();
+            const canvas = document.getElementById('previewBackCanvas');
+            const bg = await loadImage('/templates/previews/company_bm_back_clean.webp?v=2', '/templates/company_bm_back_clean.png?v=7');
+            const ctx = initHiResPreviewCanvas(canvas, bg);
+
+            const s = companyBmSettings.back;
+
+            if (!sampleCompanyQrUrl) {
+                try {
+                    const r = await fetch('/api/traders/' + encodeURIComponent(sampleCompany.uuid || sampleCompany.id || 1) + '/qr');
+                    const j = await r.json();
+                    if (j.success) sampleCompanyQrUrl = j.qr_url;
+                } catch (e) {}
+            }
+
+            if (sampleCompanyQrUrl) {
+                const qrImg = await loadImage(sampleCompanyQrUrl);
+                if (qrImg) ctx.drawImage(qrImg, s.qr_x || 753, s.qr_y || 216, s.qr_size || 237, s.qr_size || 237);
+            }
+
+            ctx.save();
+            ctx.direction = 'ltr';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#000000';
+
+            const qrLeft = (s.qr_x || 753) - 6;
+            // Company BM Back Design
+            // 1. Company
+            ctx.font = `bold ${s.comp_en_size || 36}px "Myriad Pro", Arial, sans-serif`;
+            const compEn = (sampleCompany.english_company_name || sampleCompany.company_name || '').toUpperCase();
+            drawAutoFitText(ctx, compEn, s.comp_en_x || 192, s.comp_en_y || 322, qrLeft);
+
+            // 2. BM (Branch Manager)
+            ctx.font = `bold ${s.ceo_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+            const bmEn = (sampleCompany.english_ceo_name || sampleCompany.english_name || sampleCompany.ceo_name || sampleCompany.name || '').toUpperCase();
+            drawAutoFitText(ctx, bmEn, s.ceo_en_x || 88, s.ceo_en_y || 363, qrLeft);
+
+            // 3. Class / Activity
+            ctx.font = `bold ${s.class_act_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+            const enAct = sampleCompany.english_activity || sampleCompany.activity || '-';
+            const classActEn = formatClassName(sampleCompany.card_class, 'en') + ' / ' + enAct;
+            drawAutoFitText(ctx, classActEn, s.class_act_en_x || 275, s.class_act_en_y || 410, qrLeft);
+
+            // 4. License No
+            ctx.font = `bold ${s.license_en_size || 33}px "Myriad Pro", Arial, sans-serif`;
+            const licText = String(sampleCompany.incorporation_certificate_no || '').trim() || '-';
+            drawAutoFitText(ctx, licText, s.license_en_x || 214, s.license_en_y || 459, qrLeft);
+
+            // 5. Commercial Name No
+            ctx.font = `bold ${s.comm_no_size || 33}px "Myriad Pro", Arial, sans-serif`;
+            drawAutoFitText(ctx, sampleCompany.commercial_name_no || '-', s.comm_no_x || 396, s.comm_no_y || 503, qrLeft);
+
+            // 6. ID No (Black Ribbon - white text)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${s.card_no_size || 32}px "Myriad Pro", Arial, sans-serif`;
+            let enCard = sampleCompany.card_no || '';
+            if (sampleCompany.renewal_no) enCard += ' / ' + sampleCompany.renewal_no;
+            ctx.fillText(enCard, s.card_no_x || 127, s.card_no_y || 573);
+
+            // 7. Dates
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${s.aff_date_size || 27}px "Myriad Pro", Arial, sans-serif`;
+            ctx.fillText(sampleCompany.affiliation_date || '-', s.aff_date_x || 174, s.aff_date_y || 627);
+            ctx.font = `bold ${s.exp_date_size || 27}px "Myriad Pro", Arial, sans-serif`;
+            ctx.fillText(sampleCompany.expire_date || '-', s.exp_date_x || 636, s.exp_date_y || 627);
+
+            ctx.restore();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+
         // ================= RENDER BROKER FRONT & BACK =================
         async function renderPreviewBrokerFront() {
             await ensureFonts();
             const canvas = document.getElementById('previewFrontCanvas');
-            const bg = await loadImage('/templates/previews/broker_front_clean.webp?v=1', '/templates/broker_front_clean.png?v=5');
+            const bg = await loadImage('/templates/previews/broker_front_clean.webp?v=2', '/templates/broker_front_clean.png?v=7');
             const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const photoSrc = sampleBroker.photo_path || '/templates/avatar_placeholder.png';
             const photo = await loadImage(photoSrc);
-            drawRoundedPhotoBox(ctx, photo, { x: 23, y: 267, w: 272, h: 353, radius: 22 });
+            drawRoundedPhotoBox(ctx, photo, { x: 23, y: 266, w: 273, h: 354, radius: 22 });
 
             const s = brokerSettings.front;
             ctx.save();
@@ -2329,7 +2911,7 @@
         async function renderPreviewBrokerBack() {
             await ensureFonts();
             const canvas = document.getElementById('previewBackCanvas');
-            const bg = await loadImage('/templates/previews/broker_back_clean.webp?v=1', '/templates/broker_back_clean.png?v=5');
+            const bg = await loadImage('/templates/previews/broker_back_clean.webp?v=2', '/templates/broker_back_clean.png?v=7');
             const ctx = initHiResPreviewCanvas(canvas, bg);
 
             const s = brokerSettings.back;
@@ -2401,10 +2983,12 @@
                 if (currentActiveSide === 'front') {
                     if (activeTemplateType === 'trader') renderPreviewTraderFront();
                     else if (activeTemplateType === 'company') renderPreviewCompanyFront();
+                    else if (activeTemplateType === 'company_bm') renderPreviewCompanyBmFront();
                     else renderPreviewBrokerFront();
                 } else {
                     if (activeTemplateType === 'trader') renderPreviewTraderBack();
                     else if (activeTemplateType === 'company') renderPreviewCompanyBack();
+                    else if (activeTemplateType === 'company_bm') renderPreviewCompanyBmBack();
                     else renderPreviewBrokerBack();
                 }
             });
@@ -2414,27 +2998,33 @@
             activeTemplateType = type;
             const btnT = document.getElementById('tplBtnTrader');
             const btnC = document.getElementById('tplBtnCompany');
+            const btnCBm = document.getElementById('tplBtnCompanyBm');
             const btnB = document.getElementById('tplBtnBroker');
             const traderContainer = document.getElementById('traderControlsContainer');
             const companyContainer = document.getElementById('companyControlsContainer');
+            const companyBmContainer = document.getElementById('companyBmControlsContainer');
             const brokerContainer = document.getElementById('brokerControlsContainer');
             const btnSave = document.getElementById('btnSaveAll');
             const btnReset = document.getElementById('btnResetDefault');
 
             btnT.className = 'tpl-switch-btn ' + (type === 'trader' ? 'active-template-btn' : 'inactive-template-btn');
             btnC.className = 'tpl-switch-btn ' + (type === 'company' ? 'active-template-company' : 'inactive-template-btn');
+            if (btnCBm) btnCBm.className = 'tpl-switch-btn ' + (type === 'company_bm' ? 'active-template-company-bm' : 'inactive-template-btn');
             btnB.className = 'tpl-switch-btn ' + (type === 'broker' ? 'active-template-broker' : 'inactive-template-btn');
 
             if (type === 'trader') {
                 btnSave.className = 'btn-save-studio';
             } else if (type === 'company') {
                 btnSave.className = 'btn-save-studio save-company';
+            } else if (type === 'company_bm') {
+                btnSave.className = 'btn-save-studio save-company-bm';
             } else {
                 btnSave.className = 'btn-save-studio save-broker';
             }
 
             traderContainer.style.display = type === 'trader' ? 'block' : 'none';
             companyContainer.style.display = type === 'company' ? 'block' : 'none';
+            if (companyBmContainer) companyBmContainer.style.display = type === 'company_bm' ? 'block' : 'none';
             brokerContainer.style.display = type === 'broker' ? 'block' : 'none';
 
             const iconEl = document.getElementById('previewIcon');
@@ -2444,7 +3034,10 @@
                 if (titleEl) titleEl.innerText = 'معاينة مباشرة: بطاقة هوية التجار';
             } else if (type === 'company') {
                 if (iconEl) iconEl.innerText = '🏢';
-                if (titleEl) titleEl.innerText = 'معاينة مباشرة: بطاقة هوية الشركات';
+                if (titleEl) titleEl.innerText = 'معاينة مباشرة: بطاقة هوية الشركات (المدير المفوض CEO)';
+            } else if (type === 'company_bm') {
+                if (iconEl) iconEl.innerText = '🏢';
+                if (titleEl) titleEl.innerText = 'معاينة مباشرة: بطاقة هوية الشركات (مدير الفرع BM)';
             } else {
                 if (iconEl) iconEl.innerText = '🤝';
                 if (titleEl) titleEl.innerText = 'معاينة مباشرة: بطاقة هوية الدلالين';
@@ -2454,8 +3047,11 @@
                 btnSave.innerText = '💾 حفظ التعديلات لجميع هويات التجار';
                 btnReset.innerText = '↺ استعادة افتراضي التجار';
             } else if (type === 'company') {
-                btnSave.innerText = '💾 حفظ التعديلات لجميع هويات الشركات';
-                btnReset.innerText = '↺ استعادة افتراضي الشركات';
+                btnSave.innerText = '💾 حفظ التعديلات لهويات الشركات (CEO)';
+                btnReset.innerText = '↺ استعادة افتراضي الشركات (CEO)';
+            } else if (type === 'company_bm') {
+                btnSave.innerText = '💾 حفظ التعديلات لهويات مدير الفرع (BM)';
+                btnReset.innerText = '↺ استعادة افتراضي مدير الفرع';
             } else {
                 btnSave.innerText = '💾 حفظ التعديلات لجميع هويات الدلالين';
                 btnReset.innerText = '↺ استعادة افتراضي الدلالين';
@@ -2476,6 +3072,8 @@
             const tBack = document.getElementById('backControlsPanel');
             const cFront = document.getElementById('compFrontControlsPanel');
             const cBack = document.getElementById('compBackControlsPanel');
+            const cBmFront = document.getElementById('compBmFrontControlsPanel');
+            const cBmBack = document.getElementById('compBmBackControlsPanel');
             const bFront = document.getElementById('brokerFrontControlsPanel');
             const bBack = document.getElementById('brokerBackControlsPanel');
 
@@ -2489,6 +3087,8 @@
                 if (tBack) tBack.style.display = 'none';
                 if (cFront) cFront.style.display = 'block';
                 if (cBack) cBack.style.display = 'none';
+                if (cBmFront) cBmFront.style.display = 'block';
+                if (cBmBack) cBmBack.style.display = 'none';
                 if (bFront) bFront.style.display = 'block';
                 if (bBack) bBack.style.display = 'none';
             } else {
@@ -2501,6 +3101,8 @@
                 if (tBack) tBack.style.display = 'block';
                 if (cFront) cFront.style.display = 'none';
                 if (cBack) cBack.style.display = 'block';
+                if (cBmFront) cBmFront.style.display = 'none';
+                if (cBmBack) cBmBack.style.display = 'block';
                 if (bFront) bFront.style.display = 'none';
                 if (bBack) bBack.style.display = 'block';
             }
@@ -2512,7 +3114,15 @@
         function getActiveSettings() {
             if (activeTemplateType === 'trader') return traderSettings;
             if (activeTemplateType === 'company') return companySettings;
+            if (activeTemplateType === 'company_bm') return companyBmSettings;
             return brokerSettings;
+        }
+
+        function getActiveIdPrefix() {
+            if (activeTemplateType === 'trader') return '';
+            if (activeTemplateType === 'company') return 'comp_';
+            if (activeTemplateType === 'company_bm') return 'comp_bm_';
+            return 'broker_';
         }
 
         function populateQuickSelect() {
@@ -2523,6 +3133,8 @@
                 fields = currentActiveSide === 'front' ? TRADER_FRONT_FIELDS : TRADER_BACK_FIELDS;
             } else if (activeTemplateType === 'company') {
                 fields = currentActiveSide === 'front' ? COMPANY_FRONT_FIELDS : COMPANY_BACK_FIELDS;
+            } else if (activeTemplateType === 'company_bm') {
+                fields = currentActiveSide === 'front' ? COMPANY_BM_FRONT_FIELDS : COMPANY_BM_BACK_FIELDS;
             } else {
                 fields = currentActiveSide === 'front' ? BROKER_FRONT_FIELDS : BROKER_BACK_FIELDS;
             }
@@ -2553,7 +3165,7 @@
             document.querySelectorAll('.control-group').forEach(el => el.classList.remove('active-group'));
             const side = currentActiveSide;
             const prefix = key.replace('_size', '');
-            const idPrefix = activeTemplateType === 'trader' ? '' : (activeTemplateType === 'company' ? 'comp_' : 'broker_');
+            const idPrefix = getActiveIdPrefix();
             const grp = document.getElementById(`grp_${idPrefix}${side}_${prefix}`);
             if (grp) {
                 grp.classList.add('active-group');
@@ -2571,6 +3183,8 @@
                 fields = currentActiveSide === 'front' ? TRADER_FRONT_FIELDS : TRADER_BACK_FIELDS;
             } else if (activeTemplateType === 'company') {
                 fields = currentActiveSide === 'front' ? COMPANY_FRONT_FIELDS : COMPANY_BACK_FIELDS;
+            } else if (activeTemplateType === 'company_bm') {
+                fields = currentActiveSide === 'front' ? COMPANY_BM_FRONT_FIELDS : COMPANY_BM_BACK_FIELDS;
             } else {
                 fields = currentActiveSide === 'front' ? BROKER_FRONT_FIELDS : BROKER_BACK_FIELDS;
             }
@@ -2620,7 +3234,7 @@
             settings[side][key] = num;
 
             // Sync input in UI if exists
-            const idPrefix = activeTemplateType === 'trader' ? '' : (activeTemplateType === 'company' ? 'comp_' : 'broker_');
+            const idPrefix = getActiveIdPrefix();
             const input = document.getElementById(`${idPrefix}${side}_${key}`);
             if (input && input.value != num) input.value = num;
 
@@ -2646,7 +3260,11 @@
             } else if (activeTemplateType === 'company') {
                 endpoint = '/api/settings/company-card-typography';
                 currentSettings = companySettings;
-                label = 'هويات الشركات';
+                label = 'هويات الشركات (CEO)';
+            } else if (activeTemplateType === 'company_bm') {
+                endpoint = '/api/settings/company-bm-card-typography';
+                currentSettings = companyBmSettings;
+                label = 'هويات الشركات - مدير الفرع (BM)';
             } else {
                 endpoint = '/api/settings/broker-card-typography';
                 currentSettings = brokerSettings;
@@ -2681,7 +3299,10 @@
                 label = 'هوية التجار';
             } else if (activeTemplateType === 'company') {
                 endpoint = '/api/settings/company-card-typography/reset';
-                label = 'هوية الشركات';
+                label = 'هوية الشركات (CEO)';
+            } else if (activeTemplateType === 'company_bm') {
+                endpoint = '/api/settings/company-bm-card-typography/reset';
+                label = 'هوية الشركات - مدير الفرع (BM)';
             } else {
                 endpoint = '/api/settings/broker-card-typography/reset';
                 label = 'هوية الدلالين';
@@ -2695,6 +3316,8 @@
                         traderSettings = json.settings;
                     } else if (activeTemplateType === 'company') {
                         companySettings = json.settings;
+                    } else if (activeTemplateType === 'company_bm') {
+                        companyBmSettings = json.settings;
                     } else {
                         brokerSettings = json.settings;
                     }
@@ -2719,13 +3342,23 @@
                     if (labelEl) labelEl.innerText = val + (key.includes('size') ? 'px' : '');
                 }
             }
-            // Sync Company inputs
+            // Sync Company (CEO) inputs
             for (const side of ['front', 'back']) {
                 for (const key in companySettings[side]) {
                     const val = companySettings[side][key];
                     const input = document.getElementById(`comp_${side}_${key}`);
                     if (input) input.value = val;
                     const labelEl = document.getElementById(`val_comp_${side}_${key}`);
+                    if (labelEl) labelEl.innerText = val + (key.includes('size') ? 'px' : '');
+                }
+            }
+            // Sync Company (BM) inputs
+            for (const side of ['front', 'back']) {
+                for (const key in companyBmSettings[side]) {
+                    const val = companyBmSettings[side][key];
+                    const input = document.getElementById(`comp_bm_${side}_${key}`);
+                    if (input) input.value = val;
+                    const labelEl = document.getElementById(`val_comp_bm_${side}_${key}`);
                     if (labelEl) labelEl.innerText = val + (key.includes('size') ? 'px' : '');
                 }
             }

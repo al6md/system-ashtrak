@@ -79,11 +79,14 @@ function initHiResCardCanvas(canvas, bg) {
 // Render Front Card on Canvas
 export async function renderFrontCard(canvas, trader) {
   // 1. Load Background Template
-  const tplPath = (trader && trader.member_type === 'company')
-    ? '/templates/company_front_clean.png?v=5'
-    : ((trader && trader.member_type === 'broker')
-      ? '/templates/broker_front_clean.png?v=5'
-      : '/templates/card_front_template.png?v=6');
+  const isCompanyBm = Boolean(trader && trader.member_type === 'company' && trader.company_role === 'bm');
+  const tplPath = isCompanyBm
+    ? '/templates/company_bm_front_clean.png?v=7'
+    : ((trader && trader.member_type === 'company')
+      ? '/templates/company_front_clean.png?v=7'
+      : ((trader && trader.member_type === 'broker')
+        ? '/templates/broker_front_clean.png?v=7'
+        : '/templates/card_front_template.png?v=7'));
   const bg = await loadImage(tplPath);
   const ctx = initHiResCardCanvas(canvas, bg);
 
@@ -91,11 +94,13 @@ export async function renderFrontCard(canvas, trader) {
   const photoSrc = trader.photo_path || '/templates/avatar_placeholder.png';
   const photo = await loadImage(photoSrc);
 
-  const photoBox = (trader && trader.member_type === 'company')
-    ? { x: 18, y: 265, w: 275, h: 355, radius: 22 }
-    : ((trader && trader.member_type === 'broker')
-      ? { x: 23, y: 267, w: 272, h: 353, radius: 22 }
-      : { x: 20, y: 268, w: 275, h: 342, radius: 22 });
+  const photoBox = isCompanyBm
+    ? { x: 20, y: 265, w: 276, h: 352, radius: 22 }
+    : ((trader && trader.member_type === 'company')
+      ? { x: 17, y: 264, w: 278, h: 355, radius: 22 }
+      : ((trader && trader.member_type === 'broker')
+        ? { x: 23, y: 266, w: 273, h: 354, radius: 22 }
+        : { x: 20, y: 268, w: 275, h: 342, radius: 22 }));
   const { x: boxX, y: boxY, w: boxW, h: boxH, radius } = photoBox;
 
   ctx.save();
@@ -170,11 +175,14 @@ export async function renderFrontCard(canvas, trader) {
 // Render Back Card on Canvas
 export async function renderBackCard(canvas, trader, qrDataUrl) {
   // 1. Load Clean Back Template
-  const backTplPath = (trader && trader.member_type === 'company')
-    ? '/templates/company_back_clean.png?v=5'
-    : ((trader && trader.member_type === 'broker')
-      ? '/templates/broker_back_clean.png?v=5'
-      : '/templates/card_back_clean.png?v=6');
+  const isCompanyBm = Boolean(trader && trader.member_type === 'company' && trader.company_role === 'bm');
+  const backTplPath = isCompanyBm
+    ? '/templates/company_bm_back_clean.png?v=7'
+    : ((trader && trader.member_type === 'company')
+      ? '/templates/company_back_clean.png?v=7'
+      : ((trader && trader.member_type === 'broker')
+        ? '/templates/broker_back_clean.png?v=7'
+        : '/templates/card_back_clean.png?v=7'));
   const bg = await loadImage(backTplPath);
   const ctx = initHiResCardCanvas(canvas, bg);
 

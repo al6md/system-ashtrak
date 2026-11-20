@@ -593,7 +593,7 @@
         cardModalCssPromise = new Promise((resolve) => {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
-            link.href = '/css/cardModal.css?v=7';
+            link.href = '/css/cardModal.css?v=8';
             link.onload = () => resolve();
             link.onerror = () => {
                 cardModalCssPromise = null;
@@ -612,12 +612,12 @@
         if (cardModalJsPromise) return cardModalJsPromise;
         cardModalJsPromise = new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = '/js/cardModal.js?v=17';
+            script.src = '/js/cardModal.js?v=18';
             script.async = true;
             script.onload = () => resolve();
             script.onerror = () => {
                 cardModalJsPromise = null;
-                reject(new Error('Failed to load /js/cardModal.js?v=17'));
+                reject(new Error('Failed to load /js/cardModal.js?v=18'));
             };
             document.head.appendChild(script);
         });

@@ -131,6 +131,14 @@ export function initDb() {
     } catch (_) {}
 
     try {
+      const colsRes = await sqliteClient.execute('PRAGMA table_info(traders)');
+      const hasCompanyRole = colsRes.rows.some((r) => r.name === 'company_role');
+      if (!hasCompanyRole) {
+        await sqliteClient.execute("ALTER TABLE traders ADD COLUMN company_role TEXT DEFAULT 'ceo'");
+      }
+    } catch (_) {}
+
+    try {
       await sqliteClient.execute(
         'CREATE INDEX IF NOT EXISTS idx_traders_type_del_sort ON traders(member_type, deleted_at, created_at DESC, id DESC)'
       );

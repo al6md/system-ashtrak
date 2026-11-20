@@ -102,6 +102,14 @@
                         <option value="أنثى">أنثى</option>
                     </select>
 
+                    <% if (typeof member_type !== 'undefined' && member_type === 'company') { %>
+                    <label for="company_role" class="block text-sm font-medium text-gray-700 mt-3">Manager Role (صفة المدير)</label>
+                    <select name="company_role" id="company_role" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                        <option value="ceo" selected>المدير المفوض (CEO)</option>
+                        <option value="bm">مدير الفرع (BM)</option>
+                    </select>
+                    <% } %>
+
                     <label for="address" class="block text-sm font-medium text-gray-700 mt-3">Address</label>
                     <input name="address" id="address" type="text" placeholder="Address"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
