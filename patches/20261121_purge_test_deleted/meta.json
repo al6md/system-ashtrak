@@ -1,0 +1,11 @@
+{
+  "description": "Permanently remove the 6 previously soft-deleted test records",
+  "deleteUuids": [
+    "d140f3d1-e01f-4183-b60d-2fe9c34941af",
+    "96c131cd-11c8-4af5-b64c-d28e415cd3d5",
+    "5f632d54-af39-480a-8dbb-837561cd5185",
+    "2595c3a4-6b9d-407e-b0b0-d223688c572c",
+    "1338e7c7-ceaf-46fc-af2f-74c96aaa0233",
+    "d9fc97ec-afff-46b5-9c3e-f2b5078f7567"
+  ]
+}

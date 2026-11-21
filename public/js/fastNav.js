@@ -522,8 +522,10 @@
             return;
         }
 
-        // 1b. Instant AJAX Restore
-        if (form.hasAttribute('data-restore-form')) {
+        // 1b. Instant AJAX Restore & Permanent Delete
+        const isRestore = form.hasAttribute('data-restore-form');
+        const isPermanentDelete = form.hasAttribute('data-permanent-delete-form');
+        if (isRestore || isPermanentDelete) {
             e.preventDefault();
             const rowEl = form.closest('.p-6.flex.space-x-2');
             const isDeletedFilter = new URLSearchParams(window.location.search).get('status') === 'deleted';
@@ -545,10 +547,12 @@
                 const data = await res.json().catch(() => null);
                 if (res.ok && data && data.success) {
                     pageCache.clear();
-                    if (rowEl && isDeletedFilter) {
+                    if (rowEl && (isPermanentDelete || isDeletedFilter)) {
                         rowEl.style.opacity = '0';
                         rowEl.style.transform = 'translateX(12px)';
                         setTimeout(() => rowEl.remove(), 160);
+                    } else if (isPermanentDelete && data.redirectUrl) {
+                        window.location.assign(data.redirectUrl);
                     } else {
                         window.location.reload();
                     }

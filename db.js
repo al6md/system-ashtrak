@@ -304,6 +304,59 @@ function readPatchMeta(patchDir) {
   }
 }
 
+export async function removeUnreferencedUploadFile(
+  photoPath,
+  uploadsTargetDir = process.env.UPLOADS_DIR || path.join(__dirname, 'public', 'uploads')
+) {
+  const raw = String(photoPath || '').trim();
+  if (!raw.startsWith('/uploads/')) return false;
+  const filename = path.basename(raw);
+  if (!filename || filename === '.' || filename === '..') return false;
+
+  try {
+    const refRes = await sqliteClient.execute({
+      sql: 'SELECT COUNT(*) as cnt FROM traders WHERE photo_path = ?',
+      args: [raw],
+    });
+    const cnt = Number(refRes.rows[0]?.cnt || 0);
+    if (cnt > 0) return false;
+
+    const rootDir = path.resolve(uploadsTargetDir);
+    const resolved = path.resolve(rootDir, filename);
+    if (!resolved.startsWith(rootDir + path.sep)) return false;
+    if (fs.existsSync(resolved)) {
+      fs.unlinkSync(resolved);
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+async function applyPatchDeletes(deleteUuids, uploadsTargetDir) {
+  if (!Array.isArray(deleteUuids) || deleteUuids.length === 0) {
+    return { deleted: 0, photosRemoved: 0 };
+  }
+  let deleted = 0;
+  let photosRemoved = 0;
+  for (const rawUuid of deleteUuids) {
+    const uuid = normPatchStr(rawUuid);
+    if (!uuid) continue;
+    const rowRes = await sqliteClient.execute({
+      sql: 'SELECT id, photo_path FROM traders WHERE uuid = ?',
+      args: [uuid],
+    });
+    if (rowRes.rows.length === 0) continue;
+    for (const row of rowRes.rows) {
+      await sqliteClient.execute({ sql: 'DELETE FROM traders WHERE id = ?', args: [row.id] });
+      deleted++;
+      if (await removeUnreferencedUploadFile(row.photo_path, uploadsTargetDir)) {
+        photosRemoved++;
+      }
+    }
+  }
+  return { deleted, photosRemoved };
+}
+
 async function applySinglePatchRecords(recordsFile, syncCols, index, patchMeta = {}) {
   const stats = { inserted: 0, updated: 0, skipped: 0 };
   if (!fs.existsSync(recordsFile)) return stats;
@@ -436,7 +489,8 @@ async function applyPendingDataPatches() {
     const recordsFile = path.join(patchDir, 'records.json');
     const patchMeta = readPatchMeta(patchDir);
     const recStats = await applySinglePatchRecords(recordsFile, syncCols, index, patchMeta);
-    if (recStats.inserted > 0 || recStats.updated > 0) anyDbChanges = true;
+    const delStats = await applyPatchDeletes(patchMeta.deleteUuids, uploadsTargetDir);
+    if (recStats.inserted > 0 || recStats.updated > 0 || delStats.deleted > 0) anyDbChanges = true;
 
     await sqliteClient.execute({
       sql: 'INSERT OR IGNORE INTO applied_patches (name, applied_at) VALUES (?, ?)',
@@ -445,7 +499,7 @@ async function applyPendingDataPatches() {
 
     const pStats = photoTotals.get(name) || { copied: 0, skipped: 0 };
     console.log(
-      `[DataPatch] Applied ${name}: photos copied=${pStats.copied} (skipped=${pStats.skipped}), records inserted=${recStats.inserted}, updated=${recStats.updated}, skipped=${recStats.skipped}`
+      `[DataPatch] Applied ${name}: photos copied=${pStats.copied} (skipped=${pStats.skipped}), records inserted=${recStats.inserted}, updated=${recStats.updated}, deleted=${delStats.deleted} (photosRemoved=${delStats.photosRemoved}), skipped=${recStats.skipped}`
     );
   }
 

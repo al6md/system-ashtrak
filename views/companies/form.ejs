@@ -45,7 +45,7 @@
     <link rel="modulepreload" href="/build/assets/app-4a08c204.js" />
     <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
     <script type="module" src="/build/assets/app-4a08c204.js"></script>
-    <script src="/js/fastNav.js?v=4" defer></script>
+    <script src="/js/fastNav.js?v=5" defer></script>
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
@@ -69,7 +69,9 @@
                     <%- include('../partials/deleted_edit_banner', {
                         record,
                         restoreAction: '/companies/' + encodeURIComponent(record.uuid) + '/restore',
-                        confirmRestore: t('companies.confirm_restore')
+                        permanentDeleteAction: '/companies/' + encodeURIComponent(record.uuid) + '/permanent-delete',
+                        confirmRestore: t('companies.confirm_restore'),
+                        confirmPermanentDelete: t('companies.confirm_permanent_delete')
                     }) %>
                 <% } %>
                 <form method="POST" action="<%= editing ? '/companies/' + encodeURIComponent(record.uuid) : '/companies' %>" enctype="multipart/form-data">

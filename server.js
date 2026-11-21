@@ -7,7 +7,7 @@ import os from 'node:os';
 import zlib from 'node:zlib';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { db, dbReady, isFtsReady } from './db.js';
+import { db, dbReady, isFtsReady, removeUnreferencedUploadFile } from './db.js';
 import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 import multer from 'multer';
@@ -1093,6 +1093,48 @@ async function executeRestore(req, res) {
   return res.redirect(`${memberBasePath(trader.member_type)}?status=deleted`);
 }
 
+// Shared Permanent Delete Execution (Deleted records only: DB delete + photo cleanup + Share sync)
+async function executePermanentDelete(req, res) {
+  const trader = await findTraderByIdentifier(req.params.uuid, false);
+  if (!trader) {
+    if (wantsJsonRequest(req)) {
+      return res.status(404).json({ success: false, error: 'Record not found' });
+    }
+    return res.status(404).send('Record not found');
+  }
+
+  if (!trader.deleted_at || String(trader.deleted_at).trim() === '') {
+    const msg = 'يجب شطب السجل أولاً قبل حذفه نهائياً';
+    if (wantsJsonRequest(req)) {
+      return res.status(400).json({ success: false, error: msg });
+    }
+    return res.status(400).send(msg);
+  }
+
+  const targetKey = trader.uuid || req.params.uuid;
+  const { clause, param } = buildKeyWhereClause(targetKey);
+
+  await db.prepare(`DELETE FROM traders WHERE ${clause}`).run(param);
+  invalidateTradersCache();
+  qrCache.delete(targetKey);
+
+  await removeUnreferencedUploadFile(trader.photo_path, uploadDir);
+  await accessSyncDelete(db, targetKey, trader);
+
+  const redirectUrl = `${memberBasePath(trader.member_type)}?status=deleted`;
+  if (wantsJsonRequest(req)) {
+    return res.json({
+      success: true,
+      uuid: targetKey,
+      member_type: trader.member_type || 'trader',
+      permanent: true,
+      redirectUrl,
+    });
+  }
+
+  return res.redirect(redirectUrl);
+}
+
 // Update or Delete Trader / Broker / Company (supports POST with multipart _method=patch/delete as well as PATCH/PUT)
 async function handleUpdateOrDeleteTrader(req, res) {
   try {
@@ -1170,6 +1212,21 @@ app.post(['/traders/:uuid/restore', '/companies/:uuid/restore'], async (req, res
     res.status(500).send('Error restoring record: ' + escapeHtml(err.message));
   }
 });
+
+// Permanently Delete Soft-Deleted Trader / Broker / Company
+async function handlePermanentDeleteRoute(req, res) {
+  try {
+    await executePermanentDelete(req, res);
+  } catch (err) {
+    if (wantsJsonRequest(req)) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    res.status(500).send('Error permanently deleting record: ' + escapeHtml(err.message));
+  }
+}
+
+app.post(['/traders/:uuid/permanent-delete', '/companies/:uuid/permanent-delete'], handlePermanentDeleteRoute);
+app.delete(['/traders/:uuid/permanent-delete', '/companies/:uuid/permanent-delete'], handlePermanentDeleteRoute);
 
 // Delete Trader / Broker / Company
 app.delete('/traders/:uuid', async (req, res) => {

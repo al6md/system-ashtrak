@@ -76,6 +76,7 @@ export const TRANSLATIONS = {
     'action.list_active': 'عرض السجلات الفعالة',
     'action.edit': 'تعديل',
     'action.delete': 'شطب',
+    'action.permanent_delete': 'حذف نهائي',
     'action.restore': 'استرجاع',
     'action.save': 'حفظ',
     'action.cancel': 'إلغاء',
@@ -133,6 +134,7 @@ export const TRANSLATIONS = {
     'traders.empty': 'لم يتم العثور على تجار مطابقين لبحثك.',
     'traders.confirm_delete': 'هل أنت متأكد من شطب هذا التاجر؟',
     'traders.confirm_restore': 'هل أنت متأكد من استرجاع هذا التاجر؟',
+    'traders.confirm_permanent_delete': 'تحذير: سيتم حذف هذا التاجر نهائياً من الموقع ولا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟',
 
     'brokers.title': 'الدلالين',
     'brokers.add': 'اضافة دلال',
@@ -143,6 +145,7 @@ export const TRANSLATIONS = {
     'brokers.empty': 'لم يتم العثور على دلالين مطابقين لبحثك.',
     'brokers.confirm_delete': 'هل أنت متأكد من شطب هذا الدلال؟',
     'brokers.confirm_restore': 'هل أنت متأكد من استرجاع هذا الدلال؟',
+    'brokers.confirm_permanent_delete': 'تحذير: سيتم حذف هذا الدلال نهائياً من الموقع ولا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟',
 
     'companies.title': 'الشركات',
     'companies.add': 'اضافة شركة',
@@ -158,6 +161,7 @@ export const TRANSLATIONS = {
     'companies.empty': 'لم يتم العثور على شركات مطابقة لبحثك.',
     'companies.confirm_delete': 'هل أنت متأكد من شطب هذه الشركة؟',
     'companies.confirm_restore': 'هل أنت متأكد من استرجاع هذه الشركة؟',
+    'companies.confirm_permanent_delete': 'تحذير: سيتم حذف هذه الشركة نهائياً من الموقع ولا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟',
 
     'dashboard.title': 'الصفحة الرئيسية',
     'dashboard.welcome': 'مرحباً بك في Cardval - غرفة تجارة كربلاء المقدسة',
@@ -196,6 +200,7 @@ export const TRANSLATIONS = {
     'action.list_active': 'List Active',
     'action.edit': 'Edit',
     'action.delete': 'Delete',
+    'action.permanent_delete': 'Delete Permanently',
     'action.restore': 'Restore',
     'action.save': 'Save',
     'action.cancel': 'Cancel',
@@ -253,6 +258,7 @@ export const TRANSLATIONS = {
     'traders.empty': 'No traders found matching your search.',
     'traders.confirm_delete': 'Are you sure you want to delete this trader?',
     'traders.confirm_restore': 'Are you sure you want to restore this trader?',
+    'traders.confirm_permanent_delete': 'Warning: This trader will be permanently deleted and cannot be recovered. Are you sure?',
 
     'brokers.title': 'Brokers',
     'brokers.add': 'Add Broker',
@@ -263,6 +269,7 @@ export const TRANSLATIONS = {
     'brokers.empty': 'No brokers found matching your search.',
     'brokers.confirm_delete': 'Are you sure you want to delete this broker?',
     'brokers.confirm_restore': 'Are you sure you want to restore this broker?',
+    'brokers.confirm_permanent_delete': 'Warning: This broker will be permanently deleted and cannot be recovered. Are you sure?',
 
     'companies.title': 'Companies',
     'companies.add': 'Add Company',
@@ -278,6 +285,7 @@ export const TRANSLATIONS = {
     'companies.empty': 'No companies found matching your search.',
     'companies.confirm_delete': 'Are you sure you want to delete this company?',
     'companies.confirm_restore': 'Are you sure you want to restore this company?',
+    'companies.confirm_permanent_delete': 'Warning: This company will be permanently deleted and cannot be recovered. Are you sure?',
 
     'dashboard.title': 'Dashboard',
     'dashboard.welcome': 'Welcome to Cardval - Karbala Chamber of Commerce',

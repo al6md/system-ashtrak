@@ -21,7 +21,7 @@
     <link rel="modulepreload" href="/build/assets/app-4a08c204.js" />
     <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
     <script type="module" src="/build/assets/app-4a08c204.js"></script>
-    <script src="/js/fastNav.js?v=4" defer></script>
+    <script src="/js/fastNav.js?v=5" defer></script>
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
@@ -44,7 +44,9 @@
                 <%- include('../partials/deleted_edit_banner', {
                     record: trader,
                     restoreAction: '/traders/' + trader.uuid + '/restore',
-                    confirmRestore: isBroker ? t('brokers.confirm_restore') : t('traders.confirm_restore')
+                    permanentDeleteAction: '/traders/' + trader.uuid + '/permanent-delete',
+                    confirmRestore: isBroker ? t('brokers.confirm_restore') : t('traders.confirm_restore'),
+                    confirmPermanentDelete: isBroker ? t('brokers.confirm_permanent_delete') : t('traders.confirm_permanent_delete')
                 }) %>
                 <form method="POST" action="/traders/<%= trader.uuid %>" enctype="multipart/form-data">
                     <input type="hidden" name="_method" value="patch">
