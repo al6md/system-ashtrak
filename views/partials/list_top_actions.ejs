@@ -1,0 +1,27 @@
+<%
+    const isDeletedView = query && query.status === 'deleted';
+    const isAllView = query && query.status === 'all';
+    const safeExportQs = typeof exportQueryString === 'string' ? exportQueryString : '';
+%>
+<a href="<%= addHref %>" class="text-center inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem;"><%= addLabel %></a>
+<% if (isDeletedView) { %>
+    <a href="<%= basePath %>" class="text-center inline-flex items-center px-4 py-2 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem; background-color: #059669;"><%= t('action.list_active') %></a>
+<% } else { %>
+    <a href="<%= basePath %>?status=deleted" class="text-center inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem;"><%= t('action.list_deleted') %></a>
+<% } %>
+<a href="<%= exportPath %><%= safeExportQs %>" class="text-center inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem;"><%= t('action.download_csv') %></a>
+<% if (isDeletedView) { %>
+    <div class="mt-3" style="display: flex; justify-content: center;">
+        <span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.75rem; font-size: 0.8rem; font-weight: 600; border-radius: 9999px; background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;">
+            <span><%= t('filter.status_deleted') %></span>
+            <span>(<%= Number(totalCount || 0).toLocaleString('en-US') %>)</span>
+        </span>
+    </div>
+<% } else if (isAllView) { %>
+    <div class="mt-3" style="display: flex; justify-content: center;">
+        <span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.75rem; font-size: 0.8rem; font-weight: 600; border-radius: 9999px; background-color: #e0e7ff; color: #3730a3; border: 1px solid #a5b4fc;">
+            <span><%= t('filter.status_all') %></span>
+            <span>(<%= Number(totalCount || 0).toLocaleString('en-US') %>)</span>
+        </span>
+    </div>
+<% } %>

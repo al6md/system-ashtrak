@@ -1,0 +1,4 @@
+<% if (row && row.deleted_at && String(row.deleted_at).trim() !== '') { %>
+    <span style="display: inline-flex; align-items: center; margin-left: 0.45rem; padding: 0.1rem 0.5rem; font-size: 0.72rem; font-weight: 700; border-radius: 9999px; background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;"><%= t('badge.deleted') %></span>
+    <small class="ml-2 text-sm text-red-600"><%= t('meta.deleted_at') %>: <%= row.deleted_at %></small>
+<% } %>

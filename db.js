@@ -178,6 +178,11 @@ function normTimestamp(ts) {
   return normPatchStr(ts).replace('T', ' ').replace(/\.\d+Z?$/, '').replace(/Z$/, '');
 }
 
+function normPatchCard(val) {
+  const s = normPatchStr(val);
+  return s === '0' ? '' : s;
+}
+
 function indexExistingRow(row, index) {
   const uuid = normPatchStr(row.uuid);
   if (uuid && !index.byUuid.has(uuid)) index.byUuid.set(uuid, row);
@@ -185,10 +190,12 @@ function indexExistingRow(row, index) {
   const mType = normPatchStr(row.member_type);
   const pName = primaryRecordName(row);
   const cAt = normTimestamp(row.created_at);
-  const card = normPatchStr(row.card_no);
-  const cert = normPatchStr(row.incorporation_certificate_no);
+  const card = normPatchCard(row.card_no);
+  const cert = normPatchCard(row.incorporation_certificate_no);
 
   if (cAt && pName) {
+    const typeKey = `${mType}||${cAt}||${pName}`;
+    if (!index.byTypeCreatedName.has(typeKey)) index.byTypeCreatedName.set(typeKey, row);
     const key = `${cAt}||${pName}`;
     if (!index.byCreatedName.has(key)) index.byCreatedName.set(key, row);
   }
@@ -209,6 +216,7 @@ function indexExistingRow(row, index) {
 function buildExistingRowIndex(rows) {
   const index = {
     byUuid: new Map(),
+    byTypeCreatedName: new Map(),
     byCreatedName: new Map(),
     byCardName: new Map(),
     byCertName: new Map(),
@@ -219,20 +227,26 @@ function buildExistingRowIndex(rows) {
   return index;
 }
 
-function findMatchingExistingRow(rec, index) {
+function findMatchingExistingRow(rec, index, matchMode = 'default') {
   const uuid = normPatchStr(rec.uuid);
   if (uuid && index.byUuid.has(uuid)) return index.byUuid.get(uuid);
 
   const mType = normPatchStr(rec.member_type);
   const pName = primaryRecordName(rec);
   const cAt = normTimestamp(rec.created_at);
-  const card = normPatchStr(rec.card_no);
-  const cert = normPatchStr(rec.incorporation_certificate_no);
+  const card = normPatchCard(rec.card_no);
+  const cert = normPatchCard(rec.incorporation_certificate_no);
 
   if (cAt && pName) {
+    const exactTypeMatch = index.byTypeCreatedName.get(`${mType}||${cAt}||${pName}`);
+    if (exactTypeMatch) return exactTypeMatch;
+    if (matchMode === 'created_name_only') return null;
     const match = index.byCreatedName.get(`${cAt}||${pName}`);
     if (match) return match;
+  } else if (matchMode === 'created_name_only') {
+    return null;
   }
+
   if (card && pName) {
     const match = index.byCardName.get(`${mType}||${card}||${pName}`);
     if (match) return match;
@@ -280,17 +294,29 @@ function copyPatchUploads(patchDir, uploadsTargetDir) {
   return { copied, skipped };
 }
 
-async function applySinglePatchRecords(recordsFile, syncCols, index) {
+function readPatchMeta(patchDir) {
+  const metaFile = path.join(patchDir, 'meta.json');
+  if (!fs.existsSync(metaFile)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(metaFile, 'utf-8')) || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+async function applySinglePatchRecords(recordsFile, syncCols, index, patchMeta = {}) {
   const stats = { inserted: 0, updated: 0, skipped: 0 };
   if (!fs.existsSync(recordsFile)) return stats;
 
   const records = JSON.parse(fs.readFileSync(recordsFile, 'utf-8'));
   if (!Array.isArray(records) || records.length === 0) return stats;
 
+  const matchMode = patchMeta.matchMode || 'default';
+  const insertOnly = Boolean(patchMeta.insertOnly);
   const insertSql = `INSERT INTO traders (${syncCols.join(', ')}) VALUES (${syncCols.map(() => '?').join(', ')})`;
 
   for (const rec of records) {
-    const existing = findMatchingExistingRow(rec, index);
+    const existing = findMatchingExistingRow(rec, index, matchMode);
     if (!existing) {
       const insertArgs = syncCols.map((col) => {
         if (col === 'name') {
@@ -301,6 +327,11 @@ async function applySinglePatchRecords(recordsFile, syncCols, index) {
       const res = await sqliteClient.execute({ sql: insertSql, args: insertArgs });
       indexExistingRow({ id: Number(res.lastInsertRowid || 0), ...rec }, index);
       stats.inserted++;
+      continue;
+    }
+
+    if (insertOnly) {
+      stats.skipped++;
       continue;
     }
 
@@ -401,8 +432,10 @@ async function applyPendingDataPatches() {
 
   let anyDbChanges = false;
   for (const name of pendingPatches) {
-    const recordsFile = path.join(patchesDir, name, 'records.json');
-    const recStats = await applySinglePatchRecords(recordsFile, syncCols, index);
+    const patchDir = path.join(patchesDir, name);
+    const recordsFile = path.join(patchDir, 'records.json');
+    const patchMeta = readPatchMeta(patchDir);
+    const recStats = await applySinglePatchRecords(recordsFile, syncCols, index, patchMeta);
     if (recStats.inserted > 0 || recStats.updated > 0) anyDbChanges = true;
 
     await sqliteClient.execute({

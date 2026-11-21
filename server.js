@@ -482,8 +482,32 @@ function appendGenderFilter(where, params, gender) {
 // ==========================================
 const LIST_SELECT_COLS = `
   id, uuid, name, commercial_name, company_name, ceo_name,
-  activity, card_no, created_by, created_at, member_type, company_role
+  activity, card_no, created_by, created_at, deleted_at, member_type, company_role
 `;
+
+function memberBasePath(memberType) {
+  if (memberType === 'broker') return '/brokers';
+  if (memberType === 'company') return '/companies';
+  return '/traders';
+}
+
+function wantsJsonRequest(req) {
+  return Boolean(
+    req.xhr ||
+      (req.headers.accept && req.headers.accept.includes('application/json')) ||
+      req.headers['x-requested-with'] === 'fetch'
+  );
+}
+
+function buildListQueryStrings(rawQuery = {}) {
+  const queryCopy = { ...rawQuery };
+  delete queryCopy.page;
+  const serialized = new URLSearchParams(queryCopy).toString();
+  return {
+    queryString: serialized ? '&' + serialized : '',
+    exportQueryString: serialized ? '?' + serialized : '',
+  };
+}
 
 async function runCachedPaginatedQuery(selectCols, whereSql, params, limit, offset) {
   const now = Date.now();
@@ -822,9 +846,7 @@ app.get('/traders', async (req, res) => {
     const { totalCount, rows: traders } = await runCachedPaginatedQuery(LIST_SELECT_COLS, whereSql, params, limit, offset);
     const totalPages = Math.ceil(totalCount / limit);
 
-    const queryCopy = { ...req.query };
-    delete queryCopy.page;
-    const qs = Object.keys(queryCopy).length ? '&' + new URLSearchParams(queryCopy).toString() : '';
+    const { queryString: qs, exportQueryString } = buildListQueryStrings(req.query);
 
     res.setHeader('Cache-Control', 'private, no-cache');
     res.render('traders/index', {
@@ -836,6 +858,7 @@ app.get('/traders', async (req, res) => {
       limit,
       query: req.query,
       queryString: qs,
+      exportQueryString,
       isAdvancedSearch,
     });
   } catch (err) {
@@ -1020,12 +1043,7 @@ async function executeSoftDelete(req, res) {
 
   await accessSyncDelete(db, trader?.uuid || req.params.uuid, trader);
 
-  const wantsJson =
-    req.xhr ||
-    (req.headers.accept && req.headers.accept.includes('application/json')) ||
-    req.headers['x-requested-with'] === 'fetch';
-
-  if (wantsJson) {
+  if (wantsJsonRequest(req)) {
     return res.json({
       success: true,
       uuid: trader?.uuid || req.params.uuid,
@@ -1033,8 +1051,46 @@ async function executeSoftDelete(req, res) {
     });
   }
 
-  const redirectPath = trader?.member_type === 'broker' ? '/brokers' : (trader?.member_type === 'company' ? '/companies' : '/traders');
-  return res.redirect(redirectPath);
+  return res.redirect(memberBasePath(trader?.member_type));
+}
+
+// Shared Restore Execution (Clears deleted_at + Cache Invalidation + Share Sync + AJAX support)
+async function executeRestore(req, res) {
+  const trader = await findTraderByIdentifier(req.params.uuid, false);
+  if (!trader) {
+    if (wantsJsonRequest(req)) {
+      return res.status(404).json({ success: false, error: 'Record not found' });
+    }
+    return res.status(404).send('Record not found');
+  }
+
+  const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const { clause, param } = buildKeyWhereClause(trader.uuid || req.params.uuid);
+
+  await db.prepare(`UPDATE traders SET deleted_at = '', updated_at = ? WHERE ${clause}`).run(now, param);
+  invalidateTradersCache();
+
+  const restoredRow = {
+    ...trader,
+    deleted_at: '',
+    updated_at: now,
+  };
+  await accessSyncNotify(db, trader.uuid || req.params.uuid, trader, restoredRow);
+
+  if (wantsJsonRequest(req)) {
+    return res.json({
+      success: true,
+      uuid: trader.uuid || req.params.uuid,
+      member_type: trader.member_type || 'trader',
+    });
+  }
+
+  if (req.body?.return_to === 'edit') {
+    const editBase = trader.member_type === 'company' ? '/companies' : '/traders';
+    return res.redirect(`${editBase}/${encodeURIComponent(trader.uuid || req.params.uuid)}/edit`);
+  }
+
+  return res.redirect(`${memberBasePath(trader.member_type)}?status=deleted`);
 }
 
 // Update or Delete Trader / Broker / Company (supports POST with multipart _method=patch/delete as well as PATCH/PUT)
@@ -1091,7 +1147,8 @@ async function handleUpdateOrDeleteTrader(req, res) {
 
     await accessSyncNotify(db, traderBefore.uuid || req.params.uuid, traderBefore, updatedRow);
 
-    const redirectPath = resolvedType === 'broker' ? '/brokers' : (resolvedType === 'company' ? '/companies' : '/traders');
+    const basePath = memberBasePath(resolvedType);
+    const redirectPath = traderBefore.deleted_at ? `${basePath}?status=deleted` : basePath;
     res.redirect(redirectPath);
   } catch (err) {
     res.status(500).send('Error updating trader: ' + escapeHtml(err.message));
@@ -1101,6 +1158,18 @@ async function handleUpdateOrDeleteTrader(req, res) {
 app.patch('/traders/:uuid', upload.single('person_pic'), handleUpdateOrDeleteTrader);
 app.post('/traders/:uuid', upload.single('person_pic'), handleUpdateOrDeleteTrader);
 app.put('/traders/:uuid', upload.single('person_pic'), handleUpdateOrDeleteTrader);
+
+// Restore Soft-Deleted Trader / Broker / Company
+app.post(['/traders/:uuid/restore', '/companies/:uuid/restore'], async (req, res) => {
+  try {
+    await executeRestore(req, res);
+  } catch (err) {
+    if (wantsJsonRequest(req)) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    res.status(500).send('Error restoring record: ' + escapeHtml(err.message));
+  }
+});
 
 // Delete Trader / Broker / Company
 app.delete('/traders/:uuid', async (req, res) => {
@@ -1154,9 +1223,7 @@ app.get('/brokers', async (req, res) => {
     const { totalCount, rows: brokers } = await runCachedPaginatedQuery(LIST_SELECT_COLS, whereSql, params, limit, offset);
     const totalPages = Math.ceil(totalCount / limit);
 
-    const queryCopy = { ...req.query };
-    delete queryCopy.page;
-    const qs = Object.keys(queryCopy).length ? '&' + new URLSearchParams(queryCopy).toString() : '';
+    const { queryString: qs, exportQueryString } = buildListQueryStrings(req.query);
 
     res.setHeader('Cache-Control', 'private, no-cache');
     res.render('brokers/index', {
@@ -1168,6 +1235,7 @@ app.get('/brokers', async (req, res) => {
       limit,
       query: req.query,
       queryString: qs,
+      exportQueryString,
       isAdvancedSearch,
     });
   } catch (err) {
@@ -1223,9 +1291,7 @@ app.get('/companies', async (req, res) => {
     const { totalCount, rows: companies } = await runCachedPaginatedQuery(LIST_SELECT_COLS, whereSql, params, limit, offset);
     const totalPages = Math.ceil(totalCount / limit);
 
-    const queryCopy = { ...req.query };
-    delete queryCopy.page;
-    const qs = Object.keys(queryCopy).length ? '&' + new URLSearchParams(queryCopy).toString() : '';
+    const { queryString: qs, exportQueryString } = buildListQueryStrings(req.query);
 
     res.setHeader('Cache-Control', 'private, no-cache');
     res.render('companies/index', {
@@ -1237,6 +1303,7 @@ app.get('/companies', async (req, res) => {
       limit,
       query: req.query,
       queryString: qs,
+      exportQueryString,
       isAdvancedSearch,
     });
   } catch (err) {

@@ -522,6 +522,49 @@
             return;
         }
 
+        // 1b. Instant AJAX Restore
+        if (form.hasAttribute('data-restore-form')) {
+            e.preventDefault();
+            const rowEl = form.closest('.p-6.flex.space-x-2');
+            const isDeletedFilter = new URLSearchParams(window.location.search).get('status') === 'deleted';
+            if (rowEl) {
+                rowEl.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+                rowEl.style.opacity = '0.35';
+                rowEl.style.pointerEvents = 'none';
+            }
+
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'fetch'
+                    },
+                    credentials: 'same-origin'
+                });
+                const data = await res.json().catch(() => null);
+                if (res.ok && data && data.success) {
+                    pageCache.clear();
+                    if (rowEl && isDeletedFilter) {
+                        rowEl.style.opacity = '0';
+                        rowEl.style.transform = 'translateX(12px)';
+                        setTimeout(() => rowEl.remove(), 160);
+                    } else {
+                        window.location.reload();
+                    }
+                    return;
+                }
+            } catch (_) {}
+
+            if (rowEl) {
+                rowEl.style.opacity = '1';
+                rowEl.style.pointerEvents = '';
+            }
+            pageCache.clear();
+            form.submit();
+            return;
+        }
+
         // 2. Non-GET Mutations: clear nav cache and allow normal submission
         if (formMethod !== 'get' || (overrideMethod && overrideMethod !== 'get')) {
             pageCache.clear();
