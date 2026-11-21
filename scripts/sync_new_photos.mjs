@@ -1,9 +1,12 @@
+import dns from 'node:dns';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { db } from '../db.js';
+
+dns.setDefaultResultOrder('ipv4first');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -440,11 +443,26 @@ function getArgValue(args, flag, defaultVal = null) {
   return idx !== -1 && args[idx + 1] ? args[idx + 1] : defaultVal;
 }
 
+function hasSameRemotePhoto(row, remoteImgUrl) {
+  if (!row || !row.photo_path || !remoteImgUrl) return false;
+  if (row.photo_path === '__DRY_RUN__') return true;
+  try {
+    const remoteBase = path.basename(new URL(remoteImgUrl).pathname);
+    const localFile = path.basename(row.photo_path.trim());
+    const fullLocal = path.join(UPLOADS_DIR, localFile);
+    if (!fs.existsSync(fullLocal) || fs.statSync(fullLocal).size <= 200) return false;
+    return localFile.endsWith(`_${remoteBase}`) || localFile === remoteBase;
+  } catch (_) {
+    return false;
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const driveEnabled = false;
   const forceAllMissingSince = getArgValue(args, '--since', '2026-10-01');
+  const refreshSince = getArgValue(args, '--refresh-since', '');
   const maxPages = Number(getArgValue(args, '--max-pages', '12'));
   const stopPages = Number(getArgValue(args, '--stop-pages', '2'));
   const concurrency = Number(getArgValue(args, '--concurrency', '4'));
@@ -458,13 +476,13 @@ async function main() {
   const creds = loadDotEnvCredentials();
   console.log(`=================================================================`);
   console.log(`🚀 سحب الصور الجديدة فقط من الموقع الأصلي (${BASE_URL})`);
-  console.log(`   الأقسام: ${selectedTypes.join(', ')} | حد الصفحات: ${maxPages} | أقدم تاريخ بحث مباشر: ${forceAllMissingSince}`);
+  console.log(`   الأقسام: ${selectedTypes.join(', ')} | حد الصفحات: ${maxPages} | أقدم تاريخ بحث مباشر: ${forceAllMissingSince}${refreshSince ? ` | تحديث صور المجددين منذ: ${refreshSince}` : ''}`);
   if (dryRun) console.log(`   [وضع المعاينة --dry-run لن يتم تعديل الملفات أو قاعدة البيانات]`);
   console.log(`=================================================================`);
 
   const [allRows, uploadedRows] = await Promise.all([
     db.all("SELECT * FROM traders WHERE deleted_at IS NULL OR deleted_at = ''"),
-    db.all('SELECT filename FROM uploaded_photos WHERE drive_file_id IS NOT NULL'),
+    db.all('SELECT filename FROM uploaded_photos WHERE drive_file_id IS NOT NULL').catch(() => []),
   ]);
   const usedUuids = new Set(allRows.map((r) => r.uuid).filter(Boolean));
   const uploadedSet = new Set(uploadedRows.map((r) => r.filename).filter(Boolean));
@@ -485,7 +503,10 @@ async function main() {
   await loginToCardval(session, creds.email, creds.password);
   console.log('✓ تم تسجيل الدخول بنجاح.\n');
 
-  const localDb = !dryRun && fs.existsSync(LOCAL_DB_PATH) ? new DatabaseSync(LOCAL_DB_PATH) : null;
+  const usingRemoteDb = Boolean(process.env.DATABASE_URL && !process.env.DATABASE_URL.startsWith('file:'));
+  const localDb = !dryRun && usingRemoteDb && fs.existsSync(LOCAL_DB_PATH)
+    ? new DatabaseSync(LOCAL_DB_PATH)
+    : null;
   let totalSaved = 0;
 
   try {
@@ -496,8 +517,18 @@ async function main() {
 
       let consecutiveCleanPages = 0;
       let sectionSaved = 0;
+      const checkedRowIds = new Set();
 
-      // 1. Scan newest pages first; stop early once consecutive pages have no new/missing photos
+      const needsPhotoCheck = (row) => {
+        if (!row) return true;
+        if (!idxData.hasValidPhoto(row)) return true;
+        if (refreshSince && ((row.updated_at || '') >= refreshSince || (row.created_at || '') >= refreshSince)) {
+          return true;
+        }
+        return false;
+      };
+
+      // 1. Scan newest pages first; stop early once consecutive pages have no new/missing/updated photos
       for (let page = 1; page <= maxPages; page++) {
         const pageRes = await session.request(`${BASE_URL}${cfg.listPath}?page=${page}`);
         if (pageRes.status !== 200) {
@@ -509,10 +540,10 @@ async function main() {
         const uuids = extractUuidsInOrder(html, cfg.editRegex);
         if (uuids.length === 0) break;
 
-        // Only inspect /edit pages when UUID is unknown OR matched DB row lacks a valid photo
+        // Inspect /edit pages when UUID is unknown OR matched DB row lacks a valid photo OR falls within refreshSince
         const needCheck = uuids.filter((u) => {
           const known = idxData.byUuid.get(u);
-          return !known || !idxData.hasValidPhoto(known);
+          return !known || needsPhotoCheck(known);
         });
 
         console.log(`  📄 صفحة [${page}]: ${uuids.length} سجل (${needCheck.length} بحاجة لفحص الصورة)`);
@@ -521,10 +552,12 @@ async function main() {
         if (needCheck.length > 0) {
           await runPool(needCheck, concurrency, async (uuid) => {
             const remote = await fetchRemoteEditDetails(session, cfg, uuid);
-            if (!remote || !remote.imgUrl) return;
+            if (!remote) return;
             const matchedRow = idxData.matchRemote(remote);
             if (!matchedRow) return;
-            if (idxData.hasValidPhoto(matchedRow)) return;
+            checkedRowIds.add(matchedRow.id);
+            if (!remote.imgUrl) return;
+            if (hasSameRemotePhoto(matchedRow, remote.imgUrl)) return;
             const ok = await downloadAndSavePhoto({
               session,
               remote,
@@ -555,13 +588,16 @@ async function main() {
         }
       }
 
-      // 2. Targeted direct search fallback for any recent rows still missing photo_path
-      const recentMissing = idxData.rows.filter(
-        (r) => !idxData.hasValidPhoto(r) && ((r.created_at || '') >= forceAllMissingSince || (r.updated_at || '') >= forceAllMissingSince)
-      );
-      if (recentMissing.length > 0) {
-        console.log(`  🔎 بحث مباشر عن ${recentMissing.length} سجل حديث لا يزال بدون صورة...`);
-        await runPool(recentMissing, concurrency, async (row) => {
+      // 2. Targeted direct search fallback for any recent missing-photo or newly renewed unchecked rows
+      const recentToCheck = idxData.rows.filter((r) => {
+        if (checkedRowIds.has(r.id)) return false;
+        const missingRecent = !idxData.hasValidPhoto(r) && ((r.created_at || '') >= forceAllMissingSince || (r.updated_at || '') >= forceAllMissingSince);
+        const renewedUnchecked = Boolean(refreshSince && ((r.updated_at || '') >= refreshSince || (r.created_at || '') >= refreshSince));
+        return missingRecent || renewedUnchecked;
+      });
+      if (recentToCheck.length > 0) {
+        console.log(`  🔎 بحث مباشر عن ${recentToCheck.length} سجل حديث/مجدد بحاجة لفحص الصورة...`);
+        await runPool(recentToCheck, concurrency, async (row) => {
           const searchParam = normNum(row.card_no)
             ? `card_no=${encodeURIComponent(row.card_no.trim())}`
             : `name=${encodeURIComponent((row.company_name || row.name || '').trim())}`;
@@ -576,6 +612,7 @@ async function main() {
             if (!remote || !remote.imgUrl) continue;
             const matchedRow = idxData.matchRemote(remote);
             if (!matchedRow || matchedRow.id !== row.id) continue;
+            if (hasSameRemotePhoto(matchedRow, remote.imgUrl)) break;
             const ok = await downloadAndSavePhoto({
               session,
               remote,

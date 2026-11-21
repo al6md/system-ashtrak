@@ -166,10 +166,19 @@ function hasMeaningfulChanges(existing, incoming) {
   return RENEWAL_CHECK_FIELDS.some((field) => norm(existing[field]) !== norm(incoming[field]));
 }
 
+function shareNamePrefix(a, b) {
+  const wA = norm(a).split(' ').filter(Boolean);
+  const wB = norm(b).split(' ').filter(Boolean);
+  if (wA.length < 2 || wB.length < 2) return false;
+  return wA[0] === wB[0] && wA[1] === wB[1];
+}
+
 function buildLookupIndices(rows, memberType) {
   const byCreatedName = new Map();
   const byCardName = new Map();
   const byCertName = new Map();
+  const byCreatedAtUnique = new Map();
+  const createdCounts = new Map();
 
   for (const r of rows) {
     const nm = getPrimaryName(memberType, r);
@@ -179,8 +188,15 @@ function buildLookupIndices(rows, memberType) {
     if (cr && nm) byCreatedName.set(`${cr}|||${nm}`, r);
     if (c && nm) byCardName.set(`${c}|||${nm}`, r);
     if (memberType === 'company' && cert && nm) byCertName.set(`${cert}|||${nm}`, r);
+    if (cr) {
+      createdCounts.set(cr, (createdCounts.get(cr) || 0) + 1);
+      byCreatedAtUnique.set(cr, r);
+    }
   }
-  return { byCreatedName, byCardName, byCertName };
+  for (const [cr, count] of createdCounts) {
+    if (count > 1) byCreatedAtUnique.delete(cr);
+  }
+  return { byCreatedName, byCardName, byCertName, byCreatedAtUnique };
 }
 
 function findMatchingRow(indices, memberType, mapped) {
@@ -197,6 +213,13 @@ function findMatchingRow(indices, memberType, mapped) {
   }
   if (memberType === 'company' && cert && nm && indices.byCertName.has(`${cert}|||${nm}`)) {
     return indices.byCertName.get(`${cert}|||${nm}`);
+  }
+  if (cr && nm && indices.byCreatedAtUnique.has(cr)) {
+    const cand = indices.byCreatedAtUnique.get(cr);
+    const candNm = getPrimaryName(memberType, cand);
+    if (shareNamePrefix(candNm, nm)) {
+      return cand;
+    }
   }
   return null;
 }
@@ -299,7 +322,10 @@ async function main() {
 
   const allExisting = await db.all('SELECT * FROM traders');
   const usedUuids = new Set(allExisting.map((r) => r.uuid).filter(Boolean));
-  const localDb = !dryRun && fs.existsSync(LOCAL_DB_PATH) ? new DatabaseSync(LOCAL_DB_PATH) : null;
+  const usingRemoteDb = Boolean(process.env.DATABASE_URL && !process.env.DATABASE_URL.startsWith('file:'));
+  const localDb = !dryRun && usingRemoteDb && fs.existsSync(LOCAL_DB_PATH)
+    ? new DatabaseSync(LOCAL_DB_PATH)
+    : null;
 
   const summary = {
     inserted: { trader: 0, broker: 0, company: 0 },
