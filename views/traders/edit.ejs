@@ -1,9 +1,16 @@
+<%
+    const isBroker = trader.member_type === 'broker';
+    const nameLabel = isBroker ? t('brokers.field.name') : t('traders.field.name');
+    const enNameLabel = isBroker ? t('brokers.field.english_name') : t('traders.field.english_name');
+    const pageTitle = isBroker ? t('brokers.edit') : t('traders.edit');
+    const currentGender = (trader.gender === 'أنثى' || trader.gender === 'انثى' || String(trader.gender || '').toLowerCase() === 'female') ? 'أنثى' : 'ذكر';
+%>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Edit <%= trader.member_type === 'broker' ? 'Broker' : (trader.member_type === 'company' ? 'Company' : 'Trader') %> - Cardval</title>
+    <title><%= pageTitle %> - Cardval</title>
 
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -14,7 +21,7 @@
     <link rel="modulepreload" href="/build/assets/app-4a08c204.js" />
     <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
     <script type="module" src="/build/assets/app-4a08c204.js"></script>
-    <script src="/js/fastNav.js?v=2" defer></script>
+    <script src="/js/fastNav.js?v=3" defer></script>
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
@@ -26,7 +33,7 @@
         <header class="bg-white shadow">
             <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Edit <%= trader.member_type === 'broker' ? 'Broker' : (trader.member_type === 'company' ? 'Company' : 'Trader') %>
+                    <%= pageTitle %>
                 </h2>
             </div>
         </header>
@@ -39,36 +46,36 @@
 
                     <div class="grid grid-cols-3 gap-4">
                         <div class="col-span-2">
-                            <label for="name" class="block text-sm font-medium text-gray-700">Trader name</label>
-                            <input name="name" id="name" placeholder="Trader name"
+                            <label for="name" class="block text-sm font-medium text-gray-700"><%= nameLabel %></label>
+                            <input name="name" id="name" placeholder="<%= nameLabel %>"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                                    value="<%= trader.name || '' %>" required>
 
-                            <label for="english_name" class="block text-sm font-medium text-gray-700 mt-2">Trader name in English</label>
-                            <input name="english_name" id="english_name" placeholder="Trader name in English"
+                            <label for="english_name" class="block text-sm font-medium text-gray-700 mt-2"><%= enNameLabel %></label>
+                            <input name="english_name" id="english_name" placeholder="<%= enNameLabel %>"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                                    value="<%= trader.english_name || '' %>">
 
-                            <label for="card_no" class="block text-sm font-medium text-gray-700 mt-2">Card No</label>
-                            <input name="card_no" id="card_no" type="number" placeholder="Card No"
+                            <label for="card_no" class="block text-sm font-medium text-gray-700 mt-2"><%= t('field.card_no') %></label>
+                            <input name="card_no" id="card_no" type="number" placeholder="<%= t('field.card_no') %>"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                                   value="<%= trader.card_no || '' %>" required>
+                                   value="<%= trader.card_no ?? '' %>" required>
 
-                            <% if (trader.member_type === 'broker' || trader.stamp_no) { %>
-                            <label for="stamp_no" class="block text-sm font-medium text-gray-700 mt-2">Stamp No (رقم الختم)</label>
-                            <input name="stamp_no" id="stamp_no" type="number" placeholder="Stamp No"
+                            <% if (isBroker || trader.stamp_no) { %>
+                            <label for="stamp_no" class="block text-sm font-medium text-gray-700 mt-2"><%= t('field.stamp_no') %></label>
+                            <input name="stamp_no" id="stamp_no" type="number" placeholder="<%= t('field.stamp_no') %>"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                                   value="<%= trader.stamp_no || '' %>">
+                                   value="<%= trader.stamp_no ?? '' %>">
                             <% } %>
 
-                            <label for="renewal_no" class="block text-sm font-medium text-gray-700 mt-2">Renewal No</label>
-                            <input name="renewal_no" id="renewal_no" type="number" placeholder="Renewal No"
+                            <label for="renewal_no" class="block text-sm font-medium text-gray-700 mt-2"><%= t('field.renewal_no') %></label>
+                            <input name="renewal_no" id="renewal_no" type="number" placeholder="<%= t('field.renewal_no') %>"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                                   value="<%= trader.renewal_no || '' %>">
+                                   value="<%= trader.renewal_no ?? '' %>">
                         </div>
 
                         <div>
-                            <label for="person_pic" class="block text-sm font-medium text-gray-700 cursor-pointer">Person Image
+                            <label for="person_pic" class="block text-sm font-medium text-gray-700 cursor-pointer"><%= t('field.person_pic') %>
                                 <img id="pp_preview" src="<%= trader.photo_path || '/templates/avatar_placeholder.png' %>"
                                      onerror="this.onerror=null; this.src='/templates/avatar_placeholder.png';"
                                      style="width: 175px; height: 200px; object-fit: cover; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 4px;" />
@@ -90,74 +97,65 @@
                         </div>
                     </div>
 
-                    <label for="card_class" class="block text-sm font-medium text-gray-700 mt-3">Card class</label>
+                    <label for="card_class" class="block text-sm font-medium text-gray-700 mt-3"><%= t('filter.card_class') %></label>
                     <select name="card_class" id="card_class" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
-                        <option value="0" <%= trader.card_class === '0' || String(trader.card_class).includes('ممتاز') ? 'selected' : '' %>>الممتاز</option>
-                        <option value="1" <%= trader.card_class === '1' ? 'selected' : '' %>>الاول</option>
-                        <option value="2" <%= trader.card_class === '2' ? 'selected' : '' %>>الثاني</option>
-                        <option value="3" <%= trader.card_class === '3' ? 'selected' : '' %>>الثالث</option>
-                        <option value="4" <%= trader.card_class === '4' ? 'selected' : '' %>>الرابع</option>
+                        <option value="0" <%= trader.card_class === '0' || String(trader.card_class).includes('ممتاز') ? 'selected' : '' %>><%= t('class.0') %></option>
+                        <option value="1" <%= trader.card_class === '1' ? 'selected' : '' %>><%= t('class.1') %></option>
+                        <option value="2" <%= trader.card_class === '2' ? 'selected' : '' %>><%= t('class.2') %></option>
+                        <option value="3" <%= trader.card_class === '3' ? 'selected' : '' %>><%= t('class.3') %></option>
+                        <option value="4" <%= trader.card_class === '4' ? 'selected' : '' %>><%= t('class.4') %></option>
                     </select>
 
-                    <% const currentGender = (trader.gender === 'أنثى' || trader.gender === 'انثى' || String(trader.gender || '').toLowerCase() === 'female') ? 'أنثى' : 'ذكر'; %>
-                    <label for="gender" class="block text-sm font-medium text-gray-700 mt-3">Gender (الجنس)</label>
+                    <label for="gender" class="block text-sm font-medium text-gray-700 mt-3"><%= t('filter.gender') %></label>
                     <select name="gender" id="gender" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
-                        <option value="ذكر" <%= currentGender === 'ذكر' ? 'selected' : '' %>>ذكر</option>
-                        <option value="أنثى" <%= currentGender === 'أنثى' ? 'selected' : '' %>>أنثى</option>
+                        <option value="ذكر" <%= currentGender === 'ذكر' ? 'selected' : '' %>><%= t('gender.male') %></option>
+                        <option value="أنثى" <%= currentGender === 'أنثى' ? 'selected' : '' %>><%= t('gender.female') %></option>
                     </select>
 
-                    <% if (trader.member_type === 'company') { %>
-                    <label for="company_role" class="block text-sm font-medium text-gray-700 mt-3">Manager Role (صفة المدير)</label>
-                    <select name="company_role" id="company_role" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
-                        <option value="ceo" <%= trader.company_role !== 'bm' ? 'selected' : '' %>>المدير المفوض (CEO)</option>
-                        <option value="bm" <%= trader.company_role === 'bm' ? 'selected' : '' %>>مدير الفرع (BM)</option>
-                    </select>
-                    <% } %>
-
-                    <label for="address" class="block text-sm font-medium text-gray-700 mt-3">Address</label>
-                    <input name="address" id="address" type="text" placeholder="Address"
+                    <label for="address" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.address') %></label>
+                    <input name="address" id="address" type="text" placeholder="<%= t('field.address') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                            value="<%= trader.address || '' %>">
 
-                    <label for="phone_number" class="block text-sm font-medium text-gray-700 mt-3">Phone Number</label>
-                    <input name="phone_number" id="phone_number" type="text" placeholder="Phone Number"
+                    <label for="phone_number" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.phone_number') %></label>
+                    <input name="phone_number" id="phone_number" type="text" placeholder="<%= t('field.phone_number') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                            value="<%= trader.phone_number || '' %>">
 
-                    <label for="activity" class="block text-sm font-medium text-gray-700 mt-3">Activity</label>
-                    <input name="activity" id="activity" type="text" placeholder="Activity"
+                    <label for="activity" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.activity') %></label>
+                    <input name="activity" id="activity" type="text" placeholder="<%= t('field.activity') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                            value="<%= trader.activity || '' %>">
 
-                    <label for="english_activity" class="block text-sm font-medium text-gray-700 mt-3">Activity in English</label>
-                    <input name="english_activity" id="english_activity" type="text" placeholder="Activity in English"
+                    <label for="english_activity" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.english_activity') %></label>
+                    <input name="english_activity" id="english_activity" type="text" placeholder="<%= t('field.english_activity') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                            value="<%= trader.english_activity || '' %>">
 
-                    <label for="commercial_name" class="block text-sm font-medium text-gray-700 mt-3">Commercial Name</label>
-                    <input name="commercial_name" id="commercial_name" type="text" placeholder="Commercial Name"
+                    <label for="commercial_name" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.commercial_name') %></label>
+                    <input name="commercial_name" id="commercial_name" type="text" placeholder="<%= t('field.commercial_name') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                            value="<%= trader.commercial_name || '' %>">
 
-                    <label for="commercial_name_no" class="block text-sm font-medium text-gray-700 mt-3">Commercial Name No</label>
-                    <input name="commercial_name_no" id="commercial_name_no" type="number" placeholder="Commercial Name No"
+                    <label for="commercial_name_no" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.commercial_name_no') %></label>
+                    <input name="commercial_name_no" id="commercial_name_no" type="number" placeholder="<%= t('field.commercial_name_no') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                            value="<%= trader.commercial_name_no || '' %>">
 
-                    <label for="speciality" class="block text-sm font-medium text-gray-700 mt-3">Speciality</label>
-                    <input name="speciality" id="speciality" type="text" placeholder="Speciality"
+                    <label for="speciality" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.speciality') %></label>
+                    <input name="speciality" id="speciality" type="text" placeholder="<%= t('field.speciality') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                            value="<%= trader.speciality || '' %>">
 
                     <div class="grid grid-cols-2 gap-4 mt-3">
                         <div>
-                            <label for="affiliation_date" class="block text-sm font-medium text-gray-700">Affiliation Date</label>
+                            <label for="affiliation_date" class="block text-sm font-medium text-gray-700"><%= t('field.affiliation_date') %></label>
                             <input name="affiliation_date" id="affiliation_date" type="date"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                                    value="<%= trader.affiliation_date || '' %>">
                         </div>
                         <div>
-                            <label for="expire_date" class="block text-sm font-medium text-gray-700">Expire Date</label>
+                            <label for="expire_date" class="block text-sm font-medium text-gray-700"><%= t('field.expire_date') %></label>
                             <input name="expire_date" id="expire_date" type="date"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                                    value="<%= trader.expire_date || '' %>">
@@ -166,13 +164,13 @@
 
                     <div class="mt-6 flex items-center" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                         <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Save
+                            <%= t('action.save') %>
                         </button>
-                        <button type="button" onclick="openPrintModal('<%= trader.id %>', '<%= trader.uuid %>', { companyRole: this.form && this.form.elements && this.form.elements.company_role ? this.form.elements.company_role.value : '' })" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" style="background-color: #1f2937; color: #ffffff;">
-                            🖨️ Print ID Card
+                        <button type="button" onclick="openPrintModal('<%= trader.id %>', '<%= trader.uuid %>')" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" style="background-color: #1f2937; color: #ffffff;">
+                            🖨️ <%= t('action.print_id_card') %>
                         </button>
-                        <a href="<%= typeof currentPath !== 'undefined' ? currentPath : (trader.member_type === 'broker' ? '/brokers' : (trader.member_type === 'company' ? '/companies' : '/traders')) %>" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Cancel
+                        <a href="<%= typeof currentPath !== 'undefined' ? currentPath : (isBroker ? '/brokers' : '/traders') %>" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            <%= t('action.cancel') %>
                         </a>
                     </div>
                 </form>

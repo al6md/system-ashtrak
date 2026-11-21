@@ -1,9 +1,9 @@
 <%
-    const t = typeof trader !== 'undefined' && trader ? trader : {};
+    const record = typeof trader !== 'undefined' && trader ? trader : {};
     const editing = Boolean(typeof isEdit !== 'undefined' && isEdit);
     const navPath = typeof currentPath !== 'undefined' ? currentPath : '/companies';
 
-    const rawClass = String(t.card_class ?? (editing ? '4' : '4')).trim();
+    const rawClass = String(record.card_class ?? (editing ? '4' : '4')).trim();
     const resolvedClass = (rawClass === '0' || rawClass.includes('ممتاز'))
         ? '0'
         : ((rawClass === '1' || rawClass === 'الأول' || rawClass === 'الاول' || rawClass === 'الأولى' || rawClass === 'الاولى')
@@ -14,27 +14,27 @@
                     ? '3'
                     : '4')));
 
-    const rawGender = String(t.gender || '').trim().toLowerCase();
+    const rawGender = String(record.gender || '').trim().toLowerCase();
     const currentGender = (rawGender === 'أنثى' || rawGender === 'انثى' || rawGender === 'female' || rawGender === 'f') ? 'أنثى' : 'ذكر';
-    const currentRole = String(t.company_role || '').trim().toLowerCase() === 'bm' ? 'bm' : 'ceo';
+    const currentRole = String(record.company_role || '').trim().toLowerCase() === 'bm' ? 'bm' : 'ceo';
 
     const safeDate = (d) => {
         const s = String(d || '').trim();
         return (!s || s === '0000-00-00') ? '' : s;
     };
 
-    const companyNameVal = editing ? (t.company_name || t.commercial_name || '') : '';
-    const englishCompanyNameVal = editing ? (t.english_company_name || '') : '';
-    const ceoNameVal = editing ? (t.ceo_name || t.name || '') : '';
-    const englishCeoNameVal = editing ? (t.english_ceo_name || t.english_name || '') : '';
-    const photoSrc = (editing && t.photo_path) ? t.photo_path : '/templates/avatar_placeholder.png';
+    const companyNameVal = editing ? (record.company_name || record.commercial_name || '') : '';
+    const englishCompanyNameVal = editing ? (record.english_company_name || '') : '';
+    const ceoNameVal = editing ? (record.ceo_name || record.name || '') : '';
+    const englishCeoNameVal = editing ? (record.english_ceo_name || record.english_name || '') : '';
+    const photoSrc = (editing && record.photo_path) ? record.photo_path : '/templates/avatar_placeholder.png';
 %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><%= editing ? 'Edit Company' : 'Add Company' %> - Cardval</title>
+    <title><%= editing ? t('companies.edit') : t('companies.add') %> - Cardval</title>
 
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -45,7 +45,7 @@
     <link rel="modulepreload" href="/build/assets/app-4a08c204.js" />
     <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
     <script type="module" src="/build/assets/app-4a08c204.js"></script>
-    <script src="/js/fastNav.js?v=2" defer></script>
+    <script src="/js/fastNav.js?v=3" defer></script>
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
@@ -57,7 +57,7 @@
         <header class="bg-white shadow">
             <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    <%= editing ? 'Edit Company (تعديل شركة)' : 'Add Company (إضافة شركة)' %>
+                    <%= editing ? t('companies.edit') : t('companies.add') %>
                 </h2>
             </div>
         </header>
@@ -65,7 +65,7 @@
         <!-- Main Form -->
         <main>
             <div class="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
-                <form method="POST" action="<%= editing ? '/companies/' + encodeURIComponent(t.uuid) : '/companies' %>" enctype="multipart/form-data">
+                <form method="POST" action="<%= editing ? '/companies/' + encodeURIComponent(record.uuid) : '/companies' %>" enctype="multipart/form-data">
                     <% if (editing) { %>
                         <input type="hidden" name="_method" value="patch">
                     <% } else { %>
@@ -74,29 +74,29 @@
 
                     <div class="grid grid-cols-3 gap-4">
                         <div class="col-span-2">
-                            <label for="company_name" class="block text-sm font-medium text-gray-700">Company name (اسم الشركة)</label>
-                            <input name="company_name" id="company_name" type="text" placeholder="Company name"
+                            <label for="company_name" class="block text-sm font-medium text-gray-700"><%= t('companies.field.company_name') %></label>
+                            <input name="company_name" id="company_name" type="text" placeholder="<%= t('companies.field.company_name') %>"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                                    value="<%= companyNameVal %>" required>
 
-                            <label for="english_company_name" class="block text-sm font-medium text-gray-700 mt-2">Company name in English</label>
-                            <input name="english_company_name" id="english_company_name" type="text" placeholder="Company name in English"
+                            <label for="english_company_name" class="block text-sm font-medium text-gray-700 mt-2"><%= t('companies.field.english_company_name') %></label>
+                            <input name="english_company_name" id="english_company_name" type="text" placeholder="<%= t('companies.field.english_company_name') %>"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                                    value="<%= englishCompanyNameVal %>">
 
-                            <label for="ceo_name" class="block text-sm font-medium text-gray-700 mt-2">CEO Name (المدير المفوض)</label>
-                            <input name="ceo_name" id="ceo_name" type="text" placeholder="CEO Name"
+                            <label for="ceo_name" class="block text-sm font-medium text-gray-700 mt-2"><%= t('companies.field.ceo_name') %></label>
+                            <input name="ceo_name" id="ceo_name" type="text" placeholder="<%= t('companies.field.ceo_name') %>"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                                    value="<%= ceoNameVal %>">
 
-                            <label for="english_ceo_name" class="block text-sm font-medium text-gray-700 mt-2">English CEO Name</label>
-                            <input name="english_ceo_name" id="english_ceo_name" type="text" placeholder="English CEO Name"
+                            <label for="english_ceo_name" class="block text-sm font-medium text-gray-700 mt-2"><%= t('companies.field.english_ceo_name') %></label>
+                            <input name="english_ceo_name" id="english_ceo_name" type="text" placeholder="<%= t('companies.field.english_ceo_name') %>"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
                                    value="<%= englishCeoNameVal %>">
                         </div>
 
                         <div>
-                            <label for="person_pic" class="block text-sm font-medium text-gray-700 cursor-pointer">Person Image
+                            <label for="person_pic" class="block text-sm font-medium text-gray-700 cursor-pointer"><%= t('field.person_pic') %>
                                 <img id="pp_preview" src="<%= photoSrc %>"
                                      onerror="this.onerror=null; this.src='/templates/avatar_placeholder.png';"
                                      style="width: 175px; height: 200px; object-fit: cover; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 4px;" />
@@ -106,108 +106,108 @@
                         </div>
                     </div>
 
-                    <label for="card_class" class="block text-sm font-medium text-gray-700 mt-3">Card class</label>
+                    <label for="card_class" class="block text-sm font-medium text-gray-700 mt-3"><%= t('filter.card_class') %></label>
                     <select name="card_class" id="card_class" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
-                        <option value="0" <%= resolvedClass === '0' ? 'selected' : '' %>>الممتاز</option>
-                        <option value="1" <%= resolvedClass === '1' ? 'selected' : '' %>>الاول</option>
-                        <option value="2" <%= resolvedClass === '2' ? 'selected' : '' %>>الثاني</option>
-                        <option value="3" <%= resolvedClass === '3' ? 'selected' : '' %>>الثالث</option>
-                        <option value="4" <%= resolvedClass === '4' ? 'selected' : '' %>>الرابع</option>
+                        <option value="0" <%= resolvedClass === '0' ? 'selected' : '' %>><%= t('class.0') %></option>
+                        <option value="1" <%= resolvedClass === '1' ? 'selected' : '' %>><%= t('class.1') %></option>
+                        <option value="2" <%= resolvedClass === '2' ? 'selected' : '' %>><%= t('class.2') %></option>
+                        <option value="3" <%= resolvedClass === '3' ? 'selected' : '' %>><%= t('class.3') %></option>
+                        <option value="4" <%= resolvedClass === '4' ? 'selected' : '' %>><%= t('class.4') %></option>
                     </select>
 
                     <div class="grid grid-cols-2 gap-4 mt-3">
                         <div>
-                            <label for="gender" class="block text-sm font-medium text-gray-700">Gender (الجنس)</label>
+                            <label for="gender" class="block text-sm font-medium text-gray-700"><%= t('filter.gender') %></label>
                             <select name="gender" id="gender" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
-                                <option value="ذكر" <%= currentGender === 'ذكر' ? 'selected' : '' %>>ذكر</option>
-                                <option value="أنثى" <%= currentGender === 'أنثى' ? 'selected' : '' %>>أنثى</option>
+                                <option value="ذكر" <%= currentGender === 'ذكر' ? 'selected' : '' %>><%= t('gender.male') %></option>
+                                <option value="أنثى" <%= currentGender === 'أنثى' ? 'selected' : '' %>><%= t('gender.female') %></option>
                             </select>
                         </div>
                         <div>
-                            <label for="company_role" class="block text-sm font-medium text-gray-700">Manager Role (صفة المدير)</label>
+                            <label for="company_role" class="block text-sm font-medium text-gray-700"><%= t('filter.company_role') %></label>
                             <select name="company_role" id="company_role" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
-                                <option value="ceo" <%= currentRole === 'ceo' ? 'selected' : '' %>>المدير المفوض (CEO)</option>
-                                <option value="bm" <%= currentRole === 'bm' ? 'selected' : '' %>>مدير الفرع (BM)</option>
+                                <option value="ceo" <%= currentRole === 'ceo' ? 'selected' : '' %>><%= t('role.ceo') %></option>
+                                <option value="bm" <%= currentRole === 'bm' ? 'selected' : '' %>><%= t('role.bm') %></option>
                             </select>
                         </div>
                     </div>
 
-                    <label for="card_no" class="block text-sm font-medium text-gray-700 mt-3">Card No</label>
-                    <input name="card_no" id="card_no" type="number" placeholder="Card No"
+                    <label for="card_no" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.card_no') %></label>
+                    <input name="card_no" id="card_no" type="number" placeholder="<%= t('field.card_no') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                           value="<%= editing ? (t.card_no ?? '') : '' %>" required>
+                           value="<%= editing ? (record.card_no ?? '') : '' %>" required>
 
-                    <label for="renewal_no" class="block text-sm font-medium text-gray-700 mt-3">Renewal No</label>
-                    <input name="renewal_no" id="renewal_no" type="number" placeholder="Renewal No"
+                    <label for="renewal_no" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.renewal_no') %></label>
+                    <input name="renewal_no" id="renewal_no" type="number" placeholder="<%= t('field.renewal_no') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                           value="<%= editing ? (t.renewal_no ?? '') : '' %>">
+                           value="<%= editing ? (record.renewal_no ?? '') : '' %>">
 
-                    <label for="address" class="block text-sm font-medium text-gray-700 mt-3">Address</label>
-                    <input name="address" id="address" type="text" placeholder="Address"
+                    <label for="address" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.address') %></label>
+                    <input name="address" id="address" type="text" placeholder="<%= t('field.address') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                           value="<%= editing ? (t.address || '') : '' %>">
+                           value="<%= editing ? (record.address || '') : '' %>">
 
-                    <label for="phone_number" class="block text-sm font-medium text-gray-700 mt-3">Phone Number</label>
-                    <input name="phone_number" id="phone_number" type="text" placeholder="Phone Number"
+                    <label for="phone_number" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.phone_number') %></label>
+                    <input name="phone_number" id="phone_number" type="text" placeholder="<%= t('field.phone_number') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                           value="<%= editing ? (t.phone_number || '') : '' %>">
+                           value="<%= editing ? (record.phone_number || '') : '' %>">
 
-                    <label for="activity" class="block text-sm font-medium text-gray-700 mt-3">Activity</label>
-                    <input name="activity" id="activity" type="text" placeholder="Activity"
+                    <label for="activity" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.activity') %></label>
+                    <input name="activity" id="activity" type="text" placeholder="<%= t('field.activity') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                           value="<%= editing ? (t.activity || '') : '' %>">
+                           value="<%= editing ? (record.activity || '') : '' %>">
 
-                    <label for="english_activity" class="block text-sm font-medium text-gray-700 mt-3">Activity in English</label>
-                    <input name="english_activity" id="english_activity" type="text" placeholder="Activity in English"
+                    <label for="english_activity" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.english_activity') %></label>
+                    <input name="english_activity" id="english_activity" type="text" placeholder="<%= t('field.english_activity') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                           value="<%= editing ? (t.english_activity || '') : '' %>">
+                           value="<%= editing ? (record.english_activity || '') : '' %>">
 
-                    <label for="commercial_name_no" class="block text-sm font-medium text-gray-700 mt-3">Commercial Name No</label>
-                    <input name="commercial_name_no" id="commercial_name_no" type="text" inputmode="numeric" placeholder="Commercial Name No"
+                    <label for="commercial_name_no" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.commercial_name_no') %></label>
+                    <input name="commercial_name_no" id="commercial_name_no" type="text" inputmode="numeric" placeholder="<%= t('field.commercial_name_no') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                           value="<%= editing ? (t.commercial_name_no || '') : '' %>">
+                           value="<%= editing ? (record.commercial_name_no || '') : '' %>">
 
-                    <label for="incorporation_certificate_no" class="block text-sm font-medium text-gray-700 mt-3">Incorporation Certificate No (رقم إجازة التأسيس)</label>
-                    <input name="incorporation_certificate_no" id="incorporation_certificate_no" type="number" placeholder="Incorporation Certificate No"
+                    <label for="incorporation_certificate_no" class="block text-sm font-medium text-gray-700 mt-3"><%= t('companies.field.incorporation_certificate_no') %></label>
+                    <input name="incorporation_certificate_no" id="incorporation_certificate_no" type="number" placeholder="<%= t('companies.field.incorporation_certificate_no') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                           value="<%= editing ? (t.incorporation_certificate_no ?? '') : '' %>">
+                           value="<%= editing ? (record.incorporation_certificate_no ?? '') : '' %>">
 
-                    <label for="incorporation_certificate_symbol" class="block text-sm font-medium text-gray-700 mt-3">Incorporation Certificate Symbol (رمز إجازة التأسيس)</label>
-                    <input name="incorporation_certificate_symbol" id="incorporation_certificate_symbol" type="text" placeholder="Incorporation Certificate Symbol (e.g. م.ش.أ)"
+                    <label for="incorporation_certificate_symbol" class="block text-sm font-medium text-gray-700 mt-3"><%= t('companies.field.incorporation_certificate_symbol') %></label>
+                    <input name="incorporation_certificate_symbol" id="incorporation_certificate_symbol" type="text" placeholder="<%= t('companies.field.incorporation_certificate_symbol_placeholder') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                           value="<%= editing ? (t.incorporation_certificate_symbol || '') : '' %>">
+                           value="<%= editing ? (record.incorporation_certificate_symbol || '') : '' %>">
 
-                    <label for="speciality" class="block text-sm font-medium text-gray-700 mt-3">Speciality</label>
-                    <input name="speciality" id="speciality" type="text" placeholder="Speciality"
+                    <label for="speciality" class="block text-sm font-medium text-gray-700 mt-3"><%= t('field.speciality') %></label>
+                    <input name="speciality" id="speciality" type="text" placeholder="<%= t('field.speciality') %>"
                            class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                           value="<%= editing ? (t.speciality || '') : '' %>">
+                           value="<%= editing ? (record.speciality || '') : '' %>">
 
                     <div class="grid grid-cols-2 gap-4 mt-3">
                         <div>
-                            <label for="affiliation_date" class="block text-sm font-medium text-gray-700">Affiliation Date</label>
+                            <label for="affiliation_date" class="block text-sm font-medium text-gray-700"><%= t('field.affiliation_date') %></label>
                             <input name="affiliation_date" id="affiliation_date" type="date"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                                   value="<%= editing ? safeDate(t.affiliation_date) : '' %>">
+                                   value="<%= editing ? safeDate(record.affiliation_date) : '' %>">
                         </div>
                         <div>
-                            <label for="expire_date" class="block text-sm font-medium text-gray-700">Expire Date</label>
+                            <label for="expire_date" class="block text-sm font-medium text-gray-700"><%= t('field.expire_date') %></label>
                             <input name="expire_date" id="expire_date" type="date"
                                    class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
-                                   value="<%= editing ? safeDate(t.expire_date) : '' %>">
+                                   value="<%= editing ? safeDate(record.expire_date) : '' %>">
                         </div>
                     </div>
 
                     <div class="mt-6 flex items-center" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                         <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Save
+                            <%= t('action.save') %>
                         </button>
                         <% if (editing) { %>
-                        <button type="button" onclick="openPrintModal('<%= t.id %>', '<%= t.uuid %>', { companyRole: this.form && this.form.elements && this.form.elements.company_role ? this.form.elements.company_role.value : '' })" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" style="background-color: #1f2937; color: #ffffff;">
-                            🖨️ Print ID Card
+                        <button type="button" onclick="openPrintModal('<%= record.id %>', '<%= record.uuid %>', { companyRole: this.form && this.form.elements && this.form.elements.company_role ? this.form.elements.company_role.value : '' })" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" style="background-color: #1f2937; color: #ffffff;">
+                            🖨️ <%= t('action.print_id_card') %>
                         </button>
                         <% } %>
                         <a href="<%= navPath %>" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Cancel
+                            <%= t('action.cancel') %>
                         </a>
                     </div>
                 </form>

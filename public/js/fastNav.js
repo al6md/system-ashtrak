@@ -74,6 +74,8 @@
             pathname.startsWith('/traders/validate/') ||
             pathname.startsWith('/uploads/') ||
             pathname.startsWith('/api/') ||
+            pathname.startsWith('/language/') ||
+            pathname.includes('/language/') ||
             pathname.includes('export/csv') ||
             (urlObj.search && urlObj.search.includes('export/csv'))
         ) {
@@ -219,7 +221,9 @@
             (urlObj.search && urlObj.search.includes('export/csv')) ||
             pathname.startsWith('/traders/validate/') ||
             pathname.startsWith('/uploads/') ||
-            pathname.startsWith('/api/')
+            pathname.startsWith('/api/') ||
+            pathname.startsWith('/language/') ||
+            pathname.includes('/language/')
         ) {
             return null;
         }
@@ -612,12 +616,12 @@
         if (cardModalJsPromise) return cardModalJsPromise;
         cardModalJsPromise = new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = '/js/cardModal.js?v=19';
+            script.src = '/js/cardModal.js?v=20';
             script.async = true;
             script.onload = () => resolve();
             script.onerror = () => {
                 cardModalJsPromise = null;
-                reject(new Error('Failed to load /js/cardModal.js?v=19'));
+                reject(new Error('Failed to load /js/cardModal.js?v=20'));
             };
             document.head.appendChild(script);
         });
@@ -642,12 +646,13 @@
             const token = ++lazyModalToken;
             const modalEl = document.getElementById('printModal');
             const titleEl = document.getElementById('modalTitle');
+            const isArUi = String(document.documentElement.lang || 'ar').toLowerCase().startsWith('ar');
             if (modalEl) {
                 modalEl.style.display = 'block';
                 modalEl.classList.remove('hidden');
             }
             if (titleEl) {
-                titleEl.innerText = 'جاري تحميل أداة الطباعة...';
+                titleEl.innerText = isArUi ? 'جاري تحميل أداة الطباعة...' : 'Loading print tool...';
             }
 
             try {
@@ -661,7 +666,7 @@
                 }
             } catch (err) {
                 if (token === lazyModalToken && titleEl) {
-                    titleEl.innerText = 'تعذر تحميل أداة الطباعة';
+                    titleEl.innerText = isArUi ? 'تعذر تحميل أداة الطباعة' : 'Failed to load print tool';
                 }
             }
         };

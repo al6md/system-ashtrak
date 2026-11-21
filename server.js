@@ -12,6 +12,14 @@ import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 import multer from 'multer';
 import { notifyAdded as accessSyncAdd, notifySaved as accessSyncNotify, notifyDeleted as accessSyncDelete } from './accessHubSync.js';
+import {
+  LANG_COOKIE_NAME,
+  isValidLang,
+  parseLangFromRequest,
+  createTranslator,
+  getCsvHeaders,
+  sanitizeRedirectPath,
+} from './i18n.js';
 
 const gzipAsync = promisify(zlib.gzip);
 const brotliCompressAsync = promisify(zlib.brotliCompress);
@@ -105,7 +113,7 @@ app.use((req, res, next) => {
       .then((compressed) => {
         if (res.headersSent) return;
         res.setHeader('Content-Encoding', useBr ? 'br' : 'gzip');
-        res.setHeader('Vary', 'Accept-Encoding');
+        res.vary('Accept-Encoding');
         res.setHeader('Content-Length', compressed.byteLength);
         origSend(compressed);
       })
@@ -250,6 +258,18 @@ app.use(
 // Ensure SQLite PRAGMAs, indexes, and FTS availability check complete before dynamic routes run
 app.use((req, res, next) => {
   dbReady.then(() => next(), () => next());
+});
+
+// Bilingual UI Middleware (Arabic default, persisted via cookie, LTR layout)
+app.use((req, res, next) => {
+  const lang = parseLangFromRequest(req);
+  req.lang = lang;
+  res.locals.lang = lang;
+  res.locals.isAr = lang === 'ar';
+  res.locals.t = createTranslator(lang);
+  res.locals.currentUrl = req.originalUrl || '/';
+  res.vary('Cookie');
+  next();
 });
 
 // Local persistent uploads directory
@@ -758,6 +778,24 @@ app.get('/', (req, res) => {
   res.redirect('/traders');
 });
 
+// Language Switcher Routes (Cookie persisted, same-origin redirect safe)
+function handleLanguageSwitch(req, res) {
+  const rawLang = String(req.params.lang || '').trim().toLowerCase();
+  const targetLang = isValidLang(rawLang) ? rawLang : 'ar';
+  res.setHeader(
+    'Set-Cookie',
+    `${LANG_COOKIE_NAME}=${targetLang}; Path=/; Max-Age=31536000; SameSite=Lax`
+  );
+  const candidate = req.query.redirect || req.get('referer') || '';
+  const redirectTarget = sanitizeRedirectPath(candidate, req.headers.host || '', '/traders');
+  return res.redirect(redirectTarget);
+}
+
+app.get('/language/:lang', handleLanguageSwitch);
+app.get('/traders/language/:lang', handleLanguageSwitch);
+app.get('/brokers/language/:lang', handleLanguageSwitch);
+app.get('/companies/language/:lang', handleLanguageSwitch);
+
 // Dashboard (Single SQL Covering Query + In-Memory Cache, properly excluding deleted rows)
 app.get('/dashboard', async (req, res) => {
   try {
@@ -1083,12 +1121,7 @@ app.get('/traders/export/csv', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.write('\uFEFF');
 
-    const headers = [
-      'Name', 'English Name', 'Commercial Name', 'Activity', 'English Activity',
-      'Card No', 'Renewal No', 'Card Class', 'Gender', 'Commercial Name No', 'Speciality',
-      'Phone Number', 'Address', 'Affiliation Date', 'Expire Date', 'Created By',
-      'Created At', 'Updated At', 'Deleted At'
-    ];
+    const headers = getCsvHeaders('trader', req.lang);
     res.write(headers.map((h) => `"${h}"`).join(',') + '\n');
 
     const { whereSql, params } = buildTradersFilter(req.query);
@@ -1152,12 +1185,7 @@ app.get('/brokers/export/csv', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.write('\uFEFF');
 
-    const headers = [
-      'Name', 'English Name', 'Commercial Name', 'Activity', 'English Activity',
-      'Card No', 'Stamp No', 'Renewal No', 'Card Class', 'Gender', 'Commercial Name No',
-      'Phone Number', 'Address', 'Affiliation Date', 'Expire Date', 'Created By',
-      'Created At', 'Updated At', 'Deleted At'
-    ];
+    const headers = getCsvHeaders('broker', req.lang);
     res.write(headers.map((h) => `"${h}"`).join(',') + '\n');
 
     const { whereSql, params } = buildBrokersFilter(req.query);
@@ -1224,14 +1252,7 @@ app.get('/companies/export/csv', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.write('\uFEFF');
 
-    const headers = [
-      'Company Name', 'English Company Name', 'CEO Name', 'English CEO Name',
-      'Activity', 'English Activity', 'Card No', 'Renewal No', 'Card Class',
-      'Gender', 'Manager Role', 'Commercial Name No',
-      'Incorporation Certificate No', 'Incorporation Symbol', 'Speciality',
-      'Phone Number', 'Address', 'Affiliation Date', 'Expire Date', 'Created By',
-      'Created At', 'Updated At', 'Deleted At'
-    ];
+    const headers = getCsvHeaders('company', req.lang);
     res.write(headers.map((h) => `"${h}"`).join(',') + '\n');
 
     const { whereSql, params } = buildCompaniesFilter(req.query);

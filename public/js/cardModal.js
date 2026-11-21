@@ -1160,7 +1160,10 @@ async function openPrintModal(traderId, uuid, options = {}) {
             setCompanyRoleStatus('معاينة مؤقتة · اضغط Save للحفظ');
         }
 
-        const titlePrefix = isComp ? 'Print Company ID: ' : (isBroker ? 'Print Broker ID: ' : 'Print Trader ID: ');
+        const isArUi = String(document.documentElement.lang || 'ar').toLowerCase().startsWith('ar');
+        const titlePrefix = isArUi
+            ? (isComp ? 'طباعة هوية الشركة: ' : (isBroker ? 'طباعة هوية الدلال: ' : 'طباعة هوية التاجر: '))
+            : (isComp ? 'Print Company ID: ' : (isBroker ? 'Print Broker ID: ' : 'Print Trader ID: '));
         const displayName = isComp ? (currentTrader.company_name || currentTrader.commercial_name || currentTrader.name) : currentTrader.name;
         if (titleEl) {
             delete titleEl.dataset.origTitle;
