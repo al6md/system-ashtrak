@@ -132,9 +132,20 @@ export function initDb() {
 
     try {
       const colsRes = await sqliteClient.execute('PRAGMA table_info(traders)');
-      const hasCompanyRole = colsRes.rows.some((r) => r.name === 'company_role');
-      if (!hasCompanyRole) {
-        await sqliteClient.execute("ALTER TABLE traders ADD COLUMN company_role TEXT DEFAULT 'ceo'");
+      const existingCols = new Set(colsRes.rows.map((r) => r.name));
+      const requiredCompanyCols = [
+        ['company_role', "TEXT DEFAULT 'ceo'"],
+        ['company_name', 'TEXT'],
+        ['english_company_name', 'TEXT'],
+        ['ceo_name', 'TEXT'],
+        ['english_ceo_name', 'TEXT'],
+        ['incorporation_certificate_no', 'TEXT'],
+        ['incorporation_certificate_symbol', 'TEXT'],
+      ];
+      for (const [colName, colDef] of requiredCompanyCols) {
+        if (!existingCols.has(colName)) {
+          await sqliteClient.execute(`ALTER TABLE traders ADD COLUMN ${colName} ${colDef}`);
+        }
       }
     } catch (_) {}
 

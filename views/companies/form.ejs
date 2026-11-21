@@ -1,0 +1,222 @@
+<%
+    const t = typeof trader !== 'undefined' && trader ? trader : {};
+    const editing = Boolean(typeof isEdit !== 'undefined' && isEdit);
+    const navPath = typeof currentPath !== 'undefined' ? currentPath : '/companies';
+
+    const rawClass = String(t.card_class ?? (editing ? '4' : '4')).trim();
+    const resolvedClass = (rawClass === '0' || rawClass.includes('ممتاز'))
+        ? '0'
+        : ((rawClass === '1' || rawClass === 'الأول' || rawClass === 'الاول' || rawClass === 'الأولى' || rawClass === 'الاولى')
+            ? '1'
+            : ((rawClass === '2' || rawClass === 'الثاني' || rawClass === 'الثانية')
+                ? '2'
+                : ((rawClass === '3' || rawClass === 'الثالث' || rawClass === 'الثالثة')
+                    ? '3'
+                    : '4')));
+
+    const rawGender = String(t.gender || '').trim().toLowerCase();
+    const currentGender = (rawGender === 'أنثى' || rawGender === 'انثى' || rawGender === 'female' || rawGender === 'f') ? 'أنثى' : 'ذكر';
+    const currentRole = String(t.company_role || '').trim().toLowerCase() === 'bm' ? 'bm' : 'ceo';
+
+    const safeDate = (d) => {
+        const s = String(d || '').trim();
+        return (!s || s === '0000-00-00') ? '' : s;
+    };
+
+    const companyNameVal = editing ? (t.company_name || t.commercial_name || '') : '';
+    const englishCompanyNameVal = editing ? (t.english_company_name || '') : '';
+    const ceoNameVal = editing ? (t.ceo_name || t.name || '') : '';
+    const englishCeoNameVal = editing ? (t.english_ceo_name || t.english_name || '') : '';
+    const photoSrc = (editing && t.photo_path) ? t.photo_path : '/templates/avatar_placeholder.png';
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= editing ? 'Edit Company' : 'Add Company' %> - Cardval</title>
+
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <!-- Scripts and Styles -->
+    <link rel="preload" as="style" href="/build/assets/app-514d3f3f.css" />
+    <link rel="modulepreload" href="/build/assets/app-4a08c204.js" />
+    <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
+    <script type="module" src="/build/assets/app-4a08c204.js"></script>
+    <script src="/js/fastNav.js?v=2" defer></script>
+</head>
+<body class="font-sans antialiased">
+    <div class="min-h-screen bg-gray-100">
+        <!-- Navigation -->
+        <%- include('../partials/navigation', { currentPath: navPath }) %>
+
+        <div id="pjax-container" data-nav-path="<%= navPath %>">
+        <!-- Header -->
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    <%= editing ? 'Edit Company (تعديل شركة)' : 'Add Company (إضافة شركة)' %>
+                </h2>
+            </div>
+        </header>
+
+        <!-- Main Form -->
+        <main>
+            <div class="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
+                <form method="POST" action="<%= editing ? '/companies/' + encodeURIComponent(t.uuid) : '/companies' %>" enctype="multipart/form-data">
+                    <% if (editing) { %>
+                        <input type="hidden" name="_method" value="patch">
+                    <% } else { %>
+                        <input type="hidden" name="member_type" value="company">
+                    <% } %>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="col-span-2">
+                            <label for="company_name" class="block text-sm font-medium text-gray-700">Company name (اسم الشركة)</label>
+                            <input name="company_name" id="company_name" type="text" placeholder="Company name"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= companyNameVal %>" required>
+
+                            <label for="english_company_name" class="block text-sm font-medium text-gray-700 mt-2">Company name in English</label>
+                            <input name="english_company_name" id="english_company_name" type="text" placeholder="Company name in English"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= englishCompanyNameVal %>">
+
+                            <label for="ceo_name" class="block text-sm font-medium text-gray-700 mt-2">CEO Name (المدير المفوض)</label>
+                            <input name="ceo_name" id="ceo_name" type="text" placeholder="CEO Name"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= ceoNameVal %>">
+
+                            <label for="english_ceo_name" class="block text-sm font-medium text-gray-700 mt-2">English CEO Name</label>
+                            <input name="english_ceo_name" id="english_ceo_name" type="text" placeholder="English CEO Name"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= englishCeoNameVal %>">
+                        </div>
+
+                        <div>
+                            <label for="person_pic" class="block text-sm font-medium text-gray-700 cursor-pointer">Person Image
+                                <img id="pp_preview" src="<%= photoSrc %>"
+                                     onerror="this.onerror=null; this.src='/templates/avatar_placeholder.png';"
+                                     style="width: 175px; height: 200px; object-fit: cover; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 4px;" />
+                            </label>
+
+                            <input style="display: none" onchange="if (window.readURL) readURL(this);" name="person_pic" id="person_pic" type="file" accept="image/*">
+                        </div>
+                    </div>
+
+                    <label for="card_class" class="block text-sm font-medium text-gray-700 mt-3">Card class</label>
+                    <select name="card_class" id="card_class" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                        <option value="0" <%= resolvedClass === '0' ? 'selected' : '' %>>الممتاز</option>
+                        <option value="1" <%= resolvedClass === '1' ? 'selected' : '' %>>الاول</option>
+                        <option value="2" <%= resolvedClass === '2' ? 'selected' : '' %>>الثاني</option>
+                        <option value="3" <%= resolvedClass === '3' ? 'selected' : '' %>>الثالث</option>
+                        <option value="4" <%= resolvedClass === '4' ? 'selected' : '' %>>الرابع</option>
+                    </select>
+
+                    <div class="grid grid-cols-2 gap-4 mt-3">
+                        <div>
+                            <label for="gender" class="block text-sm font-medium text-gray-700">Gender (الجنس)</label>
+                            <select name="gender" id="gender" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                <option value="ذكر" <%= currentGender === 'ذكر' ? 'selected' : '' %>>ذكر</option>
+                                <option value="أنثى" <%= currentGender === 'أنثى' ? 'selected' : '' %>>أنثى</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="company_role" class="block text-sm font-medium text-gray-700">Manager Role (صفة المدير)</label>
+                            <select name="company_role" id="company_role" class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                <option value="ceo" <%= currentRole === 'ceo' ? 'selected' : '' %>>المدير المفوض (CEO)</option>
+                                <option value="bm" <%= currentRole === 'bm' ? 'selected' : '' %>>مدير الفرع (BM)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label for="card_no" class="block text-sm font-medium text-gray-700 mt-3">Card No</label>
+                    <input name="card_no" id="card_no" type="number" placeholder="Card No"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= editing ? (t.card_no ?? '') : '' %>" required>
+
+                    <label for="renewal_no" class="block text-sm font-medium text-gray-700 mt-3">Renewal No</label>
+                    <input name="renewal_no" id="renewal_no" type="number" placeholder="Renewal No"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= editing ? (t.renewal_no ?? '') : '' %>">
+
+                    <label for="address" class="block text-sm font-medium text-gray-700 mt-3">Address</label>
+                    <input name="address" id="address" type="text" placeholder="Address"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= editing ? (t.address || '') : '' %>">
+
+                    <label for="phone_number" class="block text-sm font-medium text-gray-700 mt-3">Phone Number</label>
+                    <input name="phone_number" id="phone_number" type="text" placeholder="Phone Number"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= editing ? (t.phone_number || '') : '' %>">
+
+                    <label for="activity" class="block text-sm font-medium text-gray-700 mt-3">Activity</label>
+                    <input name="activity" id="activity" type="text" placeholder="Activity"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= editing ? (t.activity || '') : '' %>">
+
+                    <label for="english_activity" class="block text-sm font-medium text-gray-700 mt-3">Activity in English</label>
+                    <input name="english_activity" id="english_activity" type="text" placeholder="Activity in English"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= editing ? (t.english_activity || '') : '' %>">
+
+                    <label for="commercial_name_no" class="block text-sm font-medium text-gray-700 mt-3">Commercial Name No</label>
+                    <input name="commercial_name_no" id="commercial_name_no" type="text" inputmode="numeric" placeholder="Commercial Name No"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= editing ? (t.commercial_name_no || '') : '' %>">
+
+                    <label for="incorporation_certificate_no" class="block text-sm font-medium text-gray-700 mt-3">Incorporation Certificate No (رقم إجازة التأسيس)</label>
+                    <input name="incorporation_certificate_no" id="incorporation_certificate_no" type="number" placeholder="Incorporation Certificate No"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= editing ? (t.incorporation_certificate_no ?? '') : '' %>">
+
+                    <label for="incorporation_certificate_symbol" class="block text-sm font-medium text-gray-700 mt-3">Incorporation Certificate Symbol (رمز إجازة التأسيس)</label>
+                    <input name="incorporation_certificate_symbol" id="incorporation_certificate_symbol" type="text" placeholder="Incorporation Certificate Symbol (e.g. م.ش.أ)"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= editing ? (t.incorporation_certificate_symbol || '') : '' %>">
+
+                    <label for="speciality" class="block text-sm font-medium text-gray-700 mt-3">Speciality</label>
+                    <input name="speciality" id="speciality" type="text" placeholder="Speciality"
+                           class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                           value="<%= editing ? (t.speciality || '') : '' %>">
+
+                    <div class="grid grid-cols-2 gap-4 mt-3">
+                        <div>
+                            <label for="affiliation_date" class="block text-sm font-medium text-gray-700">Affiliation Date</label>
+                            <input name="affiliation_date" id="affiliation_date" type="date"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= editing ? safeDate(t.affiliation_date) : '' %>">
+                        </div>
+                        <div>
+                            <label for="expire_date" class="block text-sm font-medium text-gray-700">Expire Date</label>
+                            <input name="expire_date" id="expire_date" type="date"
+                                   class="block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+                                   value="<%= editing ? safeDate(t.expire_date) : '' %>">
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            Save
+                        </button>
+                        <% if (editing) { %>
+                        <button type="button" onclick="openPrintModal('<%= t.id %>', '<%= t.uuid %>', { companyRole: this.form && this.form.elements && this.form.elements.company_role ? this.form.elements.company_role.value : '' })" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" style="background-color: #1f2937; color: #ffffff;">
+                            🖨️ Print ID Card
+                        </button>
+                        <% } %>
+                        <a href="<%= navPath %>" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </main>
+        </div>
+    </div>
+
+    <!-- Print Modal -->
+    <%- include('../partials/card_modal') %>
+</body>
+</html>

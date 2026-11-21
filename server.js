@@ -626,8 +626,9 @@ function buildBrokersFilter(q) {
 function buildCompaniesFilter(q) {
   const {
     search, name, company_name, english_name, english_company_name,
-    commercial_name, ceo_name, activity, card_no, renewal_no,
-    commercial_name_no, incorporation_certificate_no, card_class, gender, company_role,
+    commercial_name, ceo_name, english_ceo_name, activity, card_no, renewal_no,
+    commercial_name_no, incorporation_certificate_no, incorporation_certificate_symbol,
+    speciality, card_class, gender, company_role,
     affiliation_date_from, affiliation_date_to,
     expire_date_from, expire_date_to, status
   } = q;
@@ -636,9 +637,12 @@ function buildCompaniesFilter(q) {
     (company_name && company_name.trim()) || (english_company_name && english_company_name.trim()) ||
     (name && name.trim()) || (english_name && english_name.trim()) ||
     (commercial_name && commercial_name.trim()) || (ceo_name && ceo_name.trim()) ||
+    (english_ceo_name && english_ceo_name.trim()) ||
     (activity && activity.trim()) || (card_no && card_no.trim()) ||
     (renewal_no && renewal_no.trim()) || (commercial_name_no && commercial_name_no.trim()) ||
     (incorporation_certificate_no && incorporation_certificate_no.trim()) ||
+    (incorporation_certificate_symbol && incorporation_certificate_symbol.trim()) ||
+    (speciality && speciality.trim()) ||
     (card_class && card_class !== '') || (gender && gender.trim() !== '') ||
     (company_role && company_role.trim() !== '') ||
     affiliation_date_from || affiliation_date_to || expire_date_from || expire_date_to ||
@@ -652,9 +656,9 @@ function buildCompaniesFilter(q) {
     where,
     params,
     search,
-    ['company_name', 'english_company_name', 'ceo_name', 'name', 'commercial_name', 'activity', 'card_no', 'incorporation_certificate_no', 'phone_number'],
-    '(company_name LIKE ? OR english_company_name LIKE ? OR ceo_name LIKE ? OR name LIKE ? OR commercial_name LIKE ? OR activity LIKE ? OR card_no LIKE ? OR incorporation_certificate_no LIKE ? OR phone_number LIKE ?)',
-    9
+    ['company_name', 'english_company_name', 'ceo_name', 'name', 'english_name', 'commercial_name', 'activity', 'card_no', 'incorporation_certificate_no', 'phone_number'],
+    '(company_name LIKE ? OR english_company_name LIKE ? OR ceo_name LIKE ? OR name LIKE ? OR english_name LIKE ? OR commercial_name LIKE ? OR activity LIKE ? OR card_no LIKE ? OR incorporation_certificate_no LIKE ? OR phone_number LIKE ?)',
+    10
   );
 
   const cName = company_name || name;
@@ -674,6 +678,10 @@ function buildCompaniesFilter(q) {
     where.push('(ceo_name LIKE ? OR name LIKE ?)');
     params.push(`%${ceo_name.trim()}%`, `%${ceo_name.trim()}%`);
   }
+  if (english_ceo_name && english_ceo_name.trim()) {
+    where.push('(english_ceo_name LIKE ? OR english_name LIKE ?)');
+    params.push(`%${english_ceo_name.trim()}%`, `%${english_ceo_name.trim()}%`);
+  }
   if (activity && activity.trim()) { where.push('activity LIKE ?'); params.push(`%${activity.trim()}%`); }
   if (card_no && card_no.trim()) { where.push('card_no = ?'); params.push(card_no.trim()); }
   if (renewal_no && renewal_no.trim()) { where.push('renewal_no = ?'); params.push(renewal_no.trim()); }
@@ -681,6 +689,14 @@ function buildCompaniesFilter(q) {
   if (incorporation_certificate_no && incorporation_certificate_no.trim()) {
     where.push('incorporation_certificate_no LIKE ?');
     params.push(`%${incorporation_certificate_no.trim()}%`);
+  }
+  if (incorporation_certificate_symbol && incorporation_certificate_symbol.trim()) {
+    where.push('incorporation_certificate_symbol LIKE ?');
+    params.push(`%${incorporation_certificate_symbol.trim()}%`);
+  }
+  if (speciality && speciality.trim()) {
+    where.push('speciality LIKE ?');
+    params.push(`%${speciality.trim()}%`);
   }
   if (card_class && card_class !== '') { where.push('card_class = ?'); params.push(card_class); }
   appendGenderFilter(where, params, gender);
@@ -789,33 +805,115 @@ app.get('/traders', async (req, res) => {
   }
 });
 
-// Create Trader / Broker Page
+function buildNormalizedMemberFields(body = {}, resolvedType = 'trader', existing = {}) {
+  const pick = (key, fallback = '') =>
+    body[key] !== undefined && body[key] !== null ? String(body[key]).trim() : String(fallback ?? '');
+
+  const isCompany = resolvedType === 'company';
+  const resolvedGender = normalizeGender(body.gender !== undefined ? body.gender : existing.gender);
+  const resolvedCompanyRole = isCompany
+    ? normalizeCompanyRole(body.company_role !== undefined ? body.company_role : existing.company_role)
+    : 'ceo';
+
+  const companyName = isCompany
+    ? (body.company_name !== undefined
+        ? pick('company_name')
+        : pick('commercial_name', existing.company_name ?? existing.commercial_name ?? ''))
+    : pick('company_name', existing.company_name ?? '');
+  const englishCompanyName = pick('english_company_name', existing.english_company_name ?? '');
+  const ceoName = isCompany
+    ? (body.ceo_name !== undefined
+        ? pick('ceo_name')
+        : pick('name', existing.ceo_name ?? existing.name ?? ''))
+    : pick('ceo_name', existing.ceo_name ?? '');
+  const englishCeoName = isCompany
+    ? (body.english_ceo_name !== undefined
+        ? pick('english_ceo_name')
+        : pick('english_name', existing.english_ceo_name ?? existing.english_name ?? ''))
+    : pick('english_ceo_name', existing.english_ceo_name ?? '');
+
+  const commercialName = isCompany
+    ? (companyName || pick('commercial_name', existing.commercial_name ?? ''))
+    : pick('commercial_name', existing.commercial_name ?? '');
+  const name = isCompany
+    ? (ceoName || companyName || '')
+    : pick('name', existing.name ?? '');
+  const englishName = isCompany
+    ? (englishCeoName || englishCompanyName || '')
+    : pick('english_name', existing.english_name ?? '');
+
+  const cardClassRaw =
+    body.card_class !== undefined && body.card_class !== null && String(body.card_class).trim() !== ''
+      ? String(body.card_class).trim()
+      : String(existing.card_class ?? '4');
+
+  return {
+    name,
+    english_name: englishName,
+    commercial_name: commercialName,
+    activity: pick('activity', existing.activity ?? ''),
+    english_activity: pick('english_activity', existing.english_activity ?? ''),
+    card_no: pick('card_no', existing.card_no ?? ''),
+    stamp_no: pick('stamp_no', existing.stamp_no ?? ''),
+    renewal_no: pick('renewal_no', existing.renewal_no ?? ''),
+    card_class: cardClassRaw || '4',
+    gender: resolvedGender,
+    commercial_name_no: pick('commercial_name_no', existing.commercial_name_no ?? ''),
+    speciality: pick('speciality', existing.speciality ?? ''),
+    phone_number: pick('phone_number', existing.phone_number ?? ''),
+    address: pick('address', existing.address ?? ''),
+    affiliation_date: pick('affiliation_date', existing.affiliation_date ?? ''),
+    expire_date: pick('expire_date', existing.expire_date ?? ''),
+    company_name: companyName,
+    english_company_name: englishCompanyName,
+    ceo_name: ceoName,
+    english_ceo_name: englishCeoName,
+    incorporation_certificate_no: pick('incorporation_certificate_no', existing.incorporation_certificate_no ?? ''),
+    incorporation_certificate_symbol: pick('incorporation_certificate_symbol', existing.incorporation_certificate_symbol ?? ''),
+    company_role: resolvedCompanyRole,
+  };
+}
+
+function renderCompanyForm(res, { isEdit, trader }) {
+  res.setHeader('Cache-Control', 'private, no-cache');
+  return res.render('companies/form', {
+    currentPath: '/companies',
+    isEdit,
+    trader,
+  });
+}
+
+// Create Trader / Broker / Company Page
 app.get('/traders/create', (req, res) => {
   const memberType = req.query.type || 'trader';
-  const currentPath = memberType === 'broker' ? '/brokers' : (memberType === 'company' ? '/companies' : '/traders');
+  if (memberType === 'company') {
+    return renderCompanyForm(res, {
+      isEdit: false,
+      trader: { member_type: 'company', card_class: '4', gender: 'ذكر', company_role: 'ceo' },
+    });
+  }
+  const currentPath = memberType === 'broker' ? '/brokers' : '/traders';
   res.setHeader('Cache-Control', 'private, no-cache');
   res.render('traders/create', { currentPath, member_type: memberType });
 });
 
+app.get('/companies/create', (req, res) => {
+  return renderCompanyForm(res, {
+    isEdit: false,
+    trader: { member_type: 'company', card_class: '4', gender: 'ذكر', company_role: 'ceo' },
+  });
+});
+
 // Store New Trader / Broker / Company
-app.post('/traders', upload.single('person_pic'), async (req, res) => {
+async function handleCreateMember(req, res, forcedType = null) {
   try {
-    const {
-      name, english_name, commercial_name, activity, english_activity,
-      card_no, stamp_no, renewal_no, card_class, gender, commercial_name_no, speciality,
-      phone_number, address, affiliation_date, expire_date, member_type, company_role,
-      company_name, english_company_name, ceo_name, english_ceo_name,
-      incorporation_certificate_no, incorporation_certificate_symbol
-    } = req.body;
+    const rawType = forcedType || req.body?.member_type;
+    const resolvedType = rawType === 'broker' ? 'broker' : (rawType === 'company' ? 'company' : 'trader');
+    const fields = buildNormalizedMemberFields(req.body || {}, resolvedType);
 
     const uuid = crypto.randomUUID();
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const photoPath = req.file ? '/uploads/' + req.file.filename : null;
-    const resolvedType = member_type === 'broker' ? 'broker' : (member_type === 'company' ? 'company' : 'trader');
-    const resolvedGender = normalizeGender(gender);
-    const resolvedCompanyRole = resolvedType === 'company' ? normalizeCompanyRole(company_role) : 'ceo';
-
-    const effectiveName = name || ceo_name || company_name || '';
 
     await db.prepare(`
       INSERT INTO traders (
@@ -827,42 +925,20 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
         member_type, company_role, created_by, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Site Admin', ?, ?)
     `).run(
-      uuid, effectiveName, english_name || '', commercial_name || '', activity || '', english_activity || '',
-      card_no || '', stamp_no || '', renewal_no || '', card_class || '4', resolvedGender, commercial_name_no || '', speciality || '',
-      phone_number || '', address || '', affiliation_date || '', expire_date || '', photoPath,
-      company_name || '', english_company_name || '', ceo_name || '', english_ceo_name || '',
-      incorporation_certificate_no || '', incorporation_certificate_symbol || '',
-      resolvedType, resolvedCompanyRole, now, now
+      uuid, fields.name, fields.english_name, fields.commercial_name, fields.activity, fields.english_activity,
+      fields.card_no, fields.stamp_no, fields.renewal_no, fields.card_class, fields.gender, fields.commercial_name_no, fields.speciality,
+      fields.phone_number, fields.address, fields.affiliation_date, fields.expire_date, photoPath,
+      fields.company_name, fields.english_company_name, fields.ceo_name, fields.english_ceo_name,
+      fields.incorporation_certificate_no, fields.incorporation_certificate_symbol,
+      resolvedType, fields.company_role, now, now
     );
 
     invalidateTradersCache();
 
     const createdRow = {
       uuid,
-      name: effectiveName,
-      english_name: english_name || '',
-      commercial_name: commercial_name || '',
-      activity: activity || '',
-      english_activity: english_activity || '',
-      card_no: card_no || '',
-      stamp_no: stamp_no || '',
-      renewal_no: renewal_no || '',
-      card_class: card_class || '4',
-      gender: resolvedGender,
-      commercial_name_no: commercial_name_no || '',
-      speciality: speciality || '',
-      phone_number: phone_number || '',
-      address: address || '',
-      affiliation_date: affiliation_date || '',
-      expire_date: expire_date || '',
-      company_name: company_name || '',
-      english_company_name: english_company_name || '',
-      ceo_name: ceo_name || '',
-      english_ceo_name: english_ceo_name || '',
-      incorporation_certificate_no: incorporation_certificate_no || '',
-      incorporation_certificate_symbol: incorporation_certificate_symbol || '',
+      ...fields,
       member_type: resolvedType,
-      company_role: resolvedCompanyRole,
     };
 
     await accessSyncAdd(db, uuid, createdRow);
@@ -872,7 +948,10 @@ app.post('/traders', upload.single('person_pic'), async (req, res) => {
   } catch (err) {
     res.status(500).send('Error saving trader: ' + escapeHtml(err.message));
   }
-});
+}
+
+app.post('/traders', upload.single('person_pic'), (req, res) => handleCreateMember(req, res));
+app.post('/companies', upload.single('person_pic'), (req, res) => handleCreateMember(req, res, 'company'));
 
 // Edit Trader / Broker / Company Page
 app.get('/traders/:uuid/edit', async (req, res) => {
@@ -881,7 +960,10 @@ app.get('/traders/:uuid/edit', async (req, res) => {
     if (!trader) {
       return res.status(404).send('Trader not found');
     }
-    const currentPath = trader.member_type === 'broker' ? '/brokers' : (trader.member_type === 'company' ? '/companies' : '/traders');
+    if (trader.member_type === 'company') {
+      return renderCompanyForm(res, { isEdit: true, trader });
+    }
+    const currentPath = trader.member_type === 'broker' ? '/brokers' : '/traders';
     res.setHeader('Cache-Control', 'private, no-cache');
     res.render('traders/edit', { currentPath, trader });
   } catch (err) {
@@ -917,7 +999,7 @@ async function executeSoftDelete(req, res) {
   return res.redirect(redirectPath);
 }
 
-// Update or Delete Trader / Broker (supports POST with multipart _method=patch/delete as well as PATCH/PUT)
+// Update or Delete Trader / Broker / Company (supports POST with multipart _method=patch/delete as well as PATCH/PUT)
 async function handleUpdateOrDeleteTrader(req, res) {
   try {
     if (req.body && String(req.body._method || '').toUpperCase() === 'DELETE') {
@@ -929,15 +1011,13 @@ async function handleUpdateOrDeleteTrader(req, res) {
       return res.status(404).send('Record not found');
     }
 
-    const {
-      name, english_name, commercial_name, activity, english_activity,
-      card_no, stamp_no, renewal_no, card_class, gender, company_role, commercial_name_no, speciality,
-      phone_number, address, affiliation_date, expire_date
-    } = req.body;
+    const resolvedType =
+      traderBefore.member_type === 'broker'
+        ? 'broker'
+        : (traderBefore.member_type === 'company' ? 'company' : 'trader');
+    const fields = buildNormalizedMemberFields(req.body || {}, resolvedType, traderBefore);
 
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const resolvedGender = normalizeGender(gender !== undefined ? gender : traderBefore.gender);
-    const resolvedCompanyRole = company_role !== undefined ? normalizeCompanyRole(company_role) : normalizeCompanyRole(traderBefore.company_role);
     let photoPath = traderBefore.photo_path;
 
     if (req.file) {
@@ -949,12 +1029,16 @@ async function handleUpdateOrDeleteTrader(req, res) {
         name = ?, english_name = ?, commercial_name = ?, activity = ?, english_activity = ?,
         card_no = ?, stamp_no = ?, renewal_no = ?, card_class = ?, gender = ?, company_role = ?, commercial_name_no = ?, speciality = ?,
         phone_number = ?, address = ?, affiliation_date = ?, expire_date = ?, photo_path = ?,
+        company_name = ?, english_company_name = ?, ceo_name = ?, english_ceo_name = ?,
+        incorporation_certificate_no = ?, incorporation_certificate_symbol = ?,
         updated_at = ?
       WHERE id = ?
     `).run(
-      name, english_name || '', commercial_name || '', activity || '', english_activity || '',
-      card_no, stamp_no || '', renewal_no || '', card_class || '4', resolvedGender, resolvedCompanyRole, commercial_name_no || '', speciality || '',
-      phone_number || '', address || '', affiliation_date || '', expire_date || '', photoPath,
+      fields.name, fields.english_name, fields.commercial_name, fields.activity, fields.english_activity,
+      fields.card_no, fields.stamp_no, fields.renewal_no, fields.card_class, fields.gender, fields.company_role, fields.commercial_name_no, fields.speciality,
+      fields.phone_number, fields.address, fields.affiliation_date, fields.expire_date, photoPath,
+      fields.company_name, fields.english_company_name, fields.ceo_name, fields.english_ceo_name,
+      fields.incorporation_certificate_no, fields.incorporation_certificate_symbol,
       now, traderBefore.id
     );
 
@@ -962,30 +1046,14 @@ async function handleUpdateOrDeleteTrader(req, res) {
 
     const updatedRow = {
       ...traderBefore,
-      name,
-      english_name: english_name || '',
-      commercial_name: commercial_name || '',
-      activity: activity || '',
-      english_activity: english_activity || '',
-      card_no,
-      stamp_no: stamp_no || '',
-      renewal_no: renewal_no || '',
-      card_class: card_class || '4',
-      gender: resolvedGender,
-      company_role: resolvedCompanyRole,
-      commercial_name_no: commercial_name_no || '',
-      speciality: speciality || '',
-      phone_number: phone_number || '',
-      address: address || '',
-      affiliation_date: affiliation_date || '',
-      expire_date: expire_date || '',
+      ...fields,
       photo_path: photoPath,
       updated_at: now,
     };
 
     await accessSyncNotify(db, traderBefore.uuid || req.params.uuid, traderBefore, updatedRow);
 
-    const redirectPath = traderBefore.member_type === 'broker' ? '/brokers' : (traderBefore.member_type === 'company' ? '/companies' : '/traders');
+    const redirectPath = resolvedType === 'broker' ? '/brokers' : (resolvedType === 'company' ? '/companies' : '/traders');
     res.redirect(redirectPath);
   } catch (err) {
     res.status(500).send('Error updating trader: ' + escapeHtml(err.message));
@@ -1157,8 +1225,10 @@ app.get('/companies/export/csv', async (req, res) => {
     res.write('\uFEFF');
 
     const headers = [
-      'Company Name', 'English Company Name', 'CEO Name', 'English CEO Name', 'Activity',
-      'Card No', 'Renewal No', 'Card Class', 'Gender', 'Incorporation Certificate No', 'Incorporation Symbol',
+      'Company Name', 'English Company Name', 'CEO Name', 'English CEO Name',
+      'Activity', 'English Activity', 'Card No', 'Renewal No', 'Card Class',
+      'Gender', 'Manager Role', 'Commercial Name No',
+      'Incorporation Certificate No', 'Incorporation Symbol', 'Speciality',
       'Phone Number', 'Address', 'Affiliation Date', 'Expire Date', 'Created By',
       'Created At', 'Updated At', 'Deleted At'
     ];
@@ -1169,8 +1239,12 @@ app.get('/companies/export/csv', async (req, res) => {
 
     for (const r of rows) {
       const line = [
-        r.company_name || r.commercial_name || '', r.english_company_name || '', r.ceo_name || r.name || '', r.english_ceo_name || r.english_name || '', r.activity || '',
-        r.card_no || '', r.renewal_no || '', r.card_class || '', normalizeGender(r.gender), r.incorporation_certificate_no || '', r.incorporation_certificate_symbol || '',
+        r.company_name || r.commercial_name || '', r.english_company_name || '',
+        r.ceo_name || r.name || '', r.english_ceo_name || r.english_name || '',
+        r.activity || '', r.english_activity || '',
+        r.card_no || '', r.renewal_no || '', r.card_class || '',
+        normalizeGender(r.gender), normalizeCompanyRole(r.company_role), r.commercial_name_no || '',
+        r.incorporation_certificate_no || '', r.incorporation_certificate_symbol || '', r.speciality || '',
         r.phone_number || '', r.address || '', r.affiliation_date || '', r.expire_date || '', r.created_by || 'Site Admin',
         r.created_at || '', r.updated_at || '', r.deleted_at || ''
       ].map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',');
@@ -1183,9 +1257,31 @@ app.get('/companies/export/csv', async (req, res) => {
   }
 });
 
-// Company Edit / Actions redirect to trader unified handler
-app.get('/companies/:uuid/edit', (req, res) => {
-  res.redirect('/traders/' + encodeURIComponent(req.params.uuid) + '/edit');
+// Company Edit / Update / Delete Routes
+app.get('/companies/:uuid/edit', async (req, res) => {
+  try {
+    const trader = await findTraderByIdentifier(req.params.uuid, false);
+    if (!trader) {
+      return res.status(404).send('Company not found');
+    }
+    if (trader.member_type !== 'company') {
+      return res.redirect('/traders/' + encodeURIComponent(req.params.uuid) + '/edit');
+    }
+    return renderCompanyForm(res, { isEdit: true, trader });
+  } catch (err) {
+    res.status(500).send('Error loading company edit page: ' + escapeHtml(err.message));
+  }
+});
+
+app.patch('/companies/:uuid', upload.single('person_pic'), handleUpdateOrDeleteTrader);
+app.post('/companies/:uuid', upload.single('person_pic'), handleUpdateOrDeleteTrader);
+app.put('/companies/:uuid', upload.single('person_pic'), handleUpdateOrDeleteTrader);
+app.delete('/companies/:uuid', async (req, res) => {
+  try {
+    await executeSoftDelete(req, res);
+  } catch (err) {
+    res.status(500).send('Error deleting company: ' + escapeHtml(err.message));
+  }
 });
 
 // ==========================================

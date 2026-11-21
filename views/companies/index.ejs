@@ -58,6 +58,10 @@
                                     <input id="ceo_name" name="ceo_name" value="<%= query.ceo_name || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
                                 </div>
                                 <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="english_ceo_name">English CEO Name</label>
+                                    <input id="english_ceo_name" name="english_ceo_name" value="<%= query.english_ceo_name || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
                                     <label class="block text-sm font-medium text-gray-700" for="activity">Activity</label>
                                     <input id="activity" name="activity" value="<%= query.activity || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
                                 </div>
@@ -70,8 +74,20 @@
                                     <input id="renewal_no" name="renewal_no" value="<%= query.renewal_no || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
                                 </div>
                                 <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="commercial_name_no">Commercial Name No</label>
+                                    <input id="commercial_name_no" name="commercial_name_no" value="<%= query.commercial_name_no || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
                                     <label class="block text-sm font-medium text-gray-700" for="incorporation_certificate_no">Incorporation Certificate No</label>
                                     <input id="incorporation_certificate_no" name="incorporation_certificate_no" value="<%= query.incorporation_certificate_no || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="incorporation_certificate_symbol">Incorporation Certificate Symbol</label>
+                                    <input id="incorporation_certificate_symbol" name="incorporation_certificate_symbol" value="<%= query.incorporation_certificate_symbol || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="speciality">Speciality</label>
+                                    <input id="speciality" name="speciality" value="<%= query.speciality || '' %>" class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700" for="card_class">Card class</label>
@@ -134,7 +150,7 @@
                     </details>
 
                     <!-- Top Action Buttons -->
-                    <a href="/traders/create?type=company" class="text-center inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem;">Add Company</a>
+                    <a href="/companies/create" class="text-center inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem;">Add Company</a>
                     <a href="/companies?status=deleted" class="text-center inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem;">List Deleted</a>
                     <a href="/companies/export/csv" class="text-center inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 mt-4" style="margin: 0.25rem;">Download CSV</a>
                 </div>
@@ -191,8 +207,8 @@
                                                         <button type="button" onclick="openPrintModal('<%= c.id %>', '<%= c.uuid %>')" class="block w-full px-4 py-2 text-left text-sm leading-5 text-indigo-700 font-semibold hover:bg-gray-100 focus:outline-none transition duration-150 ease-in-out">
                                                             🖨️ Print ID Card
                                                         </button>
-                                                        <a class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none transition duration-150 ease-in-out" href="/traders/<%= c.uuid %>/edit">Edit</a>
-                                                        <form method="POST" action="/traders/<%= c.uuid %>" onsubmit="return confirm('Are you sure you want to delete this company?')">
+                                                        <a class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none transition duration-150 ease-in-out" href="/companies/<%= c.uuid %>/edit">Edit</a>
+                                                        <form method="POST" action="/companies/<%= c.uuid %>" onsubmit="return confirm('Are you sure you want to delete this company?')">
                                                             <input type="hidden" name="_method" value="delete">
                                                             <button type="submit" class="block w-full px-4 py-2 text-left text-sm leading-5 text-red-600 hover:bg-gray-100 focus:outline-none transition duration-150 ease-in-out">Delete</button>
                                                         </form>
@@ -204,7 +220,7 @@
 
                                     <!-- Company Link (Identical format to Traders) -->
                                     <p class="mt-4 text-lg text-gray-900">
-                                        <a href="/traders/<%= c.uuid %>/edit" class="hover:underline">
+                                        <a href="/companies/<%= c.uuid %>/edit" class="hover:underline">
                                             <%= c.company_name || c.commercial_name || c.name %> - <%= c.activity || '' %> - <%= c.card_no %> - <%= c.ceo_name || c.name || '' %>
                                         </a>
                                         <% if (c.company_role === 'bm') { %><span data-company-role-badge="<%= c.uuid %>" style="display:inline-flex;align-items:center;margin-left:0.5rem;padding:0.15rem 0.5rem;font-size:0.72rem;font-weight:700;border-radius:9999px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;vertical-align:middle;">مدير فرع · BM</span><% } %>
