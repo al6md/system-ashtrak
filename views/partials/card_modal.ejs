@@ -21,21 +21,8 @@
 
                     <!-- LEFT COLUMN: Card Preview & Print Actions -->
                     <div class="modal-preview-box">
-                        <!-- Company Role Switcher (CEO / BM - Shown Only for Companies) -->
-                        <div id="companyRoleSwitcher" class="company-role-switcher" style="display: none;" dir="rtl">
-                            <div class="company-role-header">
-                                <span class="company-role-label">صفة المدير في الهوية:</span>
-                                <span id="companyRoleStatus" class="company-role-status" aria-live="polite"></span>
-                            </div>
-                            <div class="company-role-btns">
-                                <button type="button" id="btnRoleCeo" onclick="switchCompanyRole('ceo')" class="company-role-btn active-role">
-                                    👔 المدير المفوض (CEO)
-                                </button>
-                                <button type="button" id="btnRoleBm" onclick="switchCompanyRole('bm')" class="company-role-btn">
-                                    🏢 مدير الفرع (BM)
-                                </button>
-                            </div>
-                        </div>
+                        <!-- Read-only reminder shown only when previewing an unsaved form role selection -->
+                        <div id="companyRolePreviewNote" class="company-role-preview-note" style="display: none;" aria-live="polite"></div>
 
                         <!-- Front / Back Switcher Buttons -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; width: 100%; margin-bottom: 0.65rem;">

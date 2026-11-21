@@ -1883,31 +1883,6 @@ app.get('/api/traders/:id', async (req, res) => {
   }
 });
 
-// Update Company Role (CEO vs BM) for Single Company Record
-app.post('/api/traders/:id/company-role', async (req, res) => {
-  try {
-    const trader = await findTraderByIdentifier(req.params.id, true);
-    if (!trader) return res.status(404).json({ success: false, error: 'Not found' });
-
-    const resolvedRole = normalizeCompanyRole(req.body?.company_role);
-    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-
-    await db.prepare('UPDATE traders SET company_role = ?, updated_at = ? WHERE id = ?').run(
-      resolvedRole,
-      now,
-      trader.id
-    );
-    invalidateTradersCache();
-
-    const settingKey = resolvedRole === 'bm' ? 'company_bm_card_typography' : 'company_card_typography';
-    const globalTypography = await getTypographySettingCached(settingKey);
-
-    res.json({ success: true, company_role: resolvedRole, globalTypography });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 // Save Custom Typography for Single Trader
 app.post('/api/traders/:id/typography', async (req, res) => {
   try {

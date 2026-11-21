@@ -14,8 +14,6 @@ let currentModalQrUrl = null;
 let activeModalFieldKey = 'name';
 let redrawRafId = null;
 let modalRequestToken = 0;
-let roleSwitchToken = 0;
-let roleStatusTimer = null;
 let modalReadyForPrint = false;
 let pendingPrintTimer = null;
 
@@ -943,161 +941,28 @@ async function resetTraderCustomTypography() {
     }
 }
 
-function setCompanyRoleStatus(text, { isError = false, autoHideMs = 0 } = {}) {
-    const statusEl = document.getElementById('companyRoleStatus');
-    if (!statusEl) return;
-    if (roleStatusTimer) {
-        clearTimeout(roleStatusTimer);
-        roleStatusTimer = null;
-    }
-    statusEl.innerText = text || '';
-    statusEl.classList.toggle('error', Boolean(isError));
-    statusEl.classList.toggle('visible', Boolean(text));
-    if (text && autoHideMs > 0) {
-        roleStatusTimer = setTimeout(() => {
-            roleStatusTimer = null;
-            statusEl.classList.remove('visible');
-        }, autoHideMs);
-    }
-}
-
-function syncCompanyRoleSwitcherUI(trader) {
-    const switcher = document.getElementById('companyRoleSwitcher');
-    const btnCeo = document.getElementById('btnRoleCeo');
-    const btnBm = document.getElementById('btnRoleBm');
-    const isComp = Boolean(trader && trader.member_type === 'company');
-    if (switcher) {
-        switcher.style.display = isComp ? 'block' : 'none';
-    }
-    if (!isComp) {
-        setCompanyRoleStatus('');
+/**
+ * Toggle the read-only reminder banner shown when previewing an unsaved form role selection.
+ * @param {boolean} visible
+ * @param {boolean} isAr
+ */
+function syncCompanyRolePreviewNote(visible, isAr) {
+    const noteEl = document.getElementById('companyRolePreviewNote');
+    if (!noteEl) return;
+    if (!visible) {
+        noteEl.style.display = 'none';
+        noteEl.textContent = '';
         return;
     }
-    const isBm = isCompanyBm(trader);
-    if (btnCeo) btnCeo.className = `company-role-btn ${isBm ? '' : 'active-role'}`.trim();
-    if (btnBm) btnBm.className = `company-role-btn ${isBm ? 'active-role' : ''}`.trim();
-}
-
-function updateCompanyRoleDomBadge(uuid, role) {
-    if (!uuid) return;
-    const escapedUuid = (window.CSS && typeof window.CSS.escape === 'function')
-        ? window.CSS.escape(String(uuid))
-        : String(uuid).replace(/["\\]/g, '\\$&');
-    const existingBadge = document.querySelector(`[data-company-role-badge="${escapedUuid}"]`);
-
-    if (role === 'bm') {
-        if (existingBadge) {
-            existingBadge.style.display = 'inline-flex';
-        } else {
-            const editLink = document.querySelector(`p.mt-4 a[href="/traders/${escapedUuid}/edit"]`);
-            if (editLink && editLink.parentElement) {
-                const badge = document.createElement('span');
-                badge.setAttribute('data-company-role-badge', String(uuid));
-                badge.style.cssText = 'display:inline-flex;align-items:center;margin-left:0.5rem;padding:0.15rem 0.5rem;font-size:0.72rem;font-weight:700;border-radius:9999px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;vertical-align:middle;';
-                badge.textContent = 'مدير فرع · BM';
-                editLink.parentElement.appendChild(badge);
-            }
-        }
-    } else if (existingBadge) {
-        existingBadge.remove();
-    }
-
-    // If currently on the edit page for this company, keep the form dropdown in sync
-    const roleSelect = document.getElementById('company_role');
-    const editForm = roleSelect ? roleSelect.closest('form') : null;
-    if (roleSelect && editForm && editForm.getAttribute('action') === `/traders/${uuid}`) {
-        roleSelect.value = role;
-    }
-}
-
-async function switchCompanyRole(role) {
-    if (!currentTrader || currentTrader.member_type !== 'company') return;
-    if (role !== 'ceo' && role !== 'bm') return;
-    const normalizedCurrent = currentTrader.company_role === 'bm' ? 'bm' : 'ceo';
-    if (normalizedCurrent === role) {
-        syncCompanyRoleSwitcherUI(currentTrader);
-        return;
-    }
-
-    const traderRef = currentTrader;
-    const reqToken = modalRequestToken;
-    const myRoleToken = ++roleSwitchToken;
-    const fCanvas = document.getElementById('frontCanvas');
-    const bCanvas = document.getElementById('backCanvas');
-
-    // Optimistic state & immediate visual switch
-    traderRef.company_role = role;
-    syncCompanyRoleSwitcherUI(traderRef);
-    setCompanyRoleStatus('جاري الحفظ...');
-
-    const cacheKey = getTypoCacheKey(traderRef);
-    const fallback = getFallbackTypography(traderRef);
-    globalTypography = (companyTypographyByRole && companyTypographyByRole[role])
-        || GLOBAL_TYPO_CACHE.get(cacheKey)
-        || fallback;
-    GLOBAL_TYPO_CACHE.set(cacheKey, globalTypography);
-
-    if (!traderRef.custom_typography) {
-        activeCardTypography = JSON.parse(JSON.stringify(globalTypography));
-    }
-    populateModalFieldPills();
-
-    const renderPromise = Promise.all([
-        renderCardFront(fCanvas, traderRef),
-        renderCardBack(bCanvas, traderRef, currentModalQrUrl)
-    ]);
-
-    try {
-        const res = await fetch(`/api/traders/${encodeURIComponent(traderRef.uuid || traderRef.id)}/company-role`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ company_role: role })
-        });
-        const data = await res.json().catch(() => null);
-        await renderPromise;
-
-        if (reqToken !== modalRequestToken || currentTrader !== traderRef || myRoleToken !== roleSwitchToken) {
-            return;
-        }
-
-        if (!res.ok || !data || !data.success) {
-            setCompanyRoleStatus('تعذر الحفظ', { isError: true, autoHideMs: 3000 });
-            return;
-        }
-
-        if (data.globalTypography) {
-            const roleKey = role === 'bm' ? 'company_bm' : 'company';
-            GLOBAL_TYPO_CACHE.set(roleKey, data.globalTypography);
-            if (!companyTypographyByRole) companyTypographyByRole = {};
-            companyTypographyByRole[role] = data.globalTypography;
-
-            const prevSerialized = JSON.stringify(globalTypography);
-            const nextSerialized = JSON.stringify(data.globalTypography);
-            globalTypography = data.globalTypography;
-
-            if (!traderRef.custom_typography && prevSerialized !== nextSerialized) {
-                activeCardTypography = JSON.parse(JSON.stringify(globalTypography));
-                populateModalFieldPills();
-                await Promise.all([
-                    renderCardFront(fCanvas, traderRef),
-                    renderCardBack(bCanvas, traderRef, currentModalQrUrl)
-                ]);
-            }
-        }
-
-        setCompanyRoleStatus('✓ تم الحفظ', { autoHideMs: 2200 });
-        window.cardvalClearNavCache?.();
-        updateCompanyRoleDomBadge(traderRef.uuid, role);
-    } catch (e) {
-        if (reqToken === modalRequestToken && currentTrader === traderRef && myRoleToken === roleSwitchToken) {
-            setCompanyRoleStatus('تعذر الحفظ', { isError: true, autoHideMs: 3000 });
-        }
-    }
+    noteEl.dir = isAr ? 'rtl' : 'ltr';
+    noteEl.textContent = isAr
+        ? 'معاينة مؤقتة للخيار المحدد في الحقول · اضغط «حفظ» لتثبيت التغيير في السجل'
+        : 'Temporary preview for selected field option · Click Save to persist changes';
+    noteEl.style.display = 'block';
 }
 
 async function openPrintModal(traderId, uuid, options = {}) {
     const token = ++modalRequestToken;
-    roleSwitchToken++;
     const modalEl = document.getElementById('printModal');
     const titleEl = document.getElementById('modalTitle');
     const fCanvas = document.getElementById('frontCanvas');
@@ -1106,7 +971,7 @@ async function openPrintModal(traderId, uuid, options = {}) {
     // Open modal shell immediately (< 5ms) so UI feels instant!
     modalReadyForPrint = false;
     companyTypographyByRole = null;
-    syncCompanyRoleSwitcherUI(null);
+    syncCompanyRolePreviewNote(false);
     if (titleEl) {
         delete titleEl.dataset.origTitle;
         titleEl.innerText = 'جاري تجهيز الهوية...';
@@ -1155,12 +1020,8 @@ async function openPrintModal(traderId, uuid, options = {}) {
         GLOBAL_TYPO_CACHE.set(cacheKey, globalTypography);
         currentModalQrUrl = json.qr_url || null;
 
-        syncCompanyRoleSwitcherUI(currentTrader);
-        if (hasUnsavedRoleOverride) {
-            setCompanyRoleStatus('معاينة مؤقتة · اضغط Save للحفظ');
-        }
-
         const isArUi = String(document.documentElement.lang || 'ar').toLowerCase().startsWith('ar');
+        syncCompanyRolePreviewNote(hasUnsavedRoleOverride, isArUi);
         const titlePrefix = isArUi
             ? (isComp ? 'طباعة هوية الشركة: ' : (isBroker ? 'طباعة هوية الدلال: ' : 'طباعة هوية التاجر: '))
             : (isComp ? 'Print Company ID: ' : (isBroker ? 'Print Broker ID: ' : 'Print Trader ID: '));
@@ -1202,9 +1063,8 @@ async function openPrintModal(traderId, uuid, options = {}) {
 
 function closePrintModal() {
     modalRequestToken++;
-    roleSwitchToken++;
     modalReadyForPrint = false;
-    syncCompanyRoleSwitcherUI(null);
+    syncCompanyRolePreviewNote(false);
     const titleEl = document.getElementById('modalTitle');
     if (titleEl) delete titleEl.dataset.origTitle;
     const modalEl = document.getElementById('printModal');
@@ -1668,7 +1528,6 @@ window.__realOpenPrintModal = openPrintModal;
 window.openPrintModal = openPrintModal;
 window.closePrintModal = closePrintModal;
 window.switchCardSide = switchCardSide;
-window.switchCompanyRole = switchCompanyRole;
 window.selectModalField = selectModalField;
 window.onModalSliderChange = onModalSliderChange;
 window.modalNudgeSize = modalNudgeSize;
