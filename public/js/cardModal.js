@@ -961,6 +961,45 @@ function syncCompanyRolePreviewNote(visible, isAr) {
     noteEl.style.display = 'block';
 }
 
+const PRINT_ROTATE_BACK_KEY = 'cardval_print_rotate_back_180';
+
+function getRotateBack180Pref() {
+    try {
+        const saved = localStorage.getItem(PRINT_ROTATE_BACK_KEY);
+        if (saved === '0' || saved === 'false') return false;
+        if (saved === '1' || saved === 'true') return true;
+    } catch (_) {}
+    return true;
+}
+
+function syncRotateBackToggleUI() {
+    const isArUi = String(document.documentElement.lang || 'ar').toLowerCase().startsWith('ar');
+    const cb = document.getElementById('rotateBack180Toggle');
+    const lbl = document.getElementById('rotateBack180Label');
+    const txt = document.getElementById('rotateBack180Text');
+    if (cb) {
+        cb.checked = getRotateBack180Pref();
+    }
+    if (lbl) {
+        lbl.dir = isArUi ? 'rtl' : 'ltr';
+        lbl.title = isArUi
+            ? 'يعالج انقلاب الوجه الخلفي 180 درجة عند طباعة الوجهين على طابعات البطاقات البلاستيكية'
+            : 'Compensates for 180-degree back-side flip on dual-sided plastic ID card printers';
+    }
+    if (txt) {
+        txt.textContent = isArUi
+            ? '🔄 تصحيح اتجاه الوجه الخلفي (180°) عند طباعة الوجهين'
+            : '🔄 Fix back-side orientation (rotate 180°) for dual-sided print';
+    }
+}
+
+function setRotateBack180Pref(enabled) {
+    try {
+        localStorage.setItem(PRINT_ROTATE_BACK_KEY, enabled ? '1' : '0');
+    } catch (_) {}
+    syncRotateBackToggleUI();
+}
+
 async function openPrintModal(traderId, uuid, options = {}) {
     const token = ++modalRequestToken;
     const modalEl = document.getElementById('printModal');
@@ -972,6 +1011,7 @@ async function openPrintModal(traderId, uuid, options = {}) {
     modalReadyForPrint = false;
     companyTypographyByRole = null;
     syncCompanyRolePreviewNote(false);
+    syncRotateBackToggleUI();
     if (titleEl) {
         delete titleEl.dataset.origTitle;
         titleEl.innerText = 'جاري تجهيز الهوية...';
@@ -1122,7 +1162,7 @@ function openBlobPrintFallback(htmlContent) {
     }
 }
 
-function printHtmlContent(htmlContent) {
+function printHtmlContent(htmlContent, pageDims = { width: '210mm', height: '297mm' }) {
     if (pendingPrintTimer) {
         clearTimeout(pendingPrintTimer);
         pendingPrintTimer = null;
@@ -1139,8 +1179,8 @@ function printHtmlContent(htmlContent) {
         iframe.style.position = 'fixed';
         iframe.style.left = '-10000px';
         iframe.style.top = '0';
-        iframe.style.width = '210mm';
-        iframe.style.height = '297mm';
+        iframe.style.width = (pageDims && pageDims.width) || '210mm';
+        iframe.style.height = (pageDims && pageDims.height) || '297mm';
         iframe.style.border = '0';
         iframe.style.opacity = '0';
         iframe.style.pointerEvents = 'none';
@@ -1229,6 +1269,21 @@ async function renderHiResSideOffscreen(side) {
     return canvas;
 }
 
+function rotateCanvas180AndRelease(srcCanvas) {
+    const out = document.createElement('canvas');
+    out.width = srcCanvas.width;
+    out.height = srcCanvas.height;
+    const ctx = out.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.translate(out.width, out.height);
+    ctx.rotate(Math.PI);
+    ctx.drawImage(srcCanvas, 0, 0);
+    srcCanvas.width = 0;
+    srcCanvas.height = 0;
+    return out;
+}
+
 function canvasToPngAndRelease(canvas, quality) {
     const dataUrl = quality !== undefined ? canvas.toDataURL('image/png', quality) : canvas.toDataURL('image/png');
     canvas.width = 0;
@@ -1286,9 +1341,10 @@ async function printCR80(side = 'both') {
             renderHiResSideOffscreen('back')
         ]);
         if (!fCanvas || !bCanvas) return null;
+        const finalBackCanvas = getRotateBack180Pref() ? rotateCanvas180AndRelease(bCanvas) : bCanvas;
         return {
             fData: canvasToPngAndRelease(fCanvas),
-            bData: canvasToPngAndRelease(bCanvas)
+            bData: canvasToPngAndRelease(finalBackCanvas)
         };
     });
     if (!rendered) return;
@@ -1320,6 +1376,10 @@ async function printCR80(side = 'both') {
             margin: 0;
         }
         @media print {
+            @page {
+                size: 85.6mm 53.98mm;
+                margin: 0;
+            }
             html, body {
                 margin: 0 !important;
                 padding: 0 !important;
@@ -1394,7 +1454,7 @@ async function printCR80(side = 'both') {
     ${pagesHtml}
 </body>
 </html>`;
-    printHtmlContent(html);
+    printHtmlContent(html, { width: '85.6mm', height: '53.98mm' });
 }
 
 async function printA4() {
@@ -1538,6 +1598,9 @@ window.resetTraderCustomTypography = resetTraderCustomTypography;
 window.printCR80 = printCR80;
 window.printA4 = printA4;
 window.downloadImage = downloadImage;
+window.setRotateBack180Pref = setRotateBack180Pref;
+
+syncRotateBackToggleUI();
 
 // Keyboard arrow key listener for super fast positioning!
 window.addEventListener('keydown', (e) => {

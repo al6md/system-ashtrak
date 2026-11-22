@@ -49,6 +49,12 @@
                             <button type="button" onclick="downloadImage('back')" class="modal-act-btn btn-outline">⬇️ تحميل الخلفي</button>
                             <a id="verifyLink" href="#" target="_blank" rel="noopener noreferrer" class="modal-act-btn btn-outline">🔗 فحص الهوية</a>
                         </div>
+
+                        <!-- Dual-Sided Plastic Printer Back Orientation Toggle -->
+                        <label id="rotateBack180Label" for="rotateBack180Toggle" dir="rtl" style="margin-top: 0.55rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.35rem 0.6rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.375rem; font-size: 0.72rem; font-weight: 600; color: #374151; cursor: pointer; user-select: none; box-sizing: border-box;" title="يعالج انقلاب الوجه الخلفي 180 درجة عند طباعة الوجهين على طابعات البطاقات البلاستيكية">
+                            <input type="checkbox" id="rotateBack180Toggle" checked onchange="setRotateBack180Pref(this.checked)" style="width: 0.9rem; height: 0.9rem; cursor: pointer; accent-color: #1f2937;">
+                            <span id="rotateBack180Text">🔄 تصحيح اتجاه الوجه الخلفي (180°) عند طباعة الوجهين</span>
+                        </label>
                     </div>
 
                     <!-- RIGHT COLUMN: Per-Card Font & Position Controls (RTL) -->
