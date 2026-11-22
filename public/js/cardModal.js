@@ -961,45 +961,6 @@ function syncCompanyRolePreviewNote(visible, isAr) {
     noteEl.style.display = 'block';
 }
 
-const PRINT_ROTATE_BACK_KEY = 'cardval_print_rotate_back_180';
-
-function getRotateBack180Pref() {
-    try {
-        const saved = localStorage.getItem(PRINT_ROTATE_BACK_KEY);
-        if (saved === '0' || saved === 'false') return false;
-        if (saved === '1' || saved === 'true') return true;
-    } catch (_) {}
-    return true;
-}
-
-function syncRotateBackToggleUI() {
-    const isArUi = String(document.documentElement.lang || 'ar').toLowerCase().startsWith('ar');
-    const cb = document.getElementById('rotateBack180Toggle');
-    const lbl = document.getElementById('rotateBack180Label');
-    const txt = document.getElementById('rotateBack180Text');
-    if (cb) {
-        cb.checked = getRotateBack180Pref();
-    }
-    if (lbl) {
-        lbl.dir = isArUi ? 'rtl' : 'ltr';
-        lbl.title = isArUi
-            ? 'يعالج انقلاب الوجه الخلفي 180 درجة عند طباعة الوجهين على طابعات البطاقات البلاستيكية'
-            : 'Compensates for 180-degree back-side flip on dual-sided plastic ID card printers';
-    }
-    if (txt) {
-        txt.textContent = isArUi
-            ? '🔄 تصحيح اتجاه الوجه الخلفي (180°) عند طباعة الوجهين'
-            : '🔄 Fix back-side orientation (rotate 180°) for dual-sided print';
-    }
-}
-
-function setRotateBack180Pref(enabled) {
-    try {
-        localStorage.setItem(PRINT_ROTATE_BACK_KEY, enabled ? '1' : '0');
-    } catch (_) {}
-    syncRotateBackToggleUI();
-}
-
 async function openPrintModal(traderId, uuid, options = {}) {
     const token = ++modalRequestToken;
     const modalEl = document.getElementById('printModal');
@@ -1011,7 +972,6 @@ async function openPrintModal(traderId, uuid, options = {}) {
     modalReadyForPrint = false;
     companyTypographyByRole = null;
     syncCompanyRolePreviewNote(false);
-    syncRotateBackToggleUI();
     if (titleEl) {
         delete titleEl.dataset.origTitle;
         titleEl.innerText = 'جاري تجهيز الهوية...';
@@ -1361,7 +1321,7 @@ async function printCR80(side = 'both') {
             renderHiResSideOffscreen('back')
         ]);
         if (!fCanvas || !bCanvas) return null;
-        const finalBackCanvas = getRotateBack180Pref() ? rotateCanvas180AndRelease(bCanvas) : bCanvas;
+        const finalBackCanvas = rotateCanvas180AndRelease(bCanvas);
         return {
             fData: canvasToPngAndRelease(fCanvas),
             bData: canvasToPngAndRelease(finalBackCanvas)
@@ -1628,9 +1588,6 @@ window.resetTraderCustomTypography = resetTraderCustomTypography;
 window.printCR80 = printCR80;
 window.printA4 = printA4;
 window.downloadImage = downloadImage;
-window.setRotateBack180Pref = setRotateBack180Pref;
-
-syncRotateBackToggleUI();
 
 // Keyboard arrow key listener for super fast positioning!
 window.addEventListener('keydown', (e) => {
