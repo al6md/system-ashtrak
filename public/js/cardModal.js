@@ -1022,6 +1022,26 @@ async function openPrintModal(traderId, uuid, options = {}) {
     try {
         const targetId = encodeURIComponent(uuid || traderId);
         const res = await fetch('/api/traders/' + targetId + '?bundle=1');
+        const serverAssetRev = res.headers.get('x-cardval-asset-rev') || '';
+        const localAssetRev = modalEl?.dataset?.assetRev || '';
+        if (
+            localAssetRev &&
+            serverAssetRev &&
+            serverAssetRev !== localAssetRev &&
+            !/\/(?:edit|create)\b/.test(window.location.pathname)
+        ) {
+            try {
+                if (sessionStorage.getItem('cardval_rev_reload_to') !== serverAssetRev) {
+                    sessionStorage.setItem('cardval_rev_reload_to', serverAssetRev);
+                    sessionStorage.setItem(
+                        'cardval_pending_modal',
+                        JSON.stringify({ traderId, uuid, options, ts: Date.now() })
+                    );
+                    window.location.reload();
+                    return;
+                }
+            } catch (_) {}
+        }
         const json = await res.json();
         if (token !== modalRequestToken) return;
         if (!json.success || !json.trader) {
@@ -1372,27 +1392,31 @@ async function printCR80(side = 'both') {
     <title>CR80 Plastic Print - ${safeName}</title>
     <style>
         @page {
-            size: 85.6mm 53.98mm;
+            size: 86mm 54mm;
             margin: 0;
         }
         @media print {
             @page {
-                size: 85.6mm 53.98mm;
+                size: 86mm 54mm;
                 margin: 0;
             }
             html, body {
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 85.6mm !important;
+                width: 86mm !important;
                 height: auto !important;
+                font-size: 0 !important;
+                line-height: 0 !important;
                 overflow: visible !important;
                 background: #fff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
             .card-page {
-                width: 85.6mm !important;
-                height: 53.98mm !important;
+                width: 86mm !important;
+                height: 54mm !important;
+                font-size: 0 !important;
+                line-height: 0 !important;
                 page-break-after: always !important;
                 break-after: page !important;
                 page-break-inside: avoid !important;
@@ -1410,8 +1434,8 @@ async function printCR80(side = 'both') {
                 break-after: auto !important;
             }
             img {
-                width: 85.6mm !important;
-                height: 53.98mm !important;
+                width: 86mm !important;
+                height: 54mm !important;
                 object-fit: fill !important;
                 display: block !important;
                 margin: 0 !important;
@@ -1421,19 +1445,24 @@ async function printCR80(side = 'both') {
                 image-rendering: high-quality;
             }
         }
-        body {
+        html, body {
             margin: 0;
             padding: 0;
+            font-size: 0;
+            line-height: 0;
             background: #fff;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
         .card-page {
-            width: 85.6mm;
-            height: 53.98mm;
+            width: 86mm;
+            height: 54mm;
+            font-size: 0;
+            line-height: 0;
             display: block;
             margin: 0;
             padding: 0;
+            overflow: hidden;
             page-break-after: always;
             break-after: page;
         }
@@ -1442,8 +1471,9 @@ async function printCR80(side = 'both') {
             break-after: auto;
         }
         img {
-            width: 85.6mm;
-            height: 53.98mm;
+            width: 86mm;
+            height: 54mm;
+            object-fit: fill;
             display: block;
             image-rendering: -webkit-optimize-contrast;
             image-rendering: high-quality;
@@ -1454,7 +1484,7 @@ async function printCR80(side = 'both') {
     ${pagesHtml}
 </body>
 </html>`;
-    printHtmlContent(html, { width: '85.6mm', height: '53.98mm' });
+    printHtmlContent(html, { width: '86mm', height: '54mm' });
 }
 
 async function printA4() {

@@ -30,17 +30,36 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Deterministic asset revision hash for cache/PJAX invalidation across deploys
+const APP_ASSET_REV = (() => {
+  const hash = crypto.createHash('sha1');
+  const assetPaths = [
+    path.join(__dirname, 'public', 'js', 'cardModal.js'),
+    path.join(__dirname, 'public', 'js', 'fastNav.js'),
+    path.join(__dirname, 'public', 'css', 'cardModal.css'),
+    path.join(__dirname, 'views', 'partials', 'card_modal.ejs'),
+  ];
+  for (const p of assetPaths) {
+    try {
+      hash.update(fs.readFileSync(p));
+    } catch (_) {}
+  }
+  return hash.digest('hex').slice(0, 12);
+})();
+
 // Setup View Engine + Enable Template Compilation Cache (prevents OneDrive disk reads on every click)
 app.disable('x-powered-by');
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.set('view cache', true);
 
-// Security Headers Middleware
+// Security Headers & Asset Revision Middleware
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Cardval-Asset-Rev', APP_ASSET_REV);
+  res.locals.appAssetRev = APP_ASSET_REV;
   next();
 });
 

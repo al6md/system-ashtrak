@@ -21,6 +21,11 @@
     let progressBarEl = null;
     let cardModalCssPromise = null;
     let cardModalJsPromise = null;
+    const initialAssetRev = document.getElementById('printModal')?.dataset?.assetRev || '';
+
+    function isAssetRevStale(remoteRev) {
+        return Boolean(initialAssetRev && remoteRev && remoteRev !== initialAssetRev);
+    }
 
     function getCacheKey(urlObj) {
         return `${urlObj.origin}${urlObj.pathname}${urlObj.search}`;
@@ -169,6 +174,14 @@
             const finalUrl = res.url || urlObj.href;
             const finalUrlObj = new URL(finalUrl, window.location.href);
             const contentType = (res.headers.get('content-type') || '').toLowerCase();
+            const remoteRev = res.headers.get('x-cardval-asset-rev') || '';
+
+            if (isAssetRevStale(remoteRev)) {
+                pageCache.clear();
+                const err = new Error('Asset revision updated');
+                err.fallbackUrl = finalUrlObj.href;
+                throw err;
+            }
 
             if (!res.ok || !contentType.includes('text/html') || !isPjaxEligibleUrl(finalUrlObj)) {
                 const err = new Error('PJAX fallback');
@@ -360,9 +373,11 @@
             }
 
             const nextDoc = new DOMParser().parseFromString(html, 'text/html');
+            const nextModalRev = nextDoc.getElementById('printModal')?.dataset?.assetRev || '';
             const nextContainer = nextDoc.getElementById('pjax-container');
             const currentContainer = document.getElementById('pjax-container');
-            if (!nextContainer || !currentContainer) {
+            if (!nextContainer || !currentContainer || isAssetRevStale(nextModalRev)) {
+                pageCache.clear();
                 window.location.assign(finalUrlObj.href);
                 return;
             }
@@ -663,12 +678,12 @@
         if (cardModalJsPromise) return cardModalJsPromise;
         cardModalJsPromise = new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = '/js/cardModal.js?v=22';
+            script.src = '/js/cardModal.js?v=23';
             script.async = true;
             script.onload = () => resolve();
             script.onerror = () => {
                 cardModalJsPromise = null;
-                reject(new Error('Failed to load /js/cardModal.js?v=22'));
+                reject(new Error('Failed to load /js/cardModal.js?v=23'));
             };
             document.head.appendChild(script);
         });
@@ -720,4 +735,18 @@
 
         window.openPrintModal = lazyOpenPrintModal;
     }
+
+    // Reopen pending print modal automatically after an asset-revision reload
+    try {
+        const rawPending = sessionStorage.getItem('cardval_pending_modal');
+        if (rawPending) {
+            sessionStorage.removeItem('cardval_pending_modal');
+            const pending = JSON.parse(rawPending);
+            if (pending && Date.now() - Number(pending.ts || 0) < 15000 && typeof window.openPrintModal === 'function') {
+                setTimeout(() => {
+                    window.openPrintModal(pending.traderId || '', pending.uuid || '', pending.options || {});
+                }, 0);
+            }
+        }
+    } catch (_) {}
 })();
