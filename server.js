@@ -1848,6 +1848,50 @@ app.post('/api/settings/broker-card-typography/reset', async (req, res) => {
   }
 });
 
+/**
+ * Build trader + typography + QR payload shared between the JSON bundle API and standalone print page.
+ * @param {import('express').Request} req
+ * @param {object} trader
+ */
+async function buildCardBundlePayload(req, trader) {
+  if (trader.member_type === 'company') {
+    trader.company_role = normalizeCompanyRole(trader.company_role);
+    const [ceoTypo, bmTypo, qrData] = await Promise.all([
+      getTypographySettingCached('company_card_typography'),
+      getTypographySettingCached('company_bm_card_typography'),
+      getQrBundleForUuid(req, trader.uuid),
+    ]);
+    const globalTypography = trader.company_role === 'bm' ? bmTypo : ceoTypo;
+
+    return {
+      success: true,
+      trader,
+      globalTypography,
+      companyTypographyByRole: { ceo: ceoTypo, bm: bmTypo },
+      qr_url: qrData.qr_url,
+      validate_url: qrData.validate_url,
+    };
+  }
+
+  const settingKey =
+    trader.member_type === 'broker'
+      ? 'broker_card_typography'
+      : 'card_typography';
+
+  const [globalTypography, qrData] = await Promise.all([
+    getTypographySettingCached(settingKey),
+    getQrBundleForUuid(req, trader.uuid),
+  ]);
+
+  return {
+    success: true,
+    trader,
+    globalTypography,
+    qr_url: qrData.qr_url,
+    validate_url: qrData.validate_url,
+  };
+}
+
 // Single Trader JSON API (Supports ?bundle=1 to return trader + globalTypography + QR in ONE single fast request!)
 app.get('/api/traders/:id', async (req, res) => {
   try {
@@ -1859,41 +1903,8 @@ app.get('/api/traders/:id', async (req, res) => {
     }
 
     if (req.query.bundle === '1') {
-      if (trader.member_type === 'company') {
-        const [ceoTypo, bmTypo, qrData] = await Promise.all([
-          getTypographySettingCached('company_card_typography'),
-          getTypographySettingCached('company_bm_card_typography'),
-          getQrBundleForUuid(req, trader.uuid),
-        ]);
-        const globalTypography = trader.company_role === 'bm' ? bmTypo : ceoTypo;
-
-        return res.json({
-          success: true,
-          trader,
-          globalTypography,
-          companyTypographyByRole: { ceo: ceoTypo, bm: bmTypo },
-          qr_url: qrData.qr_url,
-          validate_url: qrData.validate_url,
-        });
-      }
-
-      const settingKey =
-        trader.member_type === 'broker'
-          ? 'broker_card_typography'
-          : 'card_typography';
-
-      const [globalTypography, qrData] = await Promise.all([
-        getTypographySettingCached(settingKey),
-        getQrBundleForUuid(req, trader.uuid),
-      ]);
-
-      return res.json({
-        success: true,
-        trader,
-        globalTypography,
-        qr_url: qrData.qr_url,
-        validate_url: qrData.validate_url,
-      });
+      const bundle = await buildCardBundlePayload(req, trader);
+      return res.json(bundle);
     }
 
     res.json({ success: true, trader });
@@ -1901,6 +1912,44 @@ app.get('/api/traders/:id', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+// Standalone CR80 Dual-Sided Print Window (matches original site /print tab layout & 0deg orientation)
+async function renderStandaloneCardPrint(req, res) {
+  try {
+    const trader = await findTraderByIdentifier(req.params.id, true);
+    if (!trader) {
+      return res.status(404).send('Card not found');
+    }
+
+    const bundle = await buildCardBundlePayload(req, trader);
+    const reqRole = String(req.query.role || '').trim().toLowerCase();
+    if (bundle.trader.member_type === 'company' && (reqRole === 'bm' || reqRole === 'ceo')) {
+      bundle.trader.company_role = reqRole;
+      if (bundle.companyTypographyByRole && bundle.companyTypographyByRole[reqRole]) {
+        bundle.globalTypography = bundle.companyTypographyByRole[reqRole];
+      }
+    }
+
+    const displayName =
+      bundle.trader.member_type === 'company'
+        ? (bundle.trader.company_name || bundle.trader.commercial_name || bundle.trader.name || '')
+        : (bundle.trader.commercial_name || bundle.trader.name || '');
+
+    res.setHeader('Cache-Control', 'private, no-cache');
+    res.render('cards/print', {
+      displayName,
+      printPayloadJson: JSON.stringify(bundle).replace(/</g, '\\u003c'),
+      assetVersion: APP_ASSET_REV,
+    });
+  } catch (err) {
+    res.status(500).send('Error preparing card print page: ' + escapeHtml(err.message));
+  }
+}
+
+app.get(
+  ['/cards/:id/print', '/traders/:id/print', '/brokers/:id/print', '/companies/:id/print'],
+  renderStandaloneCardPrint
+);
 
 // Save Custom Typography for Single Trader
 app.post('/api/traders/:id/typography', async (req, res) => {

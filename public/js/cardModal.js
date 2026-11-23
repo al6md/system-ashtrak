@@ -1249,19 +1249,23 @@ async function renderHiResSideOffscreen(side) {
     return canvas;
 }
 
-function rotateCanvas180AndRelease(srcCanvas) {
-    const out = document.createElement('canvas');
-    out.width = srcCanvas.width;
-    out.height = srcCanvas.height;
-    const ctx = out.getContext('2d');
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.translate(out.width, out.height);
-    ctx.rotate(Math.PI);
-    ctx.drawImage(srcCanvas, 0, 0);
-    srcCanvas.width = 0;
-    srcCanvas.height = 0;
-    return out;
+async function renderCardPairForPrint(trader, typography, qrUrl, fallbackGlobalTypography) {
+    if (!trader) return null;
+    currentTrader = trader;
+    globalTypography = fallbackGlobalTypography || getFallbackTypography(trader);
+    activeCardTypography = typography || JSON.parse(JSON.stringify(globalTypography));
+    currentModalQrUrl = qrUrl || null;
+
+    const [fCanvas, bCanvas] = await Promise.all([
+        renderHiResSideOffscreen('front'),
+        renderHiResSideOffscreen('back')
+    ]);
+    if (!fCanvas || !bCanvas) return null;
+
+    return {
+        fData: canvasToPngAndRelease(fCanvas),
+        bData: canvasToPngAndRelease(bCanvas)
+    };
 }
 
 function canvasToPngAndRelease(canvas, quality) {
@@ -1305,27 +1309,39 @@ async function printCR80(side = 'both') {
     }
 
     const trader = currentTrader;
+    if (targetSide === 'both') {
+        const targetId = String(trader.uuid || trader.id || '').trim();
+        if (!targetId) return;
+
+        try {
+            const overridePayload = {
+                customTypography: activeCardTypography || null,
+                companyRole: trader.member_type === 'company' ? (trader.company_role === 'bm' ? 'bm' : 'ceo') : undefined,
+                ts: Date.now()
+            };
+            sessionStorage.setItem('cardval_print_override_' + targetId, JSON.stringify(overridePayload));
+        } catch (_) {}
+
+        let printUrl = '/cards/' + encodeURIComponent(targetId) + '/print';
+        if (trader.member_type === 'company') {
+            printUrl += '?role=' + encodeURIComponent(trader.company_role === 'bm' ? 'bm' : 'ceo');
+        }
+        const win = window.open(printUrl, '_blank');
+        if (!win) {
+            alert('يرجى السماح بفتح النوافذ المنبثقة لهذا الموقع لإتمام الطباعة.');
+        }
+        return;
+    }
+
     const rendered = await withModalStatus('جاري تجهيز نسخة الطباعة عالية الدقة...', async () => {
         if (targetSide === 'front') {
             const fCanvas = await renderHiResSideOffscreen('front');
             if (!fCanvas) return null;
             return { fData: canvasToPngAndRelease(fCanvas), bData: '' };
         }
-        if (targetSide === 'back') {
-            const bCanvas = await renderHiResSideOffscreen('back');
-            if (!bCanvas) return null;
-            return { fData: '', bData: canvasToPngAndRelease(bCanvas) };
-        }
-        const [fCanvas, bCanvas] = await Promise.all([
-            renderHiResSideOffscreen('front'),
-            renderHiResSideOffscreen('back')
-        ]);
-        if (!fCanvas || !bCanvas) return null;
-        const finalBackCanvas = rotateCanvas180AndRelease(bCanvas);
-        return {
-            fData: canvasToPngAndRelease(fCanvas),
-            bData: canvasToPngAndRelease(finalBackCanvas)
-        };
+        const bCanvas = await renderHiResSideOffscreen('back');
+        if (!bCanvas) return null;
+        return { fData: '', bData: canvasToPngAndRelease(bCanvas) };
     });
     if (!rendered) return;
 
@@ -1333,17 +1349,9 @@ async function printCR80(side = 'both') {
     const rawName = trader ? (trader.company_name || trader.commercial_name || trader.name || '') : '';
     const safeName = escapeHtmlClient(rawName);
 
-    let pagesHtml = '';
-    if (targetSide === 'front') {
-        pagesHtml = `<div class="card-page"><img src="${fData}" alt="Front"></div>`;
-    } else if (targetSide === 'back') {
-        pagesHtml = `<div class="card-page"><img src="${bData}" alt="Back"></div>`;
-    } else {
-        pagesHtml = `
-            <div class="card-page"><img src="${fData}" alt="Front"></div>
-            <div class="card-page"><img src="${bData}" alt="Back"></div>
-        `;
-    }
+    const pagesHtml = targetSide === 'front'
+        ? `<div class="card-page"><img src="${fData}" alt="Front"></div>`
+        : `<div class="card-page"><img src="${bData}" alt="Back"></div>`;
 
     const html = `<!DOCTYPE html>
 <html>
@@ -1586,6 +1594,7 @@ window.onModalDirectInputChange = onModalDirectInputChange;
 window.saveTraderCustomTypography = saveTraderCustomTypography;
 window.resetTraderCustomTypography = resetTraderCustomTypography;
 window.printCR80 = printCR80;
+window.renderCardPairForPrint = renderCardPairForPrint;
 window.printA4 = printA4;
 window.downloadImage = downloadImage;
 

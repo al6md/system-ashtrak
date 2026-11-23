@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="utf-8">
+    <title>CR80 Plastic Print - <%= displayName %></title>
+    <link rel="preload" href="/templates/MyriadPro-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/templates/PTBoldHeading.woff2" as="font" type="font/woff2" crossorigin>
+    <style>
+        @page {
+            size: 86mm 54mm;
+            margin: 0;
+        }
+        @media print {
+            @page {
+                size: 86mm 54mm;
+                margin: 0;
+            }
+            #printLoadingStatus {
+                display: none !important;
+            }
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .container {
+            overflow: hidden;
+            display: block;
+            width: 86mm;
+            position: relative;
+            font-size: 0;
+            line-height: 0;
+        }
+        #card_foreground,
+        #card_background {
+            width: 86mm;
+            height: 54mm;
+            display: block;
+            border: 0;
+            margin: 0;
+            padding: 0;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: high-quality;
+        }
+        #printLoadingStatus {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            font-size: 13px;
+            color: #374151;
+            padding: 12px;
+            direction: rtl;
+        }
+    </style>
+</head>
+<body>
+    <div id="printLoadingStatus">جاري تجهيز نسخة الطباعة عالية الدقة...</div>
+    <div class="container" id="printContainer" style="display: none;">
+        <img id="card_foreground" alt="Front" />
+        <img id="card_background" alt="Back" />
+    </div>
+
+    <script id="cardPrintPayload" type="application/json"><%- printPayloadJson %></script>
+    <script src="/js/cardModal.js?v=25"></script>
+    <script>
+        (async function () {
+            const statusEl = document.getElementById('printLoadingStatus');
+            const containerEl = document.getElementById('printContainer');
+            const fgImg = document.getElementById('card_foreground');
+            const bgImg = document.getElementById('card_background');
+
+            function waitImageDecode(img) {
+                if (img.complete && img.naturalWidth > 0) {
+                    return typeof img.decode === 'function' ? img.decode().catch(function () {}) : Promise.resolve();
+                }
+                return new Promise(function (resolve) {
+                    img.onload = function () {
+                        if (typeof img.decode === 'function') {
+                            img.decode().catch(function () {}).finally(resolve);
+                        } else {
+                            resolve();
+                        }
+                    };
+                    img.onerror = resolve;
+                });
+            }
+
+            try {
+                const rawPayload = document.getElementById('cardPrintPayload')?.textContent || '{}';
+                const payload = JSON.parse(rawPayload);
+                const trader = payload && payload.trader;
+                if (!trader || typeof window.renderCardPairForPrint !== 'function') {
+                    throw new Error('تعذر تهيئة بيانات الطباعة');
+                }
+
+                let globalTypo = payload.globalTypography || null;
+                let activeTypo = null;
+                if (trader.custom_typography) {
+                    try {
+                        activeTypo = JSON.parse(trader.custom_typography);
+                    } catch (_) {}
+                }
+
+                // Apply transient edits/role selection passed from the print modal when launched from UI
+                try {
+                    const storageKey = 'cardval_print_override_' + String(trader.uuid || trader.id || '');
+                    const rawOverride = sessionStorage.getItem(storageKey);
+                    if (rawOverride) {
+                        const parsed = JSON.parse(rawOverride);
+                        if (parsed && parsed.ts && (Date.now() - parsed.ts) < 60000) {
+                            if (trader.member_type === 'company' && (parsed.companyRole === 'bm' || parsed.companyRole === 'ceo')) {
+                                trader.company_role = parsed.companyRole;
+                                if (payload.companyTypographyByRole && payload.companyTypographyByRole[parsed.companyRole]) {
+                                    globalTypo = payload.companyTypographyByRole[parsed.companyRole];
+                                }
+                            }
+                            if (parsed.customTypography) {
+                                activeTypo = parsed.customTypography;
+                            }
+                        }
+                    }
+                } catch (_) {}
+
+                const rendered = await window.renderCardPairForPrint(
+                    trader,
+                    activeTypo || globalTypo,
+                    payload.qr_url || null,
+                    globalTypo
+                );
+                if (!rendered || !rendered.fData || !rendered.bData) {
+                    throw new Error('فشل توليد صور البطاقة');
+                }
+
+                fgImg.src = rendered.fData;
+                bgImg.src = rendered.bData;
+                await Promise.all([waitImageDecode(fgImg), waitImageDecode(bgImg)]);
+
+                if (statusEl) statusEl.style.display = 'none';
+                if (containerEl) containerEl.style.display = 'block';
+
+                setTimeout(function () {
+                    window.focus();
+                    window.print();
+                }, 60);
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.textContent = 'حدث خطأ أثناء تجهيز الطباعة: ' + (err && err.message ? err.message : String(err));
+                }
+            }
+        })();
+    </script>
+</body>
+</html>
