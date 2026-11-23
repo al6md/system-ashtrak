@@ -678,12 +678,12 @@
         if (cardModalJsPromise) return cardModalJsPromise;
         cardModalJsPromise = new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = '/js/cardModal.js?v=25';
+            script.src = '/js/cardModal.js?v=26';
             script.async = true;
             script.onload = () => resolve();
             script.onerror = () => {
                 cardModalJsPromise = null;
-                reject(new Error('Failed to load /js/cardModal.js?v=25'));
+                reject(new Error('Failed to load /js/cardModal.js?v=26'));
             };
             document.head.appendChild(script);
         });

@@ -6,6 +6,18 @@
     <link rel="preload" href="/templates/MyriadPro-Bold.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/templates/PTBoldHeading.woff2" as="font" type="font/woff2" crossorigin>
     <style>
+        @font-face {
+            font-family: 'PT Bold Heading';
+            src: url('/templates/PTBoldHeading.woff2') format('woff2');
+            font-weight: bold;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Myriad Pro';
+            src: url('/templates/MyriadPro-Bold.woff2') format('woff2');
+            font-weight: bold;
+            font-display: swap;
+        }
         @page {
             size: 86mm 54mm;
             margin: 0;
@@ -62,7 +74,7 @@
     </div>
 
     <script id="cardPrintPayload" type="application/json"><%- printPayloadJson %></script>
-    <script src="/js/cardModal.js?v=25"></script>
+    <script src="/js/cardModal.js?v=26"></script>
     <script>
         (async function () {
             const statusEl = document.getElementById('printLoadingStatus');

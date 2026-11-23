@@ -363,6 +363,14 @@ async function loadImageWithFallback(primarySrc, fallbackSrc) {
     return fallbackImg;
 }
 
+async function registerFontFaceIfNeeded(family, url) {
+    if (typeof FontFace !== 'function' || !document.fonts) return;
+    if (document.fonts.check(`bold 24px "${family}"`)) return;
+    const face = new FontFace(family, `url('${url}')`, { weight: 'bold', style: 'normal' });
+    const loaded = await face.load();
+    document.fonts.add(loaded);
+}
+
 async function ensureFonts() {
     if (fontsLoadedOnce) return;
     if (fontsLoadPromise) return fontsLoadPromise;
@@ -371,6 +379,10 @@ async function ensureFonts() {
             if (document.fonts && document.fonts.ready) {
                 await document.fonts.ready;
             }
+            await Promise.all([
+                registerFontFaceIfNeeded('PT Bold Heading', '/templates/PTBoldHeading.woff2'),
+                registerFontFaceIfNeeded('Myriad Pro', '/templates/MyriadPro-Bold.woff2')
+            ]);
             await Promise.all([
                 document.fonts.load('bold 28px "PT Bold Heading"'),
                 document.fonts.load('bold 24px "Myriad Pro"')
