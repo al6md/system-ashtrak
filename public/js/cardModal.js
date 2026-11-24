@@ -1261,21 +1261,6 @@ async function renderHiResSideOffscreen(side) {
     return canvas;
 }
 
-function rotateCanvas180AndRelease(srcCanvas) {
-    const out = document.createElement('canvas');
-    out.width = srcCanvas.width;
-    out.height = srcCanvas.height;
-    const ctx = out.getContext('2d');
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.translate(out.width, out.height);
-    ctx.rotate(Math.PI);
-    ctx.drawImage(srcCanvas, 0, 0);
-    srcCanvas.width = 0;
-    srcCanvas.height = 0;
-    return out;
-}
-
 async function renderCardPairForPrint(trader, typography, qrUrl, fallbackGlobalTypography) {
     if (!trader) return null;
     currentTrader = trader;
@@ -1289,9 +1274,8 @@ async function renderCardPairForPrint(trader, typography, qrUrl, fallbackGlobalT
     ]);
     if (!fCanvas || !bCanvas) return null;
 
-    const rotatedFrontCanvas = rotateCanvas180AndRelease(fCanvas);
     return {
-        fData: canvasToPngAndRelease(rotatedFrontCanvas),
+        fData: canvasToPngAndRelease(fCanvas),
         bData: canvasToPngAndRelease(bCanvas)
     };
 }
@@ -1365,8 +1349,7 @@ async function printCR80(side = 'both') {
         if (targetSide === 'front') {
             const fCanvas = await renderHiResSideOffscreen('front');
             if (!fCanvas) return null;
-            const rotatedFrontCanvas = rotateCanvas180AndRelease(fCanvas);
-            return { fData: canvasToPngAndRelease(rotatedFrontCanvas), bData: '' };
+            return { fData: canvasToPngAndRelease(fCanvas), bData: '' };
         }
         const bCanvas = await renderHiResSideOffscreen('back');
         if (!bCanvas) return null;
@@ -1389,50 +1372,44 @@ async function printCR80(side = 'both') {
     <title>CR80 Plastic Print - ${safeName}</title>
     <style>
         @page {
-            size: 86mm 54mm;
             margin: 0;
         }
         @media print {
             @page {
-                size: 86mm 54mm;
                 margin: 0;
             }
             html, body {
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 86mm !important;
-                height: auto !important;
-                font-size: 0 !important;
-                line-height: 0 !important;
-                overflow: visible !important;
+                width: 100% !important;
                 background: #fff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
             .card-page {
-                width: 86mm !important;
-                height: 54mm !important;
-                font-size: 0 !important;
-                line-height: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
                 page-break-after: always !important;
                 break-after: page !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                display: block !important;
                 overflow: hidden !important;
                 box-sizing: border-box !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
             }
             .card-page:last-child {
                 page-break-after: auto !important;
                 break-after: auto !important;
             }
             img {
-                width: 86mm !important;
-                height: 54mm !important;
+                width: 85.6mm !important;
+                height: 53.98mm !important;
+                max-width: 100vw !important;
+                max-height: 100vh !important;
                 object-fit: fill !important;
                 display: block !important;
                 margin: 0 !important;
@@ -1445,17 +1422,13 @@ async function printCR80(side = 'both') {
         html, body {
             margin: 0;
             padding: 0;
-            font-size: 0;
-            line-height: 0;
             background: #fff;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
         .card-page {
-            width: 86mm;
-            height: 54mm;
-            font-size: 0;
-            line-height: 0;
+            width: 85.6mm;
+            height: 53.98mm;
             display: block;
             margin: 0;
             padding: 0;
@@ -1468,8 +1441,8 @@ async function printCR80(side = 'both') {
             break-after: auto;
         }
         img {
-            width: 86mm;
-            height: 54mm;
+            width: 85.6mm;
+            height: 53.98mm;
             object-fit: fill;
             display: block;
             image-rendering: -webkit-optimize-contrast;
@@ -1481,7 +1454,7 @@ async function printCR80(side = 'both') {
     ${pagesHtml}
 </body>
 </html>`;
-    printHtmlContent(html, { width: '86mm', height: '54mm' });
+    printHtmlContent(html);
 }
 
 async function printA4() {

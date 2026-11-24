@@ -19,43 +19,88 @@
             font-display: swap;
         }
         @page {
-            size: 86mm 54mm;
             margin: 0;
-        }
-        @media print {
-            @page {
-                size: 86mm 54mm;
-                margin: 0;
-            }
-            #printLoadingStatus {
-                display: none !important;
-            }
         }
         html, body {
             margin: 0;
             padding: 0;
             background: #fff;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
         .container {
-            overflow: hidden;
             display: block;
-            width: 86mm;
-            position: relative;
-            font-size: 0;
-            line-height: 0;
+            margin: 0;
+            padding: 0;
+        }
+        .card-page {
+            width: 85.6mm;
+            height: 53.98mm;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            box-sizing: border-box;
+            page-break-after: always;
+            break-after: page;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        .card-page:last-child {
+            page-break-after: auto;
+            break-after: auto;
         }
         #card_foreground,
         #card_background {
-            width: 86mm;
-            height: 54mm;
+            width: 85.6mm;
+            height: 53.98mm;
             display: block;
             border: 0;
             margin: 0;
             padding: 0;
+            object-fit: fill;
             image-rendering: -webkit-optimize-contrast;
             image-rendering: high-quality;
+        }
+        @media print {
+            @page {
+                margin: 0;
+            }
+            #printLoadingStatus {
+                display: none !important;
+            }
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                background: #fff !important;
+            }
+            .card-page {
+                width: 100vw !important;
+                height: 100vh !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .card-page:last-child {
+                page-break-after: auto !important;
+                break-after: auto !important;
+            }
+            #card_foreground,
+            #card_background {
+                width: 85.6mm !important;
+                height: 53.98mm !important;
+                max-width: 100vw !important;
+                max-height: 100vh !important;
+                object-fit: fill !important;
+                display: block !important;
+            }
         }
         #printLoadingStatus {
             font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
@@ -69,12 +114,12 @@
 <body>
     <div id="printLoadingStatus">جاري تجهيز نسخة الطباعة عالية الدقة...</div>
     <div class="container" id="printContainer" style="display: none;">
-        <img id="card_foreground" alt="Front" />
-        <img id="card_background" alt="Back" />
+        <div class="card-page"><img id="card_foreground" alt="Front" /></div>
+        <div class="card-page"><img id="card_background" alt="Back" /></div>
     </div>
 
     <script id="cardPrintPayload" type="application/json"><%- printPayloadJson %></script>
-    <script src="/js/cardModal.js?v=27"></script>
+    <script src="/js/cardModal.js?v=28"></script>
     <script>
         (async function () {
             const statusEl = document.getElementById('printLoadingStatus');
