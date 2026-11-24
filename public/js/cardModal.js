@@ -1261,6 +1261,21 @@ async function renderHiResSideOffscreen(side) {
     return canvas;
 }
 
+function rotateCanvas180AndRelease(srcCanvas) {
+    const out = document.createElement('canvas');
+    out.width = srcCanvas.width;
+    out.height = srcCanvas.height;
+    const ctx = out.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.translate(out.width, out.height);
+    ctx.rotate(Math.PI);
+    ctx.drawImage(srcCanvas, 0, 0);
+    srcCanvas.width = 0;
+    srcCanvas.height = 0;
+    return out;
+}
+
 async function renderCardPairForPrint(trader, typography, qrUrl, fallbackGlobalTypography) {
     if (!trader) return null;
     currentTrader = trader;
@@ -1274,8 +1289,9 @@ async function renderCardPairForPrint(trader, typography, qrUrl, fallbackGlobalT
     ]);
     if (!fCanvas || !bCanvas) return null;
 
+    const rotatedFrontCanvas = rotateCanvas180AndRelease(fCanvas);
     return {
-        fData: canvasToPngAndRelease(fCanvas),
+        fData: canvasToPngAndRelease(rotatedFrontCanvas),
         bData: canvasToPngAndRelease(bCanvas)
     };
 }
@@ -1349,7 +1365,8 @@ async function printCR80(side = 'both') {
         if (targetSide === 'front') {
             const fCanvas = await renderHiResSideOffscreen('front');
             if (!fCanvas) return null;
-            return { fData: canvasToPngAndRelease(fCanvas), bData: '' };
+            const rotatedFrontCanvas = rotateCanvas180AndRelease(fCanvas);
+            return { fData: canvasToPngAndRelease(rotatedFrontCanvas), bData: '' };
         }
         const bCanvas = await renderHiResSideOffscreen('back');
         if (!bCanvas) return null;

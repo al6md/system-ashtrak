@@ -1913,7 +1913,7 @@ app.get('/api/traders/:id', async (req, res) => {
   }
 });
 
-// Standalone CR80 Dual-Sided Print Window (matches original site /print tab layout & 0deg orientation)
+// Standalone CR80 Dual-Sided Print Window (matches /print tab layout with 180deg front and 0deg back orientation)
 async function renderStandaloneCardPrint(req, res) {
   try {
     const trader = await findTraderByIdentifier(req.params.id, true);
