@@ -707,14 +707,10 @@
                 // Invalidate client PJAX list cache so returning to list shows fresh data immediately
                 pageCache.clear();
 
-                // Update photo preview, remove/undo buttons, and reset file input so repeat saves behave cleanly
+                // Update photo preview, remove button state, and reset file input so repeat saves behave cleanly
                 const fileInput = form.querySelector('input[type="file"][name="person_pic"]');
                 if (fileInput) {
                     fileInput.value = '';
-                }
-                const removePhotoInput = form.querySelector('[data-remove-photo-input]');
-                if (removePhotoInput) {
-                    removePhotoInput.value = '0';
                 }
                 const savedPhotoPath = (data.trader && data.trader.photo_path) ? String(data.trader.photo_path) : '';
                 const preview = form.querySelector('#pp_preview') || document.getElementById('pp_preview');
@@ -723,12 +719,11 @@
                     preview.src = savedPhotoPath || '/templates/avatar_placeholder.png';
                 }
                 const removePhotoBtn = form.querySelector('[data-remove-photo-btn]');
-                const undoRemoveBtn = form.querySelector('[data-undo-remove-photo-btn]');
                 if (removePhotoBtn) {
+                    if (data.trader && data.trader.uuid) {
+                        removePhotoBtn.dataset.traderUuid = String(data.trader.uuid);
+                    }
                     removePhotoBtn.style.display = savedPhotoPath ? 'inline-flex' : 'none';
-                }
-                if (undoRemoveBtn) {
-                    undoRemoveBtn.style.display = 'none';
                 }
 
                 // Switch Cancel label to Back ("رجوع" / "Back") after saving
@@ -828,7 +823,7 @@
         navigateTo(targetUrl);
     });
 
-    // Delegated Photo Preview & Remove/Undo Controls (#person_pic)
+    // Delegated Photo Preview & Confirmed Immediate Delete (#person_pic)
     window.readURL = function (input) {
         if (!input || !input.files || !input.files[0]) return;
         if (input.__cardvalReadPending) return;
@@ -838,12 +833,8 @@
         });
 
         const form = input.closest ? input.closest('form') : null;
-        const removeInput = (form || document).querySelector('[data-remove-photo-input]');
         const removeBtn = (form || document).querySelector('[data-remove-photo-btn]');
-        const undoBtn = (form || document).querySelector('[data-undo-remove-photo-btn]');
-        if (removeInput) removeInput.value = '0';
         if (removeBtn) removeBtn.style.display = 'inline-flex';
-        if (undoBtn) undoBtn.style.display = 'none';
 
         const preview = (form || document).querySelector('#pp_preview') || document.getElementById('pp_preview');
         if (!preview) return;
@@ -864,38 +855,76 @@
         }
     });
 
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', async (e) => {
         const removeBtn = e.target && e.target.closest ? e.target.closest('[data-remove-photo-btn]') : null;
-        if (removeBtn) {
-            const form = removeBtn.closest('form') || document;
-            const fileInput = form.querySelector('input[type="file"][name="person_pic"]');
-            const removeInput = form.querySelector('[data-remove-photo-input]');
-            const preview = form.querySelector('#pp_preview') || document.getElementById('pp_preview');
-            const undoBtn = form.querySelector('[data-undo-remove-photo-btn]');
-            const savedPhoto = preview ? String(preview.dataset.savedPhoto || '').trim() : '';
+        if (!removeBtn || removeBtn.__cardvalDeletingPhoto) return;
 
+        const confirmMsg = removeBtn.getAttribute('data-confirm-message') || 'هل أنت متأكد من حذف صورة هذا الشخص؟';
+        if (!window.confirm(confirmMsg)) return;
+
+        const form = removeBtn.closest('form') || document;
+        const fileInput = form.querySelector('input[type="file"][name="person_pic"]');
+        const preview = form.querySelector('#pp_preview') || document.getElementById('pp_preview');
+        const savedPhoto = preview ? String(preview.dataset.savedPhoto || '').trim() : '';
+        const printBtn = form.querySelector('[data-print-btn]');
+        const traderUuid = String(
+            removeBtn.dataset.traderUuid || (printBtn && printBtn.dataset.traderUuid) || ''
+        ).trim();
+
+        // If no photo is saved in DB yet (only an unsaved local file selection), clear locally immediately
+        if (!savedPhoto || !traderUuid) {
             if (fileInput) fileInput.value = '';
             if (preview) preview.src = '/templates/avatar_placeholder.png';
-            if (removeInput) removeInput.value = savedPhoto ? '1' : '0';
             removeBtn.style.display = 'none';
-            if (undoBtn) undoBtn.style.display = savedPhoto ? 'inline-flex' : 'none';
             return;
         }
 
-        const undoBtn = e.target && e.target.closest ? e.target.closest('[data-undo-remove-photo-btn]') : null;
-        if (undoBtn) {
-            const form = undoBtn.closest('form') || document;
-            const fileInput = form.querySelector('input[type="file"][name="person_pic"]');
-            const removeInput = form.querySelector('[data-remove-photo-input]');
-            const preview = form.querySelector('#pp_preview') || document.getElementById('pp_preview');
-            const removeBtnEl = form.querySelector('[data-remove-photo-btn]');
-            const savedPhoto = preview ? String(preview.dataset.savedPhoto || '').trim() : '';
+        removeBtn.__cardvalDeletingPhoto = true;
+        removeBtn.disabled = true;
+        removeBtn.style.opacity = '0.65';
+        startProgress();
 
+        try {
+            const res = await fetch('/api/traders/' + encodeURIComponent(traderUuid) + '/photo', {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'fetch'
+                },
+                credentials: 'same-origin'
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data || !data.success) {
+                const errMsg = (data && data.error) ? data.error : 'حدث خطأ أثناء حذف الصورة.';
+                if (form.tagName === 'FORM') showMemberFormFeedback(form, errMsg, true);
+                return;
+            }
+
+            pageCache.clear();
             if (fileInput) fileInput.value = '';
-            if (removeInput) removeInput.value = '0';
-            if (preview) preview.src = savedPhoto || '/templates/avatar_placeholder.png';
-            undoBtn.style.display = 'none';
-            if (removeBtnEl) removeBtnEl.style.display = savedPhoto ? 'inline-flex' : 'none';
+            if (preview) {
+                preview.dataset.savedPhoto = '';
+                preview.src = '/templates/avatar_placeholder.png';
+            }
+            removeBtn.style.display = 'none';
+
+            const returnLink = form.querySelector('a[data-return-link]');
+            const backLabel = data.backLabel || (form.getAttribute && form.getAttribute('data-back-label')) || '';
+            if (returnLink && backLabel) {
+                returnLink.textContent = backLabel;
+            }
+            if (form.tagName === 'FORM') {
+                showMemberFormFeedback(form, data.message || 'تم حذف الصورة بنجاح', false);
+            }
+        } catch (_) {
+            if (form.tagName === 'FORM') {
+                showMemberFormFeedback(form, 'تعذر الاتصال بالخادم أثناء حذف الصورة.', true);
+            }
+        } finally {
+            removeBtn.__cardvalDeletingPhoto = false;
+            removeBtn.disabled = false;
+            removeBtn.style.opacity = '';
+            finishProgress();
         }
     });
 

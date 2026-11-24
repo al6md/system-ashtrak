@@ -1354,6 +1354,40 @@ async function handlePermanentDeleteRoute(req, res) {
 app.post(['/traders/:uuid/permanent-delete', '/companies/:uuid/permanent-delete'], handlePermanentDeleteRoute);
 app.delete(['/traders/:uuid/permanent-delete', '/companies/:uuid/permanent-delete'], handlePermanentDeleteRoute);
 
+// Immediately Delete Trader / Broker / Company Photo
+async function handleDeleteMemberPhoto(req, res) {
+  try {
+    const trader = await findTraderByIdentifier(req.params.uuid, false);
+    if (!trader) {
+      return res.status(404).json({ success: false, error: 'Record not found' });
+    }
+
+    const oldPhoto = trader.photo_path;
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    await db.prepare('UPDATE traders SET photo_path = NULL, updated_at = ? WHERE id = ?').run(now, trader.id);
+
+    if (oldPhoto) {
+      await removeUnreferencedUploadFile(oldPhoto, uploadDir);
+    }
+
+    invalidateTradersCache();
+
+    const t = res.locals.t || createTranslator(req.lang || 'ar');
+    return res.json({
+      success: true,
+      uuid: trader.uuid || req.params.uuid,
+      photo_path: null,
+      backLabel: t('action.back'),
+      message: t('status.photo_removed'),
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+app.delete(['/api/traders/:uuid/photo', '/traders/:uuid/photo', '/companies/:uuid/photo'], handleDeleteMemberPhoto);
+app.post(['/api/traders/:uuid/photo/delete', '/traders/:uuid/photo/delete', '/companies/:uuid/photo/delete'], handleDeleteMemberPhoto);
+
 // Delete Trader / Broker / Company
 app.delete('/traders/:uuid', async (req, res) => {
   try {

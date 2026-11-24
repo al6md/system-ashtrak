@@ -21,7 +21,7 @@
     <link rel="modulepreload" href="/build/assets/app-4a08c204.js" />
     <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
     <script type="module" src="/build/assets/app-4a08c204.js"></script>
-    <script src="/js/fastNav.js?v=15" defer></script>
+    <script src="/js/fastNav.js?v=16" defer></script>
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
@@ -109,18 +109,14 @@
                             </label>
 
                             <input style="display: none" onchange="if (window.readURL) readURL(this);" name="person_pic" id="person_pic" type="file" accept="image/*">
-                            <input type="hidden" name="remove_photo" value="0" data-remove-photo-input>
 
-                            <div style="width: 175px; margin-top: 6px; display: flex; gap: 0.4rem;">
+                            <div style="width: 175px; margin-top: 6px;">
                                 <button type="button"
                                         data-remove-photo-btn
+                                        data-trader-uuid="<%= trader.uuid %>"
+                                        data-confirm-message="<%= t('confirm.remove_photo') %>"
                                         style="<%= hasSavedPhoto ? 'display: inline-flex;' : 'display: none;' %> width: 100%; align-items: center; justify-content: center; gap: 0.3rem; padding: 0.35rem 0.6rem; font-size: 0.75rem; font-weight: 700; border-radius: 0.375rem; background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; cursor: pointer;">
                                     🗑️ <%= t('action.remove_photo') %>
-                                </button>
-                                <button type="button"
-                                        data-undo-remove-photo-btn
-                                        style="display: none; width: 100%; align-items: center; justify-content: center; gap: 0.3rem; padding: 0.35rem 0.6rem; font-size: 0.75rem; font-weight: 700; border-radius: 0.375rem; background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; cursor: pointer;">
-                                    ↺ <%= t('action.undo_remove_photo') %>
                                 </button>
                             </div>
                         </div>
