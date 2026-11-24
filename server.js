@@ -1251,10 +1251,13 @@ async function handleUpdateOrDeleteTrader(req, res) {
     const fields = buildNormalizedMemberFields(req.body || {}, resolvedType, traderBefore);
 
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const shouldRemovePhoto = !req.file && String(req.body?.remove_photo || '').trim() === '1';
     let photoPath = traderBefore.photo_path;
 
     if (req.file) {
       photoPath = '/uploads/' + req.file.filename;
+    } else if (shouldRemovePhoto) {
+      photoPath = null;
     }
 
     await db.prepare(`
@@ -1274,6 +1277,10 @@ async function handleUpdateOrDeleteTrader(req, res) {
       fields.incorporation_certificate_no, fields.incorporation_certificate_symbol,
       now, traderBefore.id
     );
+
+    if (shouldRemovePhoto && traderBefore.photo_path) {
+      await removeUnreferencedUploadFile(traderBefore.photo_path, uploadDir);
+    }
 
     invalidateTradersCache();
 

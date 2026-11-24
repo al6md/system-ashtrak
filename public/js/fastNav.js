@@ -707,16 +707,28 @@
                 // Invalidate client PJAX list cache so returning to list shows fresh data immediately
                 pageCache.clear();
 
-                // Update photo preview and reset file input so repeat saves do not re-upload the same file
+                // Update photo preview, remove/undo buttons, and reset file input so repeat saves behave cleanly
                 const fileInput = form.querySelector('input[type="file"][name="person_pic"]');
                 if (fileInput) {
                     fileInput.value = '';
                 }
-                if (data.trader && data.trader.photo_path) {
-                    const preview = document.getElementById('pp_preview');
-                    if (preview) {
-                        preview.src = data.trader.photo_path;
-                    }
+                const removePhotoInput = form.querySelector('[data-remove-photo-input]');
+                if (removePhotoInput) {
+                    removePhotoInput.value = '0';
+                }
+                const savedPhotoPath = (data.trader && data.trader.photo_path) ? String(data.trader.photo_path) : '';
+                const preview = form.querySelector('#pp_preview') || document.getElementById('pp_preview');
+                if (preview) {
+                    preview.dataset.savedPhoto = savedPhotoPath;
+                    preview.src = savedPhotoPath || '/templates/avatar_placeholder.png';
+                }
+                const removePhotoBtn = form.querySelector('[data-remove-photo-btn]');
+                const undoRemoveBtn = form.querySelector('[data-undo-remove-photo-btn]');
+                if (removePhotoBtn) {
+                    removePhotoBtn.style.display = savedPhotoPath ? 'inline-flex' : 'none';
+                }
+                if (undoRemoveBtn) {
+                    undoRemoveBtn.style.display = 'none';
                 }
 
                 // Switch Cancel label to Back ("رجوع" / "Back") after saving
@@ -816,7 +828,7 @@
         navigateTo(targetUrl);
     });
 
-    // Delegated Photo Preview (#person_pic)
+    // Delegated Photo Preview & Remove/Undo Controls (#person_pic)
     window.readURL = function (input) {
         if (!input || !input.files || !input.files[0]) return;
         if (input.__cardvalReadPending) return;
@@ -825,11 +837,19 @@
             input.__cardvalReadPending = false;
         });
 
-        const preview = document.getElementById('pp_preview');
+        const form = input.closest ? input.closest('form') : null;
+        const removeInput = (form || document).querySelector('[data-remove-photo-input]');
+        const removeBtn = (form || document).querySelector('[data-remove-photo-btn]');
+        const undoBtn = (form || document).querySelector('[data-undo-remove-photo-btn]');
+        if (removeInput) removeInput.value = '0';
+        if (removeBtn) removeBtn.style.display = 'inline-flex';
+        if (undoBtn) undoBtn.style.display = 'none';
+
+        const preview = (form || document).querySelector('#pp_preview') || document.getElementById('pp_preview');
         if (!preview) return;
         const reader = new FileReader();
         reader.onload = function (e) {
-            const targetPreview = document.getElementById('pp_preview');
+            const targetPreview = (form || document).querySelector('#pp_preview') || document.getElementById('pp_preview');
             if (targetPreview && e.target && e.target.result) {
                 targetPreview.src = e.target.result;
             }
@@ -841,6 +861,41 @@
         const input = e.target;
         if (input && input.id === 'person_pic') {
             window.readURL(input);
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        const removeBtn = e.target && e.target.closest ? e.target.closest('[data-remove-photo-btn]') : null;
+        if (removeBtn) {
+            const form = removeBtn.closest('form') || document;
+            const fileInput = form.querySelector('input[type="file"][name="person_pic"]');
+            const removeInput = form.querySelector('[data-remove-photo-input]');
+            const preview = form.querySelector('#pp_preview') || document.getElementById('pp_preview');
+            const undoBtn = form.querySelector('[data-undo-remove-photo-btn]');
+            const savedPhoto = preview ? String(preview.dataset.savedPhoto || '').trim() : '';
+
+            if (fileInput) fileInput.value = '';
+            if (preview) preview.src = '/templates/avatar_placeholder.png';
+            if (removeInput) removeInput.value = savedPhoto ? '1' : '0';
+            removeBtn.style.display = 'none';
+            if (undoBtn) undoBtn.style.display = savedPhoto ? 'inline-flex' : 'none';
+            return;
+        }
+
+        const undoBtn = e.target && e.target.closest ? e.target.closest('[data-undo-remove-photo-btn]') : null;
+        if (undoBtn) {
+            const form = undoBtn.closest('form') || document;
+            const fileInput = form.querySelector('input[type="file"][name="person_pic"]');
+            const removeInput = form.querySelector('[data-remove-photo-input]');
+            const preview = form.querySelector('#pp_preview') || document.getElementById('pp_preview');
+            const removeBtnEl = form.querySelector('[data-remove-photo-btn]');
+            const savedPhoto = preview ? String(preview.dataset.savedPhoto || '').trim() : '';
+
+            if (fileInput) fileInput.value = '';
+            if (removeInput) removeInput.value = '0';
+            if (preview) preview.src = savedPhoto || '/templates/avatar_placeholder.png';
+            undoBtn.style.display = 'none';
+            if (removeBtnEl) removeBtnEl.style.display = savedPhoto ? 'inline-flex' : 'none';
         }
     });
 

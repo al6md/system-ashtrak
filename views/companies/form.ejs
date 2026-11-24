@@ -45,7 +45,7 @@
     <link rel="modulepreload" href="/build/assets/app-4a08c204.js" />
     <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
     <script type="module" src="/build/assets/app-4a08c204.js"></script>
-    <script src="/js/fastNav.js?v=14" defer></script>
+    <script src="/js/fastNav.js?v=15" defer></script>
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
@@ -122,13 +122,30 @@
                         </div>
 
                         <div>
+                            <% const hasSavedPhoto = Boolean(editing && record.photo_path && String(record.photo_path).trim() !== ''); %>
                             <label for="person_pic" class="block text-sm font-medium text-gray-700 cursor-pointer"><%= t('field.person_pic') %>
-                                <img id="pp_preview" src="<%= photoSrc %>"
+                                <img id="pp_preview"
+                                     src="<%= photoSrc %>"
+                                     data-saved-photo="<%= hasSavedPhoto ? record.photo_path : '' %>"
                                      onerror="this.onerror=null; this.src='/templates/avatar_placeholder.png';"
                                      style="width: 175px; height: 200px; object-fit: cover; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 4px;" />
                             </label>
 
                             <input style="display: none" onchange="if (window.readURL) readURL(this);" name="person_pic" id="person_pic" type="file" accept="image/*">
+                            <input type="hidden" name="remove_photo" value="0" data-remove-photo-input>
+
+                            <div style="width: 175px; margin-top: 6px; display: flex; gap: 0.4rem;">
+                                <button type="button"
+                                        data-remove-photo-btn
+                                        style="<%= hasSavedPhoto ? 'display: inline-flex;' : 'display: none;' %> width: 100%; align-items: center; justify-content: center; gap: 0.3rem; padding: 0.35rem 0.6rem; font-size: 0.75rem; font-weight: 700; border-radius: 0.375rem; background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; cursor: pointer;">
+                                    🗑️ <%= t('action.remove_photo') %>
+                                </button>
+                                <button type="button"
+                                        data-undo-remove-photo-btn
+                                        style="display: none; width: 100%; align-items: center; justify-content: center; gap: 0.3rem; padding: 0.35rem 0.6rem; font-size: 0.75rem; font-weight: 700; border-radius: 0.375rem; background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; cursor: pointer;">
+                                    ↺ <%= t('action.undo_remove_photo') %>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
