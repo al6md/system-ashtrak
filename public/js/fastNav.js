@@ -39,6 +39,86 @@
         }
     })();
 
+    const LIST_SECTIONS = new Set(['/traders', '/brokers', '/companies']);
+
+    function rememberListPosition(urlLike) {
+        try {
+            const u = new URL(urlLike || window.location.href, window.location.origin);
+            const cleanPath = (u.pathname || '/').replace(/\/+$/, '') || '/';
+            if (LIST_SECTIONS.has(cleanPath)) {
+                sessionStorage.setItem('cardval_return_' + cleanPath, cleanPath + (u.search || ''));
+            }
+        } catch (_) {}
+    }
+
+    function syncFormReturnLinks() {
+        document.querySelectorAll('a[data-return-link]').forEach((link) => {
+            const section = (link.getAttribute('data-return-section') || '').replace(/\/+$/, '');
+            if (!section || !LIST_SECTIONS.has(section)) return;
+            const isDeletedRecord = link.getAttribute('data-record-deleted') === '1';
+            try {
+                const stored = sessionStorage.getItem('cardval_return_' + section);
+                if (!stored || !stored.startsWith(section)) return;
+                if (isDeletedRecord && !stored.includes('status=deleted') && !stored.includes('status=all')) {
+                    return;
+                }
+                link.setAttribute('href', stored);
+            } catch (_) {}
+        });
+    }
+
+    function showMemberFormFeedback(form, message, isError = false) {
+        const container = form.closest('main') || document;
+        const banner = container.querySelector('[data-save-feedback]');
+        const inlineBadge = form.querySelector('[data-save-inline-status]');
+
+        const bg = isError ? '#fef2f2' : '#ecfdf5';
+        const border = isError ? '#fca5a5' : '#6ee7b7';
+        const color = isError ? '#991b1b' : '#065f46';
+        const icon = isError ? '✕' : '✓';
+
+        if (banner) {
+            const iconEl = banner.querySelector('[data-save-feedback-icon]');
+            const textEl = banner.querySelector('[data-save-feedback-text]');
+            if (iconEl) iconEl.textContent = icon;
+            if (textEl) textEl.textContent = message;
+            banner.style.backgroundColor = bg;
+            banner.style.borderColor = border;
+            banner.style.color = color;
+            banner.style.display = 'flex';
+            banner.style.transition = 'none';
+            banner.style.opacity = '0.45';
+            void banner.offsetWidth;
+            banner.style.transition = 'opacity 180ms ease';
+            banner.style.opacity = '1';
+            if (isError && typeof banner.scrollIntoView === 'function') {
+                banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        if (inlineBadge) {
+            inlineBadge.textContent = icon + ' ' + message;
+            inlineBadge.style.backgroundColor = bg;
+            inlineBadge.style.borderColor = border;
+            inlineBadge.style.color = color;
+            inlineBadge.style.display = 'inline-flex';
+            inlineBadge.style.transition = 'none';
+            inlineBadge.style.opacity = '0.4';
+            inlineBadge.style.transform = 'scale(0.97)';
+            void inlineBadge.offsetWidth;
+            inlineBadge.style.transition = 'opacity 180ms ease, transform 180ms ease';
+            inlineBadge.style.opacity = '1';
+            inlineBadge.style.transform = 'scale(1)';
+        }
+    }
+
+    rememberListPosition(window.location.href);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncFormReturnLinks, { once: true });
+    } else {
+        syncFormReturnLinks();
+    }
+
     window.cardvalClearNavCache = () => {
         pageCache.clear();
     };
@@ -406,6 +486,8 @@
             }
 
             currentPageKey = getCacheKey(finalUrlObj);
+            rememberListPosition(finalUrlObj.href);
+            syncFormReturnLinks();
 
             if (!fromPopstate) {
                 window.scrollTo(0, 0);
@@ -581,6 +663,118 @@
             }
             pageCache.clear();
             form.submit();
+            return;
+        }
+
+        // 1c. Instant In-Place Save for Member Create / Edit Forms (stays on page until user chooses to go back)
+        if (form.hasAttribute('data-member-form')) {
+            e.preventDefault();
+            if (form.__cardvalSaving) return;
+            form.__cardvalSaving = true;
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const origBtnText = submitBtn ? submitBtn.textContent : '';
+            const savingLabel = form.getAttribute('data-saving-label') || 'جاري الحفظ...';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.7';
+                submitBtn.textContent = savingLabel;
+            }
+
+            startProgress();
+
+            try {
+                const fd = new FormData(form);
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'fetch'
+                    },
+                    body: fd,
+                    credentials: 'same-origin'
+                });
+
+                const data = await res.json().catch(() => null);
+                if (!res.ok || !data || !data.success) {
+                    const errMsg = (data && data.error)
+                        ? data.error
+                        : 'حدث خطأ أثناء الحفظ، يرجى المحاولة مرة أخرى.';
+                    showMemberFormFeedback(form, errMsg, true);
+                    return;
+                }
+
+                // Invalidate client PJAX list cache so returning to list shows fresh data immediately
+                pageCache.clear();
+
+                // Update photo preview and reset file input so repeat saves do not re-upload the same file
+                const fileInput = form.querySelector('input[type="file"][name="person_pic"]');
+                if (fileInput) {
+                    fileInput.value = '';
+                }
+                if (data.trader && data.trader.photo_path) {
+                    const preview = document.getElementById('pp_preview');
+                    if (preview) {
+                        preview.src = data.trader.photo_path;
+                    }
+                }
+
+                // Switch Cancel label to Back ("رجوع" / "Back") after saving
+                const returnLink = form.querySelector('a[data-return-link]');
+                const backLabel = data.backLabel || form.getAttribute('data-back-label') || '';
+                if (returnLink && backLabel) {
+                    returnLink.textContent = backLabel;
+                }
+
+                // If saved from Create page, upgrade form in-place to Edit mode so data stays & Print ID activates
+                if (data.created && data.trader && data.trader.uuid) {
+                    form.setAttribute('data-member-form', 'edit');
+                    if (data.updateActionUrl) {
+                        form.setAttribute('action', data.updateActionUrl);
+                    }
+                    let patchInput = form.querySelector('input[name="_method"]');
+                    if (!patchInput) {
+                        patchInput = document.createElement('input');
+                        patchInput.type = 'hidden';
+                        patchInput.name = '_method';
+                        form.prepend(patchInput);
+                    }
+                    patchInput.value = 'patch';
+
+                    const printBtn = form.querySelector('[data-print-btn]');
+                    if (printBtn) {
+                        printBtn.dataset.traderId = String(data.trader.id ?? '');
+                        printBtn.dataset.traderUuid = String(data.trader.uuid || '');
+                        printBtn.style.display = 'inline-flex';
+                    }
+
+                    if (data.pageTitle) {
+                        const headingEl = document.querySelector('#pjax-container header h2');
+                        if (headingEl) headingEl.textContent = data.pageTitle;
+                        document.title = data.pageTitle + ' - Cardval';
+                    }
+
+                    if (data.editUrl) {
+                        try {
+                            const editUrlObj = new URL(data.editUrl, window.location.origin);
+                            history.replaceState({ pjax: true, url: editUrlObj.href }, '', editUrlObj.href);
+                            currentPageKey = getCacheKey(editUrlObj);
+                        } catch (_) {}
+                    }
+                }
+
+                showMemberFormFeedback(form, data.message || 'تم الحفظ بنجاح', false);
+            } catch (_) {
+                showMemberFormFeedback(form, 'تعذر الاتصال بالخادم أثناء الحفظ، يرجى المحاولة مرة أخرى.', true);
+            } finally {
+                form.__cardvalSaving = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '';
+                    submitBtn.textContent = origBtnText;
+                }
+                finishProgress();
+            }
             return;
         }
 

@@ -510,6 +510,27 @@ function memberBasePath(memberType) {
   return '/traders';
 }
 
+function memberEditPath(memberType, uuid) {
+  const editBase = memberType === 'company' ? '/companies' : '/traders';
+  return `${editBase}/${encodeURIComponent(uuid)}/edit`;
+}
+
+function resolveListReturnUrl(req, basePath, isDeleted = false) {
+  const defaultUrl = isDeleted ? `${basePath}?status=deleted` : basePath;
+  const rawCandidate = req.query?.return_to || req.get('referer') || '';
+  if (!rawCandidate) return defaultUrl;
+  const sanitized = sanitizeRedirectPath(rawCandidate, req.headers.host || '', '');
+  if (!sanitized) return defaultUrl;
+  try {
+    const parsed = new URL(sanitized, 'http://localhost');
+    const cleanPathname = parsed.pathname.replace(/\/+$/, '') || '/';
+    if (cleanPathname === basePath) {
+      return `${cleanPathname}${parsed.search}`;
+    }
+  } catch (_) {}
+  return defaultUrl;
+}
+
 function wantsJsonRequest(req) {
   return Boolean(
     req.xhr ||
@@ -954,12 +975,17 @@ function buildNormalizedMemberFields(body = {}, resolvedType = 'trader', existin
   };
 }
 
-function renderCompanyForm(res, { isEdit, trader }) {
+function renderCompanyForm(req, res, { isEdit, trader }) {
+  const isDeleted = Boolean(isEdit && trader?.deleted_at && String(trader.deleted_at).trim() !== '');
+  const returnUrl = resolveListReturnUrl(req, '/companies', isDeleted);
   res.setHeader('Cache-Control', 'private, no-cache');
   return res.render('companies/form', {
     currentPath: '/companies',
     isEdit,
     trader,
+    returnUrl,
+    saved: req.query?.saved === '1',
+    created: req.query?.created === '1',
   });
 }
 
@@ -967,18 +993,25 @@ function renderCompanyForm(res, { isEdit, trader }) {
 app.get('/traders/create', (req, res) => {
   const memberType = req.query.type || 'trader';
   if (memberType === 'company') {
-    return renderCompanyForm(res, {
+    return renderCompanyForm(req, res, {
       isEdit: false,
       trader: { member_type: 'company', card_class: '4', gender: 'ذكر', company_role: 'ceo' },
     });
   }
   const currentPath = memberType === 'broker' ? '/brokers' : '/traders';
+  const returnUrl = resolveListReturnUrl(req, currentPath, false);
   res.setHeader('Cache-Control', 'private, no-cache');
-  res.render('traders/create', { currentPath, member_type: memberType });
+  res.render('traders/create', {
+    currentPath,
+    member_type: memberType,
+    returnUrl,
+    saved: false,
+    created: false,
+  });
 });
 
 app.get('/companies/create', (req, res) => {
-  return renderCompanyForm(res, {
+  return renderCompanyForm(req, res, {
     isEdit: false,
     trader: { member_type: 'company', card_class: '4', gender: 'ذكر', company_role: 'ceo' },
   });
@@ -995,7 +1028,7 @@ async function handleCreateMember(req, res, forcedType = null) {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const photoPath = req.file ? '/uploads/' + req.file.filename : null;
 
-    await db.prepare(`
+    const runRes = await db.prepare(`
       INSERT INTO traders (
         uuid, name, english_name, commercial_name, activity, english_activity,
         card_no, stamp_no, renewal_no, card_class, gender, commercial_name_no, speciality,
@@ -1013,19 +1046,53 @@ async function handleCreateMember(req, res, forcedType = null) {
       resolvedType, fields.company_role, now, now
     );
 
+    const insertedId = runRes?.lastInsertRowid != null ? Number(runRes.lastInsertRowid) : null;
+
     invalidateTradersCache();
 
     const createdRow = {
+      id: insertedId,
       uuid,
       ...fields,
+      photo_path: photoPath,
       member_type: resolvedType,
     };
 
     await accessSyncAdd(db, uuid, createdRow);
 
-    const redirectPath = resolvedType === 'broker' ? '/brokers' : (resolvedType === 'company' ? '/companies' : '/traders');
-    res.redirect(redirectPath);
+    const editUrl = memberEditPath(resolvedType, uuid);
+    const updateActionUrl = resolvedType === 'company'
+      ? `/companies/${encodeURIComponent(uuid)}`
+      : `/traders/${encodeURIComponent(uuid)}`;
+    const t = res.locals.t || createTranslator(req.lang || 'ar');
+    const editTitleKey = resolvedType === 'company'
+      ? 'companies.edit'
+      : (resolvedType === 'broker' ? 'brokers.edit' : 'traders.edit');
+
+    if (wantsJsonRequest(req)) {
+      return res.json({
+        success: true,
+        created: true,
+        editUrl,
+        updateActionUrl,
+        pageTitle: t(editTitleKey),
+        backLabel: t('action.back'),
+        message: t('status.created_success'),
+        trader: {
+          id: insertedId,
+          uuid,
+          member_type: resolvedType,
+          photo_path: photoPath,
+          company_role: fields.company_role,
+        },
+      });
+    }
+
+    return res.redirect(`${editUrl}?created=1`);
   } catch (err) {
+    if (wantsJsonRequest(req)) {
+      return res.status(500).json({ success: false, error: 'Error saving trader: ' + err.message });
+    }
     res.status(500).send('Error saving trader: ' + escapeHtml(err.message));
   }
 }
@@ -1041,11 +1108,19 @@ app.get('/traders/:uuid/edit', async (req, res) => {
       return res.status(404).send('Trader not found');
     }
     if (trader.member_type === 'company') {
-      return renderCompanyForm(res, { isEdit: true, trader });
+      return renderCompanyForm(req, res, { isEdit: true, trader });
     }
     const currentPath = trader.member_type === 'broker' ? '/brokers' : '/traders';
+    const isDeleted = Boolean(trader.deleted_at && String(trader.deleted_at).trim() !== '');
+    const returnUrl = resolveListReturnUrl(req, currentPath, isDeleted);
     res.setHeader('Cache-Control', 'private, no-cache');
-    res.render('traders/edit', { currentPath, trader });
+    res.render('traders/edit', {
+      currentPath,
+      trader,
+      returnUrl,
+      saved: req.query?.saved === '1',
+      created: req.query?.created === '1',
+    });
   } catch (err) {
     res.status(500).send('Error loading edit page: ' + escapeHtml(err.message));
   }
@@ -1163,6 +1238,9 @@ async function handleUpdateOrDeleteTrader(req, res) {
 
     const traderBefore = await findTraderByIdentifier(req.params.uuid, false);
     if (!traderBefore) {
+      if (wantsJsonRequest(req)) {
+        return res.status(404).json({ success: false, error: 'Record not found' });
+      }
       return res.status(404).send('Record not found');
     }
 
@@ -1206,12 +1284,34 @@ async function handleUpdateOrDeleteTrader(req, res) {
       updated_at: now,
     };
 
-    await accessSyncNotify(db, traderBefore.uuid || req.params.uuid, traderBefore, updatedRow);
+    const targetUuid = traderBefore.uuid || req.params.uuid;
+    await accessSyncNotify(db, targetUuid, traderBefore, updatedRow);
 
-    const basePath = memberBasePath(resolvedType);
-    const redirectPath = traderBefore.deleted_at ? `${basePath}?status=deleted` : basePath;
-    res.redirect(redirectPath);
+    const editUrl = memberEditPath(resolvedType, targetUuid);
+    const t = res.locals.t || createTranslator(req.lang || 'ar');
+
+    if (wantsJsonRequest(req)) {
+      return res.json({
+        success: true,
+        created: false,
+        editUrl,
+        backLabel: t('action.back'),
+        message: t('status.saved_success'),
+        trader: {
+          id: traderBefore.id,
+          uuid: targetUuid,
+          member_type: resolvedType,
+          photo_path: photoPath,
+          company_role: fields.company_role,
+        },
+      });
+    }
+
+    return res.redirect(`${editUrl}?saved=1`);
   } catch (err) {
+    if (wantsJsonRequest(req)) {
+      return res.status(500).json({ success: false, error: 'Error updating trader: ' + err.message });
+    }
     res.status(500).send('Error updating trader: ' + escapeHtml(err.message));
   }
 }
@@ -1353,7 +1453,9 @@ app.get('/brokers/export/csv', async (req, res) => {
 
 // Redirect /brokers/:uuid/edit to /traders/:uuid/edit
 app.get('/brokers/:uuid/edit', (req, res) => {
-  res.redirect(`/traders/${encodeURIComponent(req.params.uuid)}/edit`);
+  const qsIdx = req.originalUrl.indexOf('?');
+  const qs = qsIdx !== -1 ? req.originalUrl.slice(qsIdx) : '';
+  res.redirect(`/traders/${encodeURIComponent(req.params.uuid)}/edit${qs}`);
 });
 
 // Companies View
@@ -1429,9 +1531,11 @@ app.get('/companies/:uuid/edit', async (req, res) => {
       return res.status(404).send('Company not found');
     }
     if (trader.member_type !== 'company') {
-      return res.redirect('/traders/' + encodeURIComponent(req.params.uuid) + '/edit');
+      const qsIdx = req.originalUrl.indexOf('?');
+      const qs = qsIdx !== -1 ? req.originalUrl.slice(qsIdx) : '';
+      return res.redirect('/traders/' + encodeURIComponent(req.params.uuid) + '/edit' + qs);
     }
-    return renderCompanyForm(res, { isEdit: true, trader });
+    return renderCompanyForm(req, res, { isEdit: true, trader });
   } catch (err) {
     res.status(500).send('Error loading company edit page: ' + escapeHtml(err.message));
   }
@@ -1895,6 +1999,7 @@ async function buildCardBundlePayload(req, trader) {
 // Single Trader JSON API (Supports ?bundle=1 to return trader + globalTypography + QR in ONE single fast request!)
 app.get('/api/traders/:id', async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'private, no-cache');
     const trader = await findTraderByIdentifier(req.params.id, true);
     if (!trader) return res.status(404).json({ success: false, error: 'Not found' });
 
@@ -2126,13 +2231,20 @@ app.get('/traders/validate/:uuid', async (req, res) => {
 // Friendly Multer / Upload Error Handler
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).send('حجم الصورة يتجاوز الحد الأقصى المسموح به (5 ميجابايت).');
+    const msg = err.code === 'LIMIT_FILE_SIZE'
+      ? 'حجم الصورة يتجاوز الحد الأقصى المسموح به (5 ميجابايت).'
+      : 'Upload error: ' + err.message;
+    if (wantsJsonRequest(req)) {
+      return res.status(400).json({ success: false, error: msg });
     }
-    return res.status(400).send('Upload error: ' + escapeHtml(err.message));
+    return res.status(400).send(escapeHtml(msg));
   }
   if (err) {
-    return res.status(400).send(escapeHtml(err.message || 'Unexpected error'));
+    const msg = err.message || 'Unexpected error';
+    if (wantsJsonRequest(req)) {
+      return res.status(400).json({ success: false, error: msg });
+    }
+    return res.status(400).send(escapeHtml(msg));
   }
   next();
 });

@@ -45,7 +45,7 @@
     <link rel="modulepreload" href="/build/assets/app-4a08c204.js" />
     <link rel="stylesheet" href="/build/assets/app-514d3f3f.css" />
     <script type="module" src="/build/assets/app-4a08c204.js"></script>
-    <script src="/js/fastNav.js?v=13" defer></script>
+    <script src="/js/fastNav.js?v=14" defer></script>
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
@@ -74,7 +74,24 @@
                         confirmPermanentDelete: t('companies.confirm_permanent_delete')
                     }) %>
                 <% } %>
-                <form method="POST" action="<%= editing ? '/companies/' + encodeURIComponent(record.uuid) : '/companies' %>" enctype="multipart/form-data">
+                <%
+                    const hasSavedBanner = (typeof saved !== 'undefined' && saved) || (typeof created !== 'undefined' && created);
+                    const initialBannerMsg = (typeof created !== 'undefined' && created) ? t('status.created_success') : t('status.saved_success');
+                %>
+                <div data-save-feedback
+                     role="status"
+                     aria-live="polite"
+                     class="mb-4 rounded-md p-3 text-sm font-semibold"
+                     style="<%= hasSavedBanner ? 'display: flex;' : 'display: none;' %> align-items: center; gap: 0.5rem; background-color: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46;">
+                    <span data-save-feedback-icon>✓</span>
+                    <span data-save-feedback-text><%= hasSavedBanner ? initialBannerMsg : '' %></span>
+                </div>
+                <form method="POST"
+                      action="<%= editing ? '/companies/' + encodeURIComponent(record.uuid) : '/companies' %>"
+                      enctype="multipart/form-data"
+                      data-member-form="<%= editing ? 'edit' : 'create' %>"
+                      data-saving-label="<%= t('action.saving') %>"
+                      data-back-label="<%= t('action.back') %>">
                     <% if (editing) { %>
                         <input type="hidden" name="_method" value="patch">
                     <% } else { %>
@@ -210,14 +227,31 @@
                         <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                             <%= t('action.save') %>
                         </button>
-                        <% if (editing) { %>
-                        <button type="button" onclick="openPrintModal('<%= record.id %>', '<%= record.uuid %>', { companyRole: this.form && this.form.elements && this.form.elements.company_role ? this.form.elements.company_role.value : '' })" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" style="background-color: #1f2937; color: #ffffff;">
+                        <button type="button"
+                                data-print-btn
+                                data-trader-id="<%= editing ? (record.id ?? '') : '' %>"
+                                data-trader-uuid="<%= editing ? (record.uuid || '') : '' %>"
+                                onclick="openPrintModal(this.dataset.traderId, this.dataset.traderUuid, { companyRole: this.form && this.form.elements && this.form.elements.company_role ? this.form.elements.company_role.value : '' })"
+                                class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                style="<%= editing ? '' : 'display: none; ' %>background-color: #1f2937; color: #ffffff;">
                             🖨️ <%= t('action.print_id_card') %>
                         </button>
-                        <% } %>
-                        <a href="<%= (editing && record.deleted_at) ? navPath + '?status=deleted' : navPath %>" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            <%= t('action.cancel') %>
+                        <%
+                            const fallbackCompanyReturn = (editing && record.deleted_at) ? navPath + '?status=deleted' : navPath;
+                            const resolvedCompanyReturn = (typeof returnUrl !== 'undefined' && returnUrl) ? returnUrl : fallbackCompanyReturn;
+                        %>
+                        <a href="<%= resolvedCompanyReturn %>"
+                           data-return-link
+                           data-return-section="<%= navPath %>"
+                           data-record-deleted="<%= (editing && record.deleted_at) ? '1' : '0' %>"
+                           class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            <%= hasSavedBanner ? t('action.back') : t('action.cancel') %>
                         </a>
+                        <span data-save-inline-status
+                              aria-live="polite"
+                              style="<%= hasSavedBanner ? 'display: inline-flex;' : 'display: none;' %> align-items: center; gap: 0.35rem; padding: 0.38rem 0.75rem; border-radius: 0.375rem; font-size: 0.78rem; font-weight: 700; background-color: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46;">
+                            <%= hasSavedBanner ? '✓ ' + initialBannerMsg : '' %>
+                        </span>
                     </div>
                 </form>
             </div>
