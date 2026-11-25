@@ -955,13 +955,15 @@
         }
         if (cardModalJsPromise) return cardModalJsPromise;
         cardModalJsPromise = new Promise((resolve, reject) => {
+            const modalAssetRev = document.getElementById('printModal')?.dataset?.assetRev || '29';
+            const modalScriptSrc = '/js/cardModal.js?v=' + encodeURIComponent(modalAssetRev);
             const script = document.createElement('script');
-            script.src = '/js/cardModal.js?v=28';
+            script.src = modalScriptSrc;
             script.async = true;
             script.onload = () => resolve();
             script.onerror = () => {
                 cardModalJsPromise = null;
-                reject(new Error('Failed to load /js/cardModal.js?v=28'));
+                reject(new Error('Failed to load ' + modalScriptSrc));
             };
             document.head.appendChild(script);
         });

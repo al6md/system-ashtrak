@@ -1321,39 +1321,26 @@ async function printCR80(side = 'both') {
     }
 
     const trader = currentTrader;
-    if (targetSide === 'both') {
-        const targetId = String(trader.uuid || trader.id || '').trim();
-        if (!targetId) return;
-
-        try {
-            const overridePayload = {
-                customTypography: activeCardTypography || null,
-                companyRole: trader.member_type === 'company' ? (trader.company_role === 'bm' ? 'bm' : 'ceo') : undefined,
-                ts: Date.now()
-            };
-            sessionStorage.setItem('cardval_print_override_' + targetId, JSON.stringify(overridePayload));
-        } catch (_) {}
-
-        let printUrl = '/cards/' + encodeURIComponent(targetId) + '/print';
-        if (trader.member_type === 'company') {
-            printUrl += '?role=' + encodeURIComponent(trader.company_role === 'bm' ? 'bm' : 'ceo');
-        }
-        const win = window.open(printUrl, '_blank');
-        if (!win) {
-            alert('يرجى السماح بفتح النوافذ المنبثقة لهذا الموقع لإتمام الطباعة.');
-        }
-        return;
-    }
-
     const rendered = await withModalStatus('جاري تجهيز نسخة الطباعة عالية الدقة...', async () => {
         if (targetSide === 'front') {
             const fCanvas = await renderHiResSideOffscreen('front');
             if (!fCanvas) return null;
             return { fData: canvasToPngAndRelease(fCanvas), bData: '' };
         }
-        const bCanvas = await renderHiResSideOffscreen('back');
-        if (!bCanvas) return null;
-        return { fData: '', bData: canvasToPngAndRelease(bCanvas) };
+        if (targetSide === 'back') {
+            const bCanvas = await renderHiResSideOffscreen('back');
+            if (!bCanvas) return null;
+            return { fData: '', bData: canvasToPngAndRelease(bCanvas) };
+        }
+        const [fCanvas, bCanvas] = await Promise.all([
+            renderHiResSideOffscreen('front'),
+            renderHiResSideOffscreen('back')
+        ]);
+        if (!fCanvas || !bCanvas) return null;
+        return {
+            fData: canvasToPngAndRelease(fCanvas),
+            bData: canvasToPngAndRelease(bCanvas)
+        };
     });
     if (!rendered) return;
 
@@ -1361,9 +1348,17 @@ async function printCR80(side = 'both') {
     const rawName = trader ? (trader.company_name || trader.commercial_name || trader.name || '') : '';
     const safeName = escapeHtmlClient(rawName);
 
-    const pagesHtml = targetSide === 'front'
-        ? `<div class="card-page"><img src="${fData}" alt="Front"></div>`
-        : `<div class="card-page"><img src="${bData}" alt="Back"></div>`;
+    let pagesHtml = '';
+    if (targetSide === 'front') {
+        pagesHtml = `<div class="card-page"><img src="${fData}" alt="Front"></div>`;
+    } else if (targetSide === 'back') {
+        pagesHtml = `<div class="card-page"><img src="${bData}" alt="Back"></div>`;
+    } else {
+        pagesHtml = `
+            <div class="card-page"><img src="${fData}" alt="Front"></div>
+            <div class="card-page"><img src="${bData}" alt="Back"></div>
+        `;
+    }
 
     const html = `<!DOCTYPE html>
 <html>
@@ -1372,34 +1367,38 @@ async function printCR80(side = 'both') {
     <title>CR80 Plastic Print - ${safeName}</title>
     <style>
         @page {
+            size: 85.6mm 53.98mm;
             margin: 0;
         }
         @media print {
             @page {
+                size: 85.6mm 53.98mm;
                 margin: 0;
             }
             html, body {
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 100% !important;
+                width: 85.6mm !important;
+                height: auto !important;
+                overflow: visible !important;
                 background: #fff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
             .card-page {
-                width: 100vw !important;
-                height: 100vh !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
+                width: 85.6mm !important;
+                height: 53.98mm !important;
                 page-break-after: always !important;
                 break-after: page !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                display: block !important;
                 overflow: hidden !important;
                 box-sizing: border-box !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .card-page:last-child {
                 page-break-after: auto !important;
@@ -1408,8 +1407,6 @@ async function printCR80(side = 'both') {
             img {
                 width: 85.6mm !important;
                 height: 53.98mm !important;
-                max-width: 100vw !important;
-                max-height: 100vh !important;
                 object-fit: fill !important;
                 display: block !important;
                 margin: 0 !important;
@@ -1433,8 +1430,11 @@ async function printCR80(side = 'both') {
             margin: 0;
             padding: 0;
             overflow: hidden;
+            box-sizing: border-box;
             page-break-after: always;
             break-after: page;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         .card-page:last-child {
             page-break-after: auto;
@@ -1445,6 +1445,9 @@ async function printCR80(side = 'both') {
             height: 53.98mm;
             object-fit: fill;
             display: block;
+            margin: 0;
+            padding: 0;
+            border: 0;
             image-rendering: -webkit-optimize-contrast;
             image-rendering: high-quality;
         }

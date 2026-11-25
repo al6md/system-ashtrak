@@ -19,6 +19,7 @@
             font-display: swap;
         }
         @page {
+            size: 85.6mm 53.98mm;
             margin: 0;
         }
         html, body {
@@ -36,6 +37,7 @@
         .card-page {
             width: 85.6mm;
             height: 53.98mm;
+            display: block;
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -63,6 +65,7 @@
         }
         @media print {
             @page {
+                size: 85.6mm 53.98mm;
                 margin: 0;
             }
             #printLoadingStatus {
@@ -71,22 +74,27 @@
             html, body {
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 100% !important;
+                width: 85.6mm !important;
+                height: auto !important;
+                overflow: visible !important;
                 background: #fff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .card-page {
-                width: 100vw !important;
-                height: 100vh !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
+                width: 85.6mm !important;
+                height: 53.98mm !important;
+                display: block !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 overflow: hidden !important;
+                box-sizing: border-box !important;
                 page-break-after: always !important;
                 break-after: page !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .card-page:last-child {
                 page-break-after: auto !important;
@@ -96,10 +104,11 @@
             #card_background {
                 width: 85.6mm !important;
                 height: 53.98mm !important;
-                max-width: 100vw !important;
-                max-height: 100vh !important;
                 object-fit: fill !important;
                 display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
             }
         }
         #printLoadingStatus {
@@ -119,7 +128,7 @@
     </div>
 
     <script id="cardPrintPayload" type="application/json"><%- printPayloadJson %></script>
-    <script src="/js/cardModal.js?v=28"></script>
+    <script src="/js/cardModal.js?v=<%= typeof assetVersion !== 'undefined' && assetVersion ? assetVersion : '29' %>"></script>
     <script>
         (async function () {
             const statusEl = document.getElementById('printLoadingStatus');

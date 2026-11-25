@@ -38,6 +38,7 @@ const APP_ASSET_REV = (() => {
     path.join(__dirname, 'public', 'js', 'fastNav.js'),
     path.join(__dirname, 'public', 'css', 'cardModal.css'),
     path.join(__dirname, 'views', 'partials', 'card_modal.ejs'),
+    path.join(__dirname, 'views', 'cards', 'print.ejs'),
   ];
   for (const p of assetPaths) {
     try {
@@ -2059,7 +2060,7 @@ app.get('/api/traders/:id', async (req, res) => {
   }
 });
 
-// Standalone CR80 Dual-Sided Print Window (0deg both sides, no forced @page size to match original site)
+// Standalone CR80 Dual-Sided Print Window (85.6mm x 53.98mm ISO CR80 layout, 0deg both sides)
 async function renderStandaloneCardPrint(req, res) {
   try {
     const trader = await findTraderByIdentifier(req.params.id, true);
