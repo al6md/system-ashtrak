@@ -1261,6 +1261,49 @@ async function renderHiResSideOffscreen(side) {
     return canvas;
 }
 
+const CR80_ORIENTATION_STORAGE_KEY = 'cardval_cr80_orientation';
+
+function getCr80PrintOrientation() {
+    try {
+        const saved = localStorage.getItem(CR80_ORIENTATION_STORAGE_KEY);
+        if (saved === 'none' || saved === 'front_180' || saved === 'back_180') {
+            return saved;
+        }
+    } catch (_) {}
+    return 'front_180';
+}
+
+function setCr80PrintOrientation(mode) {
+    const normalized = (mode === 'none' || mode === 'front_180' || mode === 'back_180') ? mode : 'front_180';
+    try {
+        localStorage.setItem(CR80_ORIENTATION_STORAGE_KEY, normalized);
+    } catch (_) {}
+    return normalized;
+}
+
+function rotateCanvas180AndRelease(srcCanvas) {
+    const out = document.createElement('canvas');
+    out.width = srcCanvas.width;
+    out.height = srcCanvas.height;
+    const ctx = out.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.translate(out.width, out.height);
+    ctx.rotate(Math.PI);
+    ctx.drawImage(srcCanvas, 0, 0);
+    srcCanvas.width = 0;
+    srcCanvas.height = 0;
+    return out;
+}
+
+function maybeRotateCr80Canvas(canvas, side, orient) {
+    if (!canvas) return canvas;
+    if ((side === 'front' && orient === 'front_180') || (side === 'back' && orient === 'back_180')) {
+        return rotateCanvas180AndRelease(canvas);
+    }
+    return canvas;
+}
+
 async function renderCardPairForPrint(trader, typography, qrUrl, fallbackGlobalTypography) {
     if (!trader) return null;
     currentTrader = trader;
@@ -1274,9 +1317,13 @@ async function renderCardPairForPrint(trader, typography, qrUrl, fallbackGlobalT
     ]);
     if (!fCanvas || !bCanvas) return null;
 
+    const orient = getCr80PrintOrientation();
+    const finalFront = maybeRotateCr80Canvas(fCanvas, 'front', orient);
+    const finalBack = maybeRotateCr80Canvas(bCanvas, 'back', orient);
+
     return {
-        fData: canvasToPngAndRelease(fCanvas),
-        bData: canvasToPngAndRelease(bCanvas)
+        fData: canvasToPngAndRelease(finalFront),
+        bData: canvasToPngAndRelease(finalBack)
     };
 }
 
@@ -1321,16 +1368,17 @@ async function printCR80(side = 'both') {
     }
 
     const trader = currentTrader;
+    const orient = getCr80PrintOrientation();
     const rendered = await withModalStatus('جاري تجهيز نسخة الطباعة عالية الدقة...', async () => {
         if (targetSide === 'front') {
             const fCanvas = await renderHiResSideOffscreen('front');
             if (!fCanvas) return null;
-            return { fData: canvasToPngAndRelease(fCanvas), bData: '' };
+            return { fData: canvasToPngAndRelease(maybeRotateCr80Canvas(fCanvas, 'front', orient)), bData: '' };
         }
         if (targetSide === 'back') {
             const bCanvas = await renderHiResSideOffscreen('back');
             if (!bCanvas) return null;
-            return { fData: '', bData: canvasToPngAndRelease(bCanvas) };
+            return { fData: '', bData: canvasToPngAndRelease(maybeRotateCr80Canvas(bCanvas, 'back', orient)) };
         }
         const [fCanvas, bCanvas] = await Promise.all([
             renderHiResSideOffscreen('front'),
@@ -1338,8 +1386,8 @@ async function printCR80(side = 'both') {
         ]);
         if (!fCanvas || !bCanvas) return null;
         return {
-            fData: canvasToPngAndRelease(fCanvas),
-            bData: canvasToPngAndRelease(bCanvas)
+            fData: canvasToPngAndRelease(maybeRotateCr80Canvas(fCanvas, 'front', orient)),
+            bData: canvasToPngAndRelease(maybeRotateCr80Canvas(bCanvas, 'back', orient))
         };
     });
     if (!rendered) return;
@@ -1600,6 +1648,8 @@ window.saveTraderCustomTypography = saveTraderCustomTypography;
 window.resetTraderCustomTypography = resetTraderCustomTypography;
 window.printCR80 = printCR80;
 window.renderCardPairForPrint = renderCardPairForPrint;
+window.getCr80PrintOrientation = getCr80PrintOrientation;
+window.setCr80PrintOrientation = setCr80PrintOrientation;
 window.printA4 = printA4;
 window.downloadImage = downloadImage;
 

@@ -2060,7 +2060,7 @@ app.get('/api/traders/:id', async (req, res) => {
   }
 });
 
-// Standalone CR80 Dual-Sided Print Window (85.6mm x 53.98mm ISO CR80 layout, 0deg both sides)
+// Standalone CR80 Dual-Sided Print Window (85.6mm x 53.98mm ISO CR80 layout, configurable per-device orientation, default front_180)
 async function renderStandaloneCardPrint(req, res) {
   try {
     const trader = await findTraderByIdentifier(req.params.id, true);
