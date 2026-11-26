@@ -123,8 +123,8 @@
 <body>
     <div id="printLoadingStatus">جاري تجهيز نسخة الطباعة عالية الدقة...</div>
     <div class="container" id="printContainer" style="display: none;">
-        <div class="card-page"><img id="card_foreground" alt="Front" /></div>
-        <div class="card-page"><img id="card_background" alt="Back" /></div>
+        <div class="card-page" id="frontPageWrap"><img id="card_foreground" alt="Front" /></div>
+        <div class="card-page" id="backPageWrap"><img id="card_background" alt="Back" /></div>
     </div>
 
     <script id="cardPrintPayload" type="application/json"><%- printPayloadJson %></script>
@@ -133,6 +133,8 @@
         (async function () {
             const statusEl = document.getElementById('printLoadingStatus');
             const containerEl = document.getElementById('printContainer');
+            const frontWrap = document.getElementById('frontPageWrap');
+            const backWrap = document.getElementById('backPageWrap');
             const fgImg = document.getElementById('card_foreground');
             const bgImg = document.getElementById('card_background');
 
@@ -171,7 +173,11 @@
                 // Apply transient edits/role selection passed from the print modal when launched from UI
                 try {
                     const storageKey = 'cardval_print_override_' + String(trader.uuid || trader.id || '');
-                    const rawOverride = sessionStorage.getItem(storageKey);
+                    let rawOverride = null;
+                    try { rawOverride = localStorage.getItem(storageKey); } catch (_) {}
+                    if (!rawOverride) {
+                        try { rawOverride = sessionStorage.getItem(storageKey); } catch (_) {}
+                    }
                     if (rawOverride) {
                         const parsed = JSON.parse(rawOverride);
                         if (parsed && parsed.ts && (Date.now() - parsed.ts) < 60000) {
@@ -188,19 +194,35 @@
                     }
                 } catch (_) {}
 
+                const rawSide = new URLSearchParams(window.location.search).get('side');
+                const targetSide = (rawSide === 'front' || rawSide === 'back') ? rawSide : 'both';
+
                 const rendered = await window.renderCardPairForPrint(
                     trader,
                     activeTypo || globalTypo,
                     payload.qr_url || null,
-                    globalTypo
+                    globalTypo,
+                    targetSide
                 );
-                if (!rendered || !rendered.fData || !rendered.bData) {
-                    throw new Error('فشل توليد صور البطاقة');
-                }
 
-                fgImg.src = rendered.fData;
-                bgImg.src = rendered.bData;
-                await Promise.all([waitImageDecode(fgImg), waitImageDecode(bgImg)]);
+                if (targetSide === 'front') {
+                    if (!rendered || !rendered.fData) throw new Error('فشل توليد صورة الوجه الأمامي');
+                    if (backWrap) backWrap.remove();
+                    fgImg.src = rendered.fData;
+                    await waitImageDecode(fgImg);
+                } else if (targetSide === 'back') {
+                    if (!rendered || !rendered.bData) throw new Error('فشل توليد صورة الوجه الخلفي');
+                    if (frontWrap) frontWrap.remove();
+                    bgImg.src = rendered.bData;
+                    await waitImageDecode(bgImg);
+                } else {
+                    if (!rendered || !rendered.fData || !rendered.bData) {
+                        throw new Error('فشل توليد صور البطاقة');
+                    }
+                    fgImg.src = rendered.fData;
+                    bgImg.src = rendered.bData;
+                    await Promise.all([waitImageDecode(fgImg), waitImageDecode(bgImg)]);
+                }
 
                 if (statusEl) statusEl.style.display = 'none';
                 if (containerEl) containerEl.style.display = 'block';

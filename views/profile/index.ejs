@@ -448,32 +448,6 @@
                     </div>
                 </div>
 
-                <!-- CR80 Plastic Card Printer Orientation Card (Per-PC localStorage calibration) -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4" dir="rtl" style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1rem 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem;">
-                        <div>
-                            <h3 style="font-size: 0.95rem; font-weight: 700; color: #111827; margin: 0 0 0.25rem 0;">
-                                🖨️ اتجاه طباعة البطاقة البلاستيكية (طابعة DTC1500 — إعداد خاص بهذا الحاسوب)
-                            </h3>
-                            <p style="font-size: 0.78rem; color: #4b5563; margin: 0;">
-                                افتراضياً يتم تدوير الوجه الأمامي 180° تلقائياً للأجهزة التي لم يُفعَّل فيها «Rotate Front 180 Degrees» في تعريف الطابعة بـ Windows. إذا كان حاسوباً آخر يطبع معكوساً فاختر الوضع المناسب هنا ليُحفظ لهذا المتصفح فقط.
-                            </p>
-                        </div>
-                        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;">
-                            <button type="button" id="cr80OrientFront180" onclick="selectCr80Orientation('front_180')" style="padding: 0.42rem 0.85rem; border-radius: 0.5rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid #1f2937; background: #1f2937; color: #ffffff;">
-                                تدوير الأمامي 180° (افتراضي DTC1500)
-                            </button>
-                            <button type="button" id="cr80OrientNone" onclick="selectCr80Orientation('none')" style="padding: 0.42rem 0.85rem; border-radius: 0.5rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid #d1d5db; background: #ffffff; color: #374151;">
-                                بدون تدوير (0° للوجهين)
-                            </button>
-                            <button type="button" id="cr80OrientBack180" onclick="selectCr80Orientation('back_180')" style="padding: 0.42rem 0.85rem; border-radius: 0.5rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid #d1d5db; background: #ffffff; color: #374151;">
-                                تدوير الخلفي 180°
-                            </button>
-                        </div>
-                    </div>
-                    <div id="cr80OrientSavedHint" style="margin-top: 0.45rem; font-size: 0.74rem; font-weight: 600; color: #065f46; display: none;"></div>
-                </div>
-
                 <!-- MAIN CARD: Card Typography Studio -->
                 <div class="studio-card-wrapper">
                     <!-- Studio Header -->
@@ -3400,53 +3374,8 @@
             }
         }
 
-        const CR80_ORIENTATION_KEY = 'cardval_cr80_orientation';
-
-        function syncCr80OrientationButtons() {
-            let active = 'front_180';
-            try {
-                const saved = localStorage.getItem(CR80_ORIENTATION_KEY);
-                if (saved === 'none' || saved === 'front_180' || saved === 'back_180') {
-                    active = saved;
-                }
-            } catch (_) {}
-
-            const btnMap = {
-                front_180: document.getElementById('cr80OrientFront180'),
-                none: document.getElementById('cr80OrientNone'),
-                back_180: document.getElementById('cr80OrientBack180')
-            };
-            for (const key in btnMap) {
-                const btn = btnMap[key];
-                if (!btn) continue;
-                const isActive = key === active;
-                btn.style.background = isActive ? '#1f2937' : '#ffffff';
-                btn.style.color = isActive ? '#ffffff' : '#374151';
-                btn.style.borderColor = isActive ? '#111827' : '#d1d5db';
-            }
-        }
-
-        function selectCr80Orientation(mode) {
-            const normalized = (mode === 'none' || mode === 'front_180' || mode === 'back_180') ? mode : 'front_180';
-            try {
-                localStorage.setItem(CR80_ORIENTATION_KEY, normalized);
-            } catch (_) {}
-            syncCr80OrientationButtons();
-            const hint = document.getElementById('cr80OrientSavedHint');
-            if (hint) {
-                const labelMap = {
-                    front_180: 'تدوير الأمامي 180° (افتراضي DTC1500)',
-                    none: 'بدون تدوير (0° للوجهين)',
-                    back_180: 'تدوير الخلفي 180°'
-                };
-                hint.textContent = `✓ تم حفظ إعداد الطابعة لهذا الحاسوب: ${labelMap[normalized]}`;
-                hint.style.display = 'block';
-            }
-        }
-
         // Initial render on load
         window.addEventListener('load', () => {
-            syncCr80OrientationButtons();
             populateQuickSelect();
             renderCurrentPreview();
         });
